@@ -32,14 +32,19 @@ session:
   lifespan: "1h"
   enable_auth_token_header: true
   cookie:
-    http_only: true
+    http_only: false
     same_site: "lax"
     secure: false  # true in production
+
+password:
+  enabled: true
+  min_length: 8
 
 passcode:
   ttl: 120
 
-email:
+email_delivery:
+  smtp:
+    host: "mailpit"
+    port: "1025"
   from_address: noreply@repousse.org
-  from_name: Repousse
-  # Configure SMTP or use Hanko's built-in mock for dev

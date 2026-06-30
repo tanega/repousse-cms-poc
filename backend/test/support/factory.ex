@@ -44,7 +44,7 @@ defmodule Repousse.Factory do
     %Taxon{
       scientific_name: sequence(:sci_name, &"Genus species#{&1}"),
       common_name: sequence(:common_name, &"Common Plant #{&1}"),
-      level: :species,
+      taxonomic_level: :species,
       is_non_taxonomic: false,
       category: build(:taxon_category)
     }
@@ -54,14 +54,13 @@ defmodule Repousse.Factory do
     %Event{
       title: sequence(:event_title, &"Distribution #{&1}"),
       slug: sequence(:event_slug, &"distribution-#{&1}"),
-      status: :draft,
-      location: "Place de la Mairie"
+      status: :draft
     }
   end
 
   def project_factory do
     %Project{
-      title: sequence(:project_title, &"Projet #{&1}"),
+      name: sequence(:project_title, &"Projet #{&1}"),
       description: "Un projet de plantation",
       publication_status: :private
     }

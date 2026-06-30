@@ -23,6 +23,12 @@ end
 config :repousse, RepousseWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+hanko_api_url = System.get_env("HANKO_API_URL", "http://localhost:8000")
+
+config :repousse, :hanko,
+  api_url: hanko_api_url,
+  jwks_url: hanko_api_url <> "/.well-known/jwks.json"
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

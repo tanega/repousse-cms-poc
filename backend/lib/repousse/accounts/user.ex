@@ -5,6 +5,20 @@ defmodule Repousse.Accounts.User do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :email,
+             :first_name,
+             :last_name,
+             :membership_year,
+             :status,
+             :last_seen_at,
+             :profiles,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "users" do
     field :email, :string
     field :first_name, :string

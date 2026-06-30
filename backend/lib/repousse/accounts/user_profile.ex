@@ -7,6 +7,23 @@ defmodule Repousse.Accounts.UserProfile do
 
   @profile_types [:volunteer, :adoptant, :host_family, :admin]
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :profile_type,
+             :engagement_note,
+             :address,
+             :avatar_url,
+             :notification_prefs,
+             :hosting_capacity,
+             :hosting_address,
+             :hosting_lat,
+             :hosting_lng,
+             :hosting_availability,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "user_profiles" do
     field :profile_type, Ecto.Enum, values: @profile_types
     field :engagement_note, :string
