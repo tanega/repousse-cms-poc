@@ -1,0 +1,4 @@
+.env
+frontend/.env.local
+backend/config/dev.secret.exs
+backend/config/prod.secret.exs

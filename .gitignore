@@ -48,6 +48,11 @@ backend/config/prod.secret.exs
 postgres/data/
 
 # ========================
+# CLAUDE CODE WORKTREES
+# ========================
+.claude/worktrees/
+
+# ========================
 # OS
 # ========================
 .DS_Store
