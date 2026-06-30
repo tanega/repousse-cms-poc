@@ -1,0 +1,45 @@
+server:
+  public:
+    address: ":8000"
+    cors:
+      enabled: true
+      allow_origins:
+        - "http://localhost:3000"
+      allow_credentials: true
+  admin:
+    address: ":8001"
+
+webauthn:
+  relying_party:
+    id: "localhost"
+    display_name: "Repousse"
+    origins:
+      - "http://localhost:3000"
+
+database:
+  user: postgres
+  password: postgres
+  host: postgres
+  port: "5432"
+  database: hanko
+  dialect: postgres
+
+secrets:
+  keys:
+    - "supersecrethankokey32chars123456"
+
+session:
+  lifespan: "1h"
+  enable_auth_token_header: true
+  cookie:
+    http_only: true
+    same_site: "lax"
+    secure: false  # true in production
+
+passcode:
+  ttl: 120
+
+email:
+  from_address: noreply@repousse.org
+  from_name: Repousse
+  # Configure SMTP or use Hanko's built-in mock for dev

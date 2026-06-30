@@ -1,0 +1,52 @@
+---
+title: Repousse — Plateforme numérique
+description: Cahier de spécifications fonctionnelles
+template: splash
+hero:
+  tagline: Cahier de spécifications fonctionnelles de la nouvelle plateforme numérique de l'association Repousse.
+  actions:
+    - text: Voir la roadmap
+      link: /roadmap/
+      icon: right-arrow
+    - text: EP-01 — Distributions
+      link: /roadmap/ep-01-distributions/
+      icon: document
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Épics
+
+<CardGrid stagger>
+  <Card title="EP-01 — Distributions" icon="list-format">
+    Création d'événements de distribution, gestion des créneaux, réservations Adoptants, validation terrain (PWA).
+
+    [Voir l'épic →](/roadmap/ep-01-distributions/)
+  </Card>
+  <Card title="EP-02 — Authentification & accès" icon="shield">
+    Synchronisation HelloAsso, authentification passwordless (passkeys), rôles et profils utilisateurs.
+
+    [Voir l'épic →](/roadmap/ep-02-authentification/)
+  </Card>
+  <Card title="EP-03 — Profils utilisateurs" icon="person">
+    Profils Adoptant, Bénévole, Famille d'accueil. Gestion des données personnelles et conformité RGPD.
+
+    [Voir l'épic →](/roadmap/ep-03-profils-utilisateurs/)
+  </Card>
+  <Card title="EP-04 — Projets de plantation" icon="map">
+    Création et suivi de projets, membres, journal d'actions, galerie médias, modération.
+
+    [Voir l'épic →](/roadmap/ep-04-projets-plantation/)
+  </Card>
+  <Card title="EP-05 — Taxons végétaux" icon="open-book">
+    Référentiel des genres, espèces et variétés. Hiérarchie taxonomique, import, ressources pédagogiques.
+
+    [Voir l'épic →](/roadmap/ep-05-gestion-taxons/)
+  </Card>
+  <Card title="EP-06 — Tableau de bord" icon="bar-chart">
+    Indicateurs d'impact (CO₂, plants distribués), cartographie, calendrier, exports, Metabase.
+
+    [Voir l'épic →](/roadmap/ep-06-tableau-de-bord/)
+  </Card>
+</CardGrid>

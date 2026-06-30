@@ -1,0 +1,70 @@
+# ========================
+# EXCLUDE
+# ========================
+frontend-demo/
+
+# ========================
+# ELIXIR / MIX
+# ========================
+backend/_build/
+backend/deps/
+backend/doc/
+backend/cover/
+backend/.fetch
+backend/tmp/
+backend/repousse-*.tar
+backend/erl_crash.dump
+backend/*.ez
+
+# ========================
+# NODE / NEXT.JS
+# ========================
+**/node_modules/
+**/.next/
+**/out/
+**/.turbo/
+**/dist/
+**/.vercel/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.pnp.*
+**/.pnp.js
+**/.cache/
+
+# ========================
+# ENVIRONMENT & SECRETS
+# ========================
+.env
+.env.*
+!.env.example
+!.env.*.example
+backend/config/dev.secret.exs
+backend/config/prod.secret.exs
+
+# ========================
+# DOCKER
+# ========================
+postgres/data/
+
+# ========================
+# OS
+# ========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ========================
+# IDE / EDITORS
+# ========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.history/
