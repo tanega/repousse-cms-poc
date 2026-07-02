@@ -78,6 +78,12 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/crm",
         icon: ChartBar,
       },
+      {
+        id: "distributions",
+        title: "Distributions",
+        url: "/distributions",
+        icon: Package,
+      },
     ],
   },
   {
