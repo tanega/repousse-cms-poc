@@ -18,6 +18,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
+import { useLiveQuery } from "@tanstack/react-db";
 import { ChevronsDownUp, ChevronsUpDown, Download, Plus, Search, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,8 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { CATEGORIES, flattenTaxons, NIVEAUX, taxons as initialTaxons, type Taxon } from "./data";
+import { taxonCollection } from "./collection";
+import { buildTree, CATEGORIES, NIVEAUX, type TaxonNode } from "./data";
 import type { DeleteTarget } from "./delete-alert-dialog";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
 import { getTaxonsColumns } from "./taxons-columns";
@@ -34,7 +36,8 @@ import { TaxonsTable } from "./taxons-table";
 const ALL = "Tous";
 
 export function Taxons() {
-  const [data, setData] = React.useState<Taxon[]>(initialTaxons);
+  const { data: rows } = useLiveQuery(taxonCollection);
+  const data = React.useMemo(() => buildTree(rows ?? []), [rows]);
   const [deleteTarget, setDeleteTarget] = React.useState<DeleteTarget | null>(null);
 
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "nom", desc: false }]);
@@ -96,18 +99,16 @@ export function Taxons() {
   }
 
   function handleDelete(id: string) {
-    function removeFromTree(nodes: Taxon[]): Taxon[] {
-      return nodes
-        .filter((n) => n.id !== id)
-        .map((n) => ({
-          ...n,
-          children: n.children ? removeFromTree(n.children) : undefined,
-        }));
+    const toDelete = [id];
+    for (let i = 0; i < toDelete.length; i++) {
+      for (const row of rows ?? []) {
+        if (row.parentId === toDelete[i]) toDelete.push(row.id);
+      }
     }
-    setData((prev) => removeFromTree(prev));
+    taxonCollection.delete(toDelete);
   }
 
-  const totalTaxons = flattenTaxons(data).length;
+  const totalTaxons = rows?.length ?? 0;
   const filteredCount = table.getFilteredRowModel().flatRows.length;
 
   return (
