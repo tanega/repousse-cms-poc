@@ -15,10 +15,17 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 import { taxons } from "../../especes-vegetales/_components/data";
+import { CarteMini } from "./carte-mini";
 import { projetPlantationCollection } from "./collection";
+import { CURRENT_USER } from "./current-user";
 import { findProjetById, STATUT_COLORS, STATUT_TRANSITIONS, type StatutPublication } from "./data";
 import type { DeleteTarget } from "./delete-alert-dialog";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
+import { JournalCard } from "./journal-card";
+import { MediasCard } from "./medias-card";
+import { MembresCard } from "./membres-card";
+import { ModerationCard } from "./moderation-card";
+import { PlantsAssociesCard } from "./plants-associes-card";
 
 function taxonName(taxonId: string) {
   const taxon = taxons.find((t) => t.id === taxonId);
@@ -108,6 +115,17 @@ export function ProjetDetailView({ id }: { id: string }) {
               </CardContent>
             </Card>
 
+            {projet.lat !== null && projet.lng !== null && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Localisation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CarteMini lat={projet.lat} lng={projet.lng} label={projet.nom} />
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Terrain</CardTitle>
@@ -151,6 +169,12 @@ export function ProjetDetailView({ id }: { id: string }) {
                 )}
               </CardContent>
             </Card>
+
+            <PlantsAssociesCard projetId={projet.id} />
+
+            <MediasCard projet={projet} canEdit />
+
+            <JournalCard projet={projet} currentUserNom={CURRENT_USER.nom} canPost isProjectAdmin />
           </div>
 
           {/* Right 1/3 */}
@@ -173,7 +197,7 @@ export function ProjetDetailView({ id }: { id: string }) {
                     <Users className="size-3.5" />
                     Membres
                   </span>
-                  <span className="font-medium text-foreground tabular-nums">{projet.nbMembres}</span>
+                  <span className="font-medium text-foreground tabular-nums">{projet.membres.length}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-muted-foreground">
@@ -196,6 +220,10 @@ export function ProjetDetailView({ id }: { id: string }) {
                 )}
               </CardContent>
             </Card>
+
+            <MembresCard projet={projet} canManage />
+
+            <ModerationCard projet={projet} />
 
             <Button variant="destructive" className="w-full" onClick={() => setDeleteTarget({ projet })}>
               Supprimer ce projet

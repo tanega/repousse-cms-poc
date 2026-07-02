@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 import { taxons } from "../../especes-vegetales/_components/data";
 import { projetPlantationCollection } from "./collection";
+import { CURRENT_USER } from "./current-user";
 import { NATURES_GESTION, type NatureGestion, STATUT_COLORS, type StatutPublication, slugify } from "./data";
 
 type FormValues = {
@@ -89,9 +90,16 @@ export function ProjetForm({ mode, defaultValues, projetId, statut }: ProjetForm
       const id = slugify(record.nom) || crypto.randomUUID();
       projetPlantationCollection.insert({
         id,
+        lat: null,
+        lng: null,
         statut: "Privé",
-        createurNom: "Vous",
-        nbMembres: 1,
+        createurNom: CURRENT_USER.nom,
+        membres: [
+          { id: crypto.randomUUID(), nom: CURRENT_USER.nom, email: CURRENT_USER.email, role: "Administrateur" },
+        ],
+        invitations: [],
+        medias: [],
+        journal: [],
         createdAt: new Date().toISOString().slice(0, 10),
         publishedAt: null,
         ...record,

@@ -86,7 +86,7 @@ export function getProjetsColumns(
       cell: ({ row }) => (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Users className="size-3" />
-          {row.original.nbMembres}
+          {row.original.membres.length}
         </div>
       ),
     },
