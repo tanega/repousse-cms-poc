@@ -91,6 +91,12 @@ export const sidebarItems: NavGroup[] = [
         icon: Calendar,
       },
       {
+        id: "admin-kanban",
+        title: "Kanban",
+        url: "/admin/kanban",
+        icon: Kanban,
+      },
+      {
         id: "tasks",
         title: "Tâches",
         url: "/dashboard/tasks",
@@ -113,12 +119,6 @@ export const sidebarItems: NavGroup[] = [
         title: "Rôles",
         url: "/admin/roles",
         icon: Lock,
-      },
-      {
-        id: "admin-kanban",
-        title: "Kanban",
-        url: "/admin/kanban",
-        icon: Kanban,
       },
       {
         id: "admin-especes",
