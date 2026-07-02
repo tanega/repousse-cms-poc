@@ -1,0 +1,326 @@
+"use client";
+
+import { useState } from "react";
+
+import Link from "next/link";
+
+import { ArrowLeft } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+import { filters, profileTypeMeta, type AdherentProfileType, type AdherentSource, type AdherentStatus } from "./data";
+
+const profileDescriptions: Record<AdherentProfileType, string> = {
+  "Bénévole": "Participe aux ateliers et activités de l'association.",
+  "Adoptant": "Réserve des plants et gère des projets de plantation.",
+  "Famille d'accueil": "Héberge de jeunes plants avant leur distribution.",
+  "Coordinateur": "Organise et coordonne les activités sur le terrain.",
+  "Administrateur": "Gère l'association et a accès à l'espace d'administration.",
+};
+
+type FormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  profileTypes: AdherentProfileType[];
+  status: AdherentStatus;
+  source: AdherentSource;
+  memberSince: string;
+  notes: string;
+};
+
+type AdherentFormProps = {
+  mode: "create" | "edit";
+  defaultValues?: Partial<FormValues>;
+};
+
+const today = new Date().toISOString().split("T")[0];
+
+export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
+  const isEdit = mode === "edit";
+
+  const [values, setValues] = useState<FormValues>({
+    firstName: defaultValues?.firstName ?? "",
+    lastName: defaultValues?.lastName ?? "",
+    email: defaultValues?.email ?? "",
+    phone: defaultValues?.phone ?? "",
+    profileTypes: defaultValues?.profileTypes ?? ["Bénévole"],
+    status: defaultValues?.status ?? "En attente",
+    source: defaultValues?.source ?? "Manuel",
+    memberSince: defaultValues?.memberSince ?? today,
+    notes: defaultValues?.notes ?? "",
+  });
+
+  function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
+    setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function toggleProfile(profile: AdherentProfileType) {
+    setValues((prev) => ({
+      ...prev,
+      profileTypes: prev.profileTypes.includes(profile)
+        ? prev.profileTypes.filter((p) => p !== profile)
+        : [...prev.profileTypes, profile],
+    }));
+  }
+
+  const profileOrder: AdherentProfileType[] = [
+    "Bénévole",
+    "Adoptant",
+    "Famille d'accueil",
+    "Coordinateur",
+    "Administrateur",
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon-sm" asChild>
+          <Link href="/admin/adherents">
+            <ArrowLeft className="size-4" />
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-2xl font-semibold">
+            {isEdit ? "Modifier l'adhérent" : "Ajouter un adhérent"}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {isEdit
+              ? "Modifiez les informations du compte adhérent."
+              : "Créez un nouveau compte adhérent pour l'association."}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* ── Left column ── */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Informations personnelles */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Informations personnelles</CardTitle>
+              <CardDescription className="text-xs">
+                Identité et coordonnées de l'adhérent.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">Prénom</Label>
+                  <Input
+                    id="firstName"
+                    placeholder="Prénom"
+                    value={values.firstName}
+                    onChange={(e) => set("firstName", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Nom</Label>
+                  <Input
+                    id="lastName"
+                    placeholder="Nom de famille"
+                    value={values.lastName}
+                    onChange={(e) => set("lastName", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Adresse email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="prenom.nom@email.fr"
+                  value={values.email}
+                  onChange={(e) => set("email", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">
+                  Téléphone
+                  <span className="ml-1.5 text-muted-foreground text-xs font-normal">(facultatif)</span>
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+33 6 00 00 00 00"
+                  value={values.phone}
+                  onChange={(e) => set("phone", e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Profils d'engagement */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Profils d'engagement</CardTitle>
+              <CardDescription className="text-xs">
+                Sélectionnez les profils correspondant à l'engagement de l'adhérent. Au moins un profil est requis.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {profileOrder.map((profile) => {
+                const meta = profileTypeMeta[profile];
+                const Icon = meta.icon;
+                const checked = values.profileTypes.includes(profile);
+                return (
+                  <label
+                    key={profile}
+                    htmlFor={`profile-${profile}`}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors",
+                      checked
+                        ? "border-primary/20 bg-primary/5"
+                        : "border-transparent hover:bg-muted/50",
+                    )}
+                  >
+                    <Checkbox
+                      id={`profile-${profile}`}
+                      checked={checked}
+                      onCheckedChange={() => toggleProfile(profile)}
+                    />
+                    <div className={cn("flex size-7 shrink-0 items-center justify-center rounded-md bg-muted/60")}>
+                      <Icon className={cn("size-3.5", meta.className)} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm leading-none">{profile}</p>
+                      <p className="mt-0.5 text-muted-foreground text-xs leading-snug">
+                        {profileDescriptions[profile]}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          {/* Notes internes */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Notes internes</CardTitle>
+              <CardDescription className="text-xs">
+                Visibles uniquement par les administrateurs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Contexte d'adhésion, remarques, informations particulières…"
+                rows={4}
+                value={values.notes}
+                onChange={(e) => set("notes", e.target.value)}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Right column ── */}
+        <div className="space-y-6">
+          {/* Adhésion */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Adhésion</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Statut</Label>
+                <Select
+                  value={values.status}
+                  onValueChange={(v) => set("status", v as AdherentStatus)}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filters.status
+                      .filter((s) => s !== "Tous")
+                      .map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="source">Source</Label>
+                <Select
+                  value={values.source}
+                  onValueChange={(v) => set("source", v as AdherentSource)}
+                >
+                  <SelectTrigger id="source">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filters.source
+                      .filter((s) => s !== "Tous")
+                      .map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Date d'adhésion</Label>
+                <DatePicker
+                  value={values.memberSince}
+                  onChange={(v) => set("memberSince", v)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {isEdit && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Activité</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Connexions</span>
+                  <span className="font-medium text-foreground tabular-nums">—</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Projets</span>
+                  <span className="font-medium text-foreground tabular-nums">—</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Dernière connexion</span>
+                  <span className="font-medium text-foreground">—</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Actions */}
+          <div className="flex flex-col gap-2">
+            <Button className="w-full">
+              {isEdit ? "Enregistrer les modifications" : "Créer l'adhérent"}
+            </Button>
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/admin/adherents">Annuler</Link>
+            </Button>
+            {isEdit && (
+              <>
+                <Separator />
+                <Button variant="destructive" className="w-full">
+                  Désactiver le compte
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

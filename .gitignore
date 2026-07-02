@@ -1,7 +1,8 @@
 # ========================
 # EXCLUDE
 # ========================
-frontend-demo/
+frontend-demo
+frontend-template
 
 # ========================
 # ELIXIR / MIX

@@ -31,6 +31,161 @@ Permettre à chaque membre de renseigner et gérer son profil personnel, de choi
 | **Famille d'accueil** | Conserve et multiplie de jeunes plants avant distribution | Auto-sélection |
 | **Administrateur** | Coordination, bureau, CA, équipe salariée | Attribution par superadmin uniquement |
 
+## Parcours utilisateurs
+
+### Bénévole
+
+> Profil par défaut — attribué automatiquement à tout nouveau compte.
+
+```
+Inscription (HelloAsso / formulaire)
+  ↓
+Activation du compte (email — EP-02)
+  ↓
+1ère connexion → onboarding guidé
+  · Profil "Bénévole" pré-coché
+  · Invitation à compléter le profil (non bloquante)
+  · Indication des autres profils disponibles
+  ↓
+Accès à l'espace membre
+  · Calendrier des ateliers & événements
+  · Actualités de l'association
+  · Tableau de bord personnel (projets suivis, connexions)
+  ↓
+Évolution possible → sélection d'un profil supplémentaire
+  (Adoptant ou Famille d'accueil depuis les paramètres)
+```
+
+**Déclencheurs de montée en profil :**
+- Envie de réserver des plants → ajouter Adoptant
+- Souhait d'héberger des jeunes plants → ajouter Famille d'accueil
+- Recrutement par l'association → attribution Administrateur
+
+---
+
+### Adoptant
+
+> Profil auto-sélectionnable — débloque la réservation de plants et la création de projets.
+
+```
+Compte existant (Bénévole) OU nouveau compte
+  ↓
+Sélection du profil "Adoptant" dans Paramètres → Profil
+  · Description du profil affichée (engagement, responsabilités)
+  · Confirmation explicite
+  ↓
+Complétion des champs profil Adoptant (facultatifs)
+  · Localisation de plantation souhaitée
+  · Type d'espace disponible (jardin privé, espace public, entreprise…)
+  · Souhait d'engagement (champ libre)
+  · Préférences d'espèces (à relier EP-05)
+  ↓
+Accès débloqué
+  · Réservation de plants lors des distributions (EP-01)
+  · Création et suivi de projets de plantation (EP-04)
+  · Page profil publique (si activée)
+  ↓
+Cycle de plantation
+  · Réservation → Retrait lors d'un atelier → Plantation → Suivi → Rapport
+```
+
+**Points de friction identifiés :**
+- L'Adoptant doit savoir qu'il peut avoir plusieurs profils simultanément
+- La distinction Adoptant / Famille d'accueil n'est pas intuitive — décrire clairement à l'onboarding
+
+---
+
+### Famille d'accueil
+
+> Profil auto-sélectionnable — rôle logistique clé pour la conservation des jeunes plants avant distribution.
+
+```
+Compte existant (généralement aussi Bénévole)
+  ↓
+Sélection du profil "Famille d'accueil" dans Paramètres → Profil
+  · Présentation du rôle et des responsabilités
+  · Engagement de disponibilité demandé (non contractuel)
+  ↓
+Complétion des champs spécifiques (facultatifs mais utiles)
+  · Adresse d'accueil (ou zone géographique)
+  · Capacité de stockage (nombre de plants / surface)
+  · Espèces pouvant être accueillies (sélection multi — EP-05)
+  · Disponibilités générales (saisonnières, ponctuelles)
+  · Équipements disponibles (serre, bâche, arrosage automatique…)
+  ↓
+Visibilité coordinateurs
+  · Profil apparaît dans l'interface admin (EP-03, US-PROFIL-09)
+  · Coordinateurs peuvent assigner un lot de plants à la famille
+  ↓
+Cycle d'hébergement
+  · Assignation d'un lot → Accueil des plants → Suivi de croissance
+  → Notification de distribution → Remise aux adoptants lors d'un atelier
+```
+
+**Contraintes métier spécifiques :**
+- Une famille d'accueil peut héberger des plants pour plusieurs espèces simultanément
+- La capacité renseignée est indicative — le coordinateur valide la disponibilité avant assignation
+- En cas d'indisponibilité soudaine, le coordinateur doit pouvoir réassigner rapidement → notification urgente à prévoir
+
+---
+
+## Matrice d'accès par profil
+
+| Fonctionnalité | Bénévole | Adoptant | Famille d'accueil | Administrateur |
+|----------------|:--------:|:--------:|:-----------------:|:--------------:|
+| Voir son profil & le modifier | ✓ | ✓ | ✓ | ✓ |
+| Voir les profils publics des autres membres | ✓ | ✓ | ✓ | ✓ |
+| Consulter le calendrier / ateliers | ✓ | ✓ | ✓ | ✓ |
+| Réserver des plants (distributions) | — | ✓ | — | ✓ |
+| Créer un projet de plantation | — | ✓ | — | ✓ |
+| Être assigné·e comme famille d'accueil | — | — | ✓ | — |
+| Renseigner capacités d'hébergement | — | — | ✓ | — |
+| Consulter tous les profils (admin) | — | — | — | ✓ |
+| Modifier un profil en modération | — | — | — | ✓ |
+| Gérer les espèces végétales | — | — | — | ✓ |
+| Gérer les distributions | — | — | — | ✓ |
+| Accéder aux automatisations (imports) | — | — | — | ✓ |
+
+---
+
+## Données collectées par profil
+
+### Champs communs (tous profils)
+
+| Champ | Type | Obligatoire | Source |
+|-------|------|:-----------:|--------|
+| Email | string | ✓ (IAM) | HelloAsso / Hanko |
+| Prénom | string | — | Profil utilisateur |
+| Nom | string | — | Profil utilisateur |
+| Photo de profil | image | — | Upload |
+| Profil(s) actif(s) | enum[] | ✓ | Sélection utilisateur |
+| Préférences de notifications | json | — | Paramètres |
+| Statut du compte | enum | ✓ (système) | Calculé |
+| Date d'inscription | datetime | ✓ (système) | Généré |
+| Dernière connexion | datetime | ✓ (système) | Généré |
+
+### Champs spécifiques — Adoptant
+
+| Champ | Type | Remarque |
+|-------|------|----------|
+| Localisation de plantation | string / coordonnées | Zone ou adresse indicative |
+| Type d'espace disponible | enum | Jardin privé, espace public, entreprise, balcon… |
+| Souhait d'engagement | text | Champ libre |
+| Espèces souhaitées | taxon[] | Lié EP-05 |
+
+### Champs spécifiques — Famille d'accueil
+
+| Champ | Type | Remarque |
+|-------|------|----------|
+| Adresse d'accueil | string / coordonnées | Peut différer de l'adresse personnelle |
+| Capacité (nombre de plants) | integer | Indicatif |
+| Surface disponible (m²) | float | Facultatif |
+| Espèces pouvant être accueillies | taxon[] | Lié EP-05 |
+| Disponibilités | text / enum | Saisonnière, ponctuelle, permanente |
+| Équipements | enum[] | Serre, bâche, arrosage auto, lumière artificielle… |
+
+---
+
 ## Récits utilisateurs
 
 ### Complétion du profil

@@ -86,5 +86,21 @@ services:
     depends_on:
       - backend
 
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_HANKO_API_URL: ${NEXT_PUBLIC_HANKO_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      NEXT_PUBLIC_HANKO_API_URL: ${NEXT_PUBLIC_HANKO_API_URL:-http://localhost:8000}
+    ports:
+      - "${WEBAPP_PORT:-3002}:3000"
+    depends_on:
+      - backend
+      - hanko
+
 volumes:
   postgres_data:
