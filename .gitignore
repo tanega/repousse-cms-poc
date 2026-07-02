@@ -74,3 +74,9 @@ Desktop.ini
 *.swo
 *~
 .history/
+
+# ========================
+# AI STUFF
+# ========================
+.claude
+.agents
