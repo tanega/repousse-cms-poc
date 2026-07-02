@@ -49,6 +49,45 @@ Group 3 — "Administration": Adhérents · Espèces végétales · Distribution
 
 See `docs/roadmap/epic-0N-*.md` for user stories and acceptance criteria.
 
+## TanStack DB (client-side reactive store)
+
+Explored on `feat-frontend-tanstackdb`, applied first to the Espèces végétales
+admin page (`webapp/src/app/(main)/admin/especes-vegetales/`). Packages:
+`@tanstack/react-db`, `@tanstack/db`, `@tanstack/query-db-collection`,
+`@tanstack/query-core`.
+
+Two non-obvious gotchas if you extend this pattern to another page:
+
+- **SSR crash with `useLiveQuery`.** It's built on `useSyncExternalStore`
+  without a server snapshot, so any page tree that calls it 500s during SSR
+  ("Missing getServerSnapshot..."). Fix: split the route into a thin
+  `page.tsx` (parses params, no TanStack DB calls) plus a `*-view.tsx` client
+  component holding the actual `useLiveQuery` logic, dynamically imported with
+  `next/dynamic(() => import(...), { ssr: false })` — same pattern already
+  used for the maplibre map on the Carte page. Next's App Router disallows
+  `ssr: false` from a Server Component, so the file doing the `dynamic()`
+  call must itself be `"use client"` (see `[especeId]/page.tsx`).
+- **Collection type matters when there's no backend yet.**
+  `queryCollectionOptions` treats its `queryFn` as the ultimate source of
+  truth: optimistic insert/update/delete get silently dropped whenever the
+  collection's sync pauses and resumes (e.g. across route navigation),
+  because nothing ever "confirms" them server-side. For a mock/demo phase
+  with no real API, use `localOnlyCollectionOptions` instead — its loopback
+  sync makes optimistic writes permanent. Swap to `queryCollectionOptions` +
+  real `fetch`/`onInsert`/`onUpdate`/`onDelete` once the backend REST
+  endpoint for a resource actually exists (`collection.ts` per feature is the
+  only file that needs to change — `useLiveQuery`/insert/update/delete calls
+  in consumers stay the same).
+
+## E2E testing (Playwright)
+
+`webapp/playwright.config.ts` + `webapp/e2e/*.spec.ts`, run with
+`npm run test:e2e` from `webapp/` (auto-starts `next dev` if not already
+running). `middleware.ts` only checks that a `hanko` cookie is *present*, not
+that it's a valid JWT, so specs set a dummy cookie value to get past the
+`/auth/v2/login` redirect — see the `beforeEach` in
+`especes-vegetales.spec.ts`.
+
 <!-- gitbutler-agent-setup:start -->
 ## Version control
 
