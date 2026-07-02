@@ -1,10 +1,13 @@
 import {
+  BookOpen,
   Calendar,
   ChartBar,
   CheckSquare,
+  GraduationCap,
   Kanban,
   LayoutDashboard,
   Leaf,
+  Library,
   ListTodo,
   Lock,
   type LucideIcon,
@@ -160,6 +163,30 @@ export const sidebarItems: NavGroup[] = [
   },
   {
     id: 4,
+    label: "Académie",
+    items: [
+      {
+        id: "academie-guide",
+        title: "Guide",
+        url: "/academie/guide",
+        icon: BookOpen,
+      },
+      {
+        id: "academie-tutoriel",
+        title: "Tutoriel",
+        url: "/academie/tutoriel",
+        icon: GraduationCap,
+      },
+      {
+        id: "academie-encyclopedie",
+        title: "Encyclopédie",
+        url: "/academie/encyclopedie",
+        icon: Library,
+      },
+    ],
+  },
+  {
+    id: 5,
     label: "Pages",
     items: [
       {
@@ -183,7 +210,7 @@ export const sidebarItems: NavGroup[] = [
     ],
   },
   {
-    id: 5,
+    id: 6,
     label: "Legacy",
     items: [
       {
