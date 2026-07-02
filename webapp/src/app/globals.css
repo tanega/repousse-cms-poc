@@ -256,6 +256,19 @@ html {
   overscroll-behavior: none;
 }
 
+hanko-auth,
+hanko-profile {
+  --color: var(--foreground);
+  --brand-color: var(--primary);
+  --brand-color-shade-1: var(--accent-foreground);
+  --brand-contrast-color: var(--primary-foreground);
+  --link-color: var(--primary);
+  --background-color: var(--card);
+  --error-color: var(--destructive);
+  --font-family: var(--font-sans), system-ui, sans-serif;
+  --border-radius: var(--radius-md);
+}
+
 .disable-transitions * {
   transition: none !important;
 }
