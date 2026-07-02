@@ -653,7 +653,8 @@ export function buildTree(rows: Taxon[]): TaxonNode[] {
   for (const node of byId.values()) {
     if (node.parentId && byId.has(node.parentId)) {
       const parent = byId.get(node.parentId)!;
-      (parent.children ??= []).push(node);
+      parent.children ??= [];
+      parent.children.push(node);
     } else {
       roots.push(node);
     }
