@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import type { Taxon } from "./data";
+import type { TaxonNode } from "./data";
 
 function preventNav(e: MouseEvent<HTMLAnchorElement>) {
   e.preventDefault();
@@ -31,7 +31,7 @@ function getPageNumbers(current: number, total: number) {
   return [current - 1, current, current + 1];
 }
 
-export function TaxonsTable({ table }: { table: TableType<Taxon> }) {
+export function TaxonsTable({ table }: { table: TableType<TaxonNode> }) {
   const pageCount = Math.max(table.getPageCount(), 1);
   const currentPage = Math.min(table.getState().pagination.pageIndex + 1, pageCount);
   const pageNumbers = getPageNumbers(currentPage, pageCount);

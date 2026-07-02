@@ -17,10 +17,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-import { CATEGORIE_COLORS, NIVEAU_COLORS, type Taxon } from "./data";
+import { CATEGORIE_COLORS, NIVEAU_COLORS, type TaxonNode } from "./data";
 import type { DeleteTarget } from "./delete-alert-dialog";
 
-function ExpandButton({ row }: { row: Row<Taxon> }) {
+function ExpandButton({ row }: { row: Row<TaxonNode> }) {
   if (!row.getCanExpand()) return <span className="inline-block size-5" />;
   return (
     <button
@@ -35,7 +35,7 @@ function ExpandButton({ row }: { row: Row<Taxon> }) {
   );
 }
 
-export function getTaxonsColumns(onDelete: (target: DeleteTarget) => void): ColumnDef<Taxon>[] {
+export function getTaxonsColumns(onDelete: (target: DeleteTarget) => void): ColumnDef<TaxonNode>[] {
   return [
     {
       id: "search",

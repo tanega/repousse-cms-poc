@@ -3,7 +3,9 @@
 import { useState } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
+import { useLiveQuery } from "@tanstack/react-db";
 import { ArrowLeft, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,12 +16,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 
+import { taxonCollection } from "./collection";
 import {
   CATEGORIES,
-  flattenTaxons,
+  collectWithDescendants,
   NIVEAUX,
   SOURCES_LIENS,
-  taxons,
   type Categorie,
   type LienExterne,
   type NiveauTaxonomique,
@@ -35,8 +37,6 @@ type FormValues = {
   imageUrl: string;
   liens: LienExterne[];
 };
-
-const allTaxons = flattenTaxons(taxons);
 
 function LienRow({
   lien,
@@ -80,6 +80,8 @@ export interface TaxonFormProps {
 
 export function TaxonForm({ mode, defaultValues, especeId }: TaxonFormProps) {
   const isEdit = mode === "edit";
+  const router = useRouter();
+  const { data: allTaxons } = useLiveQuery(taxonCollection);
 
   const [values, setValues] = useState<FormValues>({
     nomCommun: defaultValues?.nomCommun ?? "",
@@ -110,9 +112,39 @@ export function TaxonForm({ mode, defaultValues, especeId }: TaxonFormProps) {
     set("liens", values.liens.filter((_, idx) => idx !== i));
   }
 
-  const parentOptions = allTaxons.filter(
+  const parentOptions = (allTaxons ?? []).filter(
     (t) => t.id !== especeId && t.niveau !== "Variété/Cultivar",
   );
+
+  const canSubmit =
+    values.nomCommun.trim().length > 0 &&
+    (values.nonTaxonomique || values.nomScientifique.trim().length > 0);
+
+  function handleSubmit() {
+    if (!canSubmit) return;
+    const record = {
+      nomCommun: values.nomCommun.trim(),
+      nomScientifique: values.nonTaxonomique && !values.nomScientifique ? null : values.nomScientifique.trim(),
+      niveau: values.niveau,
+      categorie: values.categorie,
+      parentId: values.parentId || null,
+      nonTaxonomique: values.nonTaxonomique,
+      imageUrl: values.imageUrl || undefined,
+      liens: values.liens,
+    };
+    if (isEdit && especeId) {
+      taxonCollection.update(especeId, (draft) => Object.assign(draft, record));
+    } else {
+      taxonCollection.insert({ id: crypto.randomUUID(), nbDistributions: 0, nbProjets: 0, ...record });
+    }
+    router.push("/admin/especes-vegetales");
+  }
+
+  function handleDelete() {
+    if (!especeId) return;
+    taxonCollection.delete(collectWithDescendants(especeId, allTaxons ?? []));
+    router.push("/admin/especes-vegetales");
+  }
 
   return (
     <div className="space-y-6">
@@ -369,7 +401,7 @@ export function TaxonForm({ mode, defaultValues, especeId }: TaxonFormProps) {
           )}
 
           <div className="flex flex-col gap-2">
-            <Button className="w-full">
+            <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
               {isEdit ? "Enregistrer les modifications" : "Créer le taxon"}
             </Button>
             <Button variant="outline" className="w-full" asChild>
@@ -378,7 +410,7 @@ export function TaxonForm({ mode, defaultValues, especeId }: TaxonFormProps) {
             {isEdit && (
               <>
                 <Separator />
-                <Button variant="destructive" className="w-full">
+                <Button variant="destructive" className="w-full" onClick={handleDelete}>
                   Supprimer ce taxon
                 </Button>
               </>
