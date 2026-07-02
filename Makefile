@@ -46,7 +46,6 @@ seed:
 
 deps:
 	cd backend && mix deps.get
-	cd frontend && npm install
 
 test:
 	cd backend && mix test
@@ -56,10 +55,6 @@ test-watch:
 
 format:
 	cd backend && mix format
-	cd frontend && npm run format
-
-lint:
-	cd frontend && npm run check
 
 create-admin:
 	@test -n "$(EMAIL)" || (echo "Usage: make create-admin EMAIL=user@example.com" && exit 1)
