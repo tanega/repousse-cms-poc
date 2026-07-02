@@ -84,6 +84,12 @@ export const sidebarItems: NavGroup[] = [
         url: "/distributions",
         icon: Package,
       },
+      {
+        id: "projets-plantation",
+        title: "Projets de plantation",
+        url: "/projets-plantation",
+        icon: TreePine,
+      },
     ],
   },
   {
