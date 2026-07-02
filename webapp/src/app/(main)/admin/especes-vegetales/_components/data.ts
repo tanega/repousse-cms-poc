@@ -15,6 +15,7 @@ export interface LienExterne {
 
 export interface Taxon {
   id: string;
+  parentId: string | null;
   nomScientifique: string | null;
   nomCommun: string;
   niveau: NiveauTaxonomique;
@@ -24,8 +25,10 @@ export interface Taxon {
   liens: LienExterne[];
   nbDistributions: number;
   nbProjets: number;
-  children?: Taxon[];
 }
+
+/** Taxon with its descendants nested, for tree-shaped UI (table sub-rows, breadcrumbs). */
+export type TaxonNode = Taxon & { children?: TaxonNode[] };
 
 export const CATEGORIES: Categorie[] = [
   "Arbre",
@@ -67,6 +70,7 @@ export const taxons: Taxon[] = [
   // ── QUERCUS ─────────────────────────────────────────────────────────────────
   {
     id: "quercus",
+    parentId: null,
     nomScientifique: "Quercus",
     nomCommun: "Chêne",
     niveau: "Genre",
@@ -77,65 +81,66 @@ export const taxons: Taxon[] = [
     liens: [{ source: "Floriscope", url: "https://floriscope.io/quercus" }],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "quercus-robur",
-        nomScientifique: "Quercus robur",
-        nomCommun: "Chêne pédonculé",
-        niveau: "Espèce",
-        categorie: "Arbre",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Quercus_robur.jpg/500px-Quercus_robur.jpg",
-        liens: [
-          { source: "Floriscope", url: "https://floriscope.io/quercus-robur" },
-          { source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Ch%C3%AAne_p%C3%A9doncul%C3%A9" },
-        ],
-        nbDistributions: 12,
-        nbProjets: 4,
-        children: [
-          {
-            id: "quercus-robur-fastigiata",
-            nomScientifique: "Quercus robur 'Fastigiata'",
-            nomCommun: "Chêne fastigié",
-            niveau: "Variété/Cultivar",
-            categorie: "Arbre",
-            nonTaxonomique: false,
-            liens: [],
-            nbDistributions: 2,
-            nbProjets: 1,
-          },
-        ],
-      },
-      {
-        id: "quercus-petraea",
-        nomScientifique: "Quercus petraea",
-        nomCommun: "Chêne sessile",
-        niveau: "Espèce",
-        categorie: "Arbre",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Quercus_petraea_06.jpg/500px-Quercus_petraea_06.jpg",
-        liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Ch%C3%AAne_sessile" }],
-        nbDistributions: 5,
-        nbProjets: 2,
-      },
-      {
-        id: "quercus-pubescens",
-        nomScientifique: "Quercus pubescens",
-        nomCommun: "Chêne pubescent",
-        niveau: "Espèce",
-        categorie: "Arbre",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Quercus_pubescens_Tuscany.jpg/500px-Quercus_pubescens_Tuscany.jpg",
-        liens: [],
-        nbDistributions: 1,
-        nbProjets: 0,
-      },
+  },
+  {
+    id: "quercus-robur",
+    parentId: "quercus",
+    nomScientifique: "Quercus robur",
+    nomCommun: "Chêne pédonculé",
+    niveau: "Espèce",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Quercus_robur.jpg/500px-Quercus_robur.jpg",
+    liens: [
+      { source: "Floriscope", url: "https://floriscope.io/quercus-robur" },
+      { source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Ch%C3%AAne_p%C3%A9doncul%C3%A9" },
     ],
+    nbDistributions: 12,
+    nbProjets: 4,
+  },
+  {
+    id: "quercus-robur-fastigiata",
+    parentId: "quercus-robur",
+    nomScientifique: "Quercus robur 'Fastigiata'",
+    nomCommun: "Chêne fastigié",
+    niveau: "Variété/Cultivar",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 2,
+    nbProjets: 1,
+  },
+  {
+    id: "quercus-petraea",
+    parentId: "quercus",
+    nomScientifique: "Quercus petraea",
+    nomCommun: "Chêne sessile",
+    niveau: "Espèce",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Quercus_petraea_06.jpg/500px-Quercus_petraea_06.jpg",
+    liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Ch%C3%AAne_sessile" }],
+    nbDistributions: 5,
+    nbProjets: 2,
+  },
+  {
+    id: "quercus-pubescens",
+    parentId: "quercus",
+    nomScientifique: "Quercus pubescens",
+    nomCommun: "Chêne pubescent",
+    niveau: "Espèce",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Quercus_pubescens_Tuscany.jpg/500px-Quercus_pubescens_Tuscany.jpg",
+    liens: [],
+    nbDistributions: 1,
+    nbProjets: 0,
   },
 
   // ── FAGUS ────────────────────────────────────────────────────────────────────
   {
     id: "fagus",
+    parentId: null,
     nomScientifique: "Fagus",
     nomCommun: "Hêtre",
     niveau: "Genre",
@@ -146,38 +151,37 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "fagus-sylvatica",
-        nomScientifique: "Fagus sylvatica",
-        nomCommun: "Hêtre commun",
-        niveau: "Espèce",
-        categorie: "Arbre",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Fagus-sylvatica-cansiglio-forest-italy.jpg/500px-Fagus-sylvatica-cansiglio-forest-italy.jpg",
-        liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/H%C3%AAtre_commun" }],
-        nbDistributions: 8,
-        nbProjets: 3,
-        children: [
-          {
-            id: "fagus-sylvatica-purpurea",
-            nomScientifique: "Fagus sylvatica 'Purpurea'",
-            nomCommun: "Hêtre pourpre",
-            niveau: "Variété/Cultivar",
-            categorie: "Arbre",
-            nonTaxonomique: false,
-            liens: [],
-            nbDistributions: 1,
-            nbProjets: 1,
-          },
-        ],
-      },
-    ],
+  },
+  {
+    id: "fagus-sylvatica",
+    parentId: "fagus",
+    nomScientifique: "Fagus sylvatica",
+    nomCommun: "Hêtre commun",
+    niveau: "Espèce",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Fagus-sylvatica-cansiglio-forest-italy.jpg/500px-Fagus-sylvatica-cansiglio-forest-italy.jpg",
+    liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/H%C3%AAtre_commun" }],
+    nbDistributions: 8,
+    nbProjets: 3,
+  },
+  {
+    id: "fagus-sylvatica-purpurea",
+    parentId: "fagus-sylvatica",
+    nomScientifique: "Fagus sylvatica 'Purpurea'",
+    nomCommun: "Hêtre pourpre",
+    niveau: "Variété/Cultivar",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 1,
+    nbProjets: 1,
   },
 
   // ── ACER ─────────────────────────────────────────────────────────────────────
   {
     id: "acer",
+    parentId: null,
     nomScientifique: "Acer",
     nomCommun: "Érable",
     niveau: "Genre",
@@ -188,49 +192,49 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "acer-campestre",
-        nomScientifique: "Acer campestre",
-        nomCommun: "Érable champêtre",
-        niveau: "Espèce",
-        categorie: "Arbre",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Acer_campestre_in_Appennino2.jpg/500px-Acer_campestre_in_Appennino2.jpg",
-        liens: [{ source: "Floriscope", url: "https://floriscope.io/acer-campestre" }],
-        nbDistributions: 7,
-        nbProjets: 2,
-        children: [
-          {
-            id: "acer-campestre-elsrijk",
-            nomScientifique: "Acer campestre 'Elsrijk'",
-            nomCommun: "Érable champêtre 'Elsrijk'",
-            niveau: "Variété/Cultivar",
-            categorie: "Arbre",
-            nonTaxonomique: false,
-            liens: [],
-            nbDistributions: 3,
-            nbProjets: 1,
-          },
-        ],
-      },
-      {
-        id: "acer-pseudoplatanus",
-        nomScientifique: "Acer pseudoplatanus",
-        nomCommun: "Sycomore",
-        niveau: "Espèce",
-        categorie: "Arbre",
-        nonTaxonomique: false,
-        liens: [],
-        nbDistributions: 4,
-        nbProjets: 1,
-      },
-    ],
+  },
+  {
+    id: "acer-campestre",
+    parentId: "acer",
+    nomScientifique: "Acer campestre",
+    nomCommun: "Érable champêtre",
+    niveau: "Espèce",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Acer_campestre_in_Appennino2.jpg/500px-Acer_campestre_in_Appennino2.jpg",
+    liens: [{ source: "Floriscope", url: "https://floriscope.io/acer-campestre" }],
+    nbDistributions: 7,
+    nbProjets: 2,
+  },
+  {
+    id: "acer-campestre-elsrijk",
+    parentId: "acer-campestre",
+    nomScientifique: "Acer campestre 'Elsrijk'",
+    nomCommun: "Érable champêtre 'Elsrijk'",
+    niveau: "Variété/Cultivar",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 3,
+    nbProjets: 1,
+  },
+  {
+    id: "acer-pseudoplatanus",
+    parentId: "acer",
+    nomScientifique: "Acer pseudoplatanus",
+    nomCommun: "Sycomore",
+    niveau: "Espèce",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 4,
+    nbProjets: 1,
   },
 
   // ── ALNUS ────────────────────────────────────────────────────────────────────
   {
     id: "alnus",
+    parentId: null,
     nomScientifique: "Alnus",
     nomCommun: "Aulne",
     niveau: "Genre",
@@ -241,25 +245,25 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "alnus-glutinosa",
-        nomScientifique: "Alnus glutinosa",
-        nomCommun: "Aulne glutineux",
-        niveau: "Espèce",
-        categorie: "Arbre",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/20120904Alnus_glutinosa01.jpg/500px-20120904Alnus_glutinosa01.jpg",
-        liens: [{ source: "Floriscope", url: "https://floriscope.io/alnus-glutinosa" }],
-        nbDistributions: 6,
-        nbProjets: 3,
-      },
-    ],
+  },
+  {
+    id: "alnus-glutinosa",
+    parentId: "alnus",
+    nomScientifique: "Alnus glutinosa",
+    nomCommun: "Aulne glutineux",
+    niveau: "Espèce",
+    categorie: "Arbre",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/20120904Alnus_glutinosa01.jpg/500px-20120904Alnus_glutinosa01.jpg",
+    liens: [{ source: "Floriscope", url: "https://floriscope.io/alnus-glutinosa" }],
+    nbDistributions: 6,
+    nbProjets: 3,
   },
 
   // ── CORYLUS ──────────────────────────────────────────────────────────────────
   {
     id: "corylus",
+    parentId: null,
     nomScientifique: "Corylus",
     nomCommun: "Noisetier",
     niveau: "Genre",
@@ -270,38 +274,37 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "corylus-avellana",
-        nomScientifique: "Corylus avellana",
-        nomCommun: "Noisetier commun",
-        niveau: "Espèce",
-        categorie: "Arbuste",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Corylus_avellana.jpg/500px-Corylus_avellana.jpg",
-        liens: [{ source: "Floriscope", url: "https://floriscope.io/corylus-avellana" }],
-        nbDistributions: 15,
-        nbProjets: 5,
-        children: [
-          {
-            id: "corylus-avellana-contorta",
-            nomScientifique: "Corylus avellana 'Contorta'",
-            nomCommun: "Noisetier tortueux",
-            niveau: "Variété/Cultivar",
-            categorie: "Arbuste",
-            nonTaxonomique: false,
-            liens: [],
-            nbDistributions: 2,
-            nbProjets: 0,
-          },
-        ],
-      },
-    ],
+  },
+  {
+    id: "corylus-avellana",
+    parentId: "corylus",
+    nomScientifique: "Corylus avellana",
+    nomCommun: "Noisetier commun",
+    niveau: "Espèce",
+    categorie: "Arbuste",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Corylus_avellana.jpg/500px-Corylus_avellana.jpg",
+    liens: [{ source: "Floriscope", url: "https://floriscope.io/corylus-avellana" }],
+    nbDistributions: 15,
+    nbProjets: 5,
+  },
+  {
+    id: "corylus-avellana-contorta",
+    parentId: "corylus-avellana",
+    nomScientifique: "Corylus avellana 'Contorta'",
+    nomCommun: "Noisetier tortueux",
+    niveau: "Variété/Cultivar",
+    categorie: "Arbuste",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 2,
+    nbProjets: 0,
   },
 
   // ── CORNUS ───────────────────────────────────────────────────────────────────
   {
     id: "cornus",
+    parentId: null,
     nomScientifique: "Cornus",
     nomCommun: "Cornouiller",
     niveau: "Genre",
@@ -312,36 +315,37 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "cornus-sanguinea",
-        nomScientifique: "Cornus sanguinea",
-        nomCommun: "Cornouiller sanguin",
-        niveau: "Espèce",
-        categorie: "Arbuste",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Cornus_sanguinea_Sturm39.jpg/500px-Cornus_sanguinea_Sturm39.jpg",
-        liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Cornouiller_sanguin" }],
-        nbDistributions: 6,
-        nbProjets: 2,
-      },
-      {
-        id: "cornus-mas",
-        nomScientifique: "Cornus mas",
-        nomCommun: "Cornouiller mâle",
-        niveau: "Espèce",
-        categorie: "Fruitier",
-        nonTaxonomique: false,
-        liens: [],
-        nbDistributions: 3,
-        nbProjets: 1,
-      },
-    ],
+  },
+  {
+    id: "cornus-sanguinea",
+    parentId: "cornus",
+    nomScientifique: "Cornus sanguinea",
+    nomCommun: "Cornouiller sanguin",
+    niveau: "Espèce",
+    categorie: "Arbuste",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Cornus_sanguinea_Sturm39.jpg/500px-Cornus_sanguinea_Sturm39.jpg",
+    liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Cornouiller_sanguin" }],
+    nbDistributions: 6,
+    nbProjets: 2,
+  },
+  {
+    id: "cornus-mas",
+    parentId: "cornus",
+    nomScientifique: "Cornus mas",
+    nomCommun: "Cornouiller mâle",
+    niveau: "Espèce",
+    categorie: "Fruitier",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 3,
+    nbProjets: 1,
   },
 
   // ── SAMBUCUS ─────────────────────────────────────────────────────────────────
   {
     id: "sambucus",
+    parentId: null,
     nomScientifique: "Sambucus",
     nomCommun: "Sureau",
     niveau: "Genre",
@@ -352,25 +356,25 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "sambucus-nigra",
-        nomScientifique: "Sambucus nigra",
-        nomCommun: "Sureau noir",
-        niveau: "Espèce",
-        categorie: "Arbuste",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Sambucus_nigra_004.jpg/500px-Sambucus_nigra_004.jpg",
-        liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Sureau_noir" }],
-        nbDistributions: 7,
-        nbProjets: 2,
-      },
-    ],
+  },
+  {
+    id: "sambucus-nigra",
+    parentId: "sambucus",
+    nomScientifique: "Sambucus nigra",
+    nomCommun: "Sureau noir",
+    niveau: "Espèce",
+    categorie: "Arbuste",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Sambucus_nigra_004.jpg/500px-Sambucus_nigra_004.jpg",
+    liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Sureau_noir" }],
+    nbDistributions: 7,
+    nbProjets: 2,
   },
 
   // ── FRANGULA ─────────────────────────────────────────────────────────────────
   {
     id: "frangula",
+    parentId: null,
     nomScientifique: "Frangula",
     nomCommun: "Bourdaine",
     niveau: "Genre",
@@ -381,25 +385,25 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "frangula-alnus",
-        nomScientifique: "Frangula alnus",
-        nomCommun: "Bourdaine",
-        niveau: "Espèce",
-        categorie: "Arbuste",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Frangula-alnus-fruits.JPG/500px-Frangula-alnus-fruits.JPG",
-        liens: [],
-        nbDistributions: 4,
-        nbProjets: 1,
-      },
-    ],
+  },
+  {
+    id: "frangula-alnus",
+    parentId: "frangula",
+    nomScientifique: "Frangula alnus",
+    nomCommun: "Bourdaine",
+    niveau: "Espèce",
+    categorie: "Arbuste",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Frangula-alnus-fruits.JPG/500px-Frangula-alnus-fruits.JPG",
+    liens: [],
+    nbDistributions: 4,
+    nbProjets: 1,
   },
 
   // ── ROSA ─────────────────────────────────────────────────────────────────────
   {
     id: "rosa",
+    parentId: null,
     nomScientifique: "Rosa",
     nomCommun: "Rosier",
     niveau: "Genre",
@@ -410,25 +414,25 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "rosa-canina",
-        nomScientifique: "Rosa canina",
-        nomCommun: "Rosier des chiens",
-        niveau: "Espèce",
-        categorie: "Arbuste",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Divlja_ruza_cvijet_270508.jpg/500px-Divlja_ruza_cvijet_270508.jpg",
-        liens: [],
-        nbDistributions: 8,
-        nbProjets: 2,
-      },
-    ],
+  },
+  {
+    id: "rosa-canina",
+    parentId: "rosa",
+    nomScientifique: "Rosa canina",
+    nomCommun: "Rosier des chiens",
+    niveau: "Espèce",
+    categorie: "Arbuste",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Divlja_ruza_cvijet_270508.jpg/500px-Divlja_ruza_cvijet_270508.jpg",
+    liens: [],
+    nbDistributions: 8,
+    nbProjets: 2,
   },
 
   // ── PRUNUS ───────────────────────────────────────────────────────────────────
   {
     id: "prunus",
+    parentId: null,
     nomScientifique: "Prunus",
     nomCommun: "Prunier / Cerisier",
     niveau: "Genre",
@@ -439,62 +443,63 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "prunus-avium",
-        nomScientifique: "Prunus avium",
-        nomCommun: "Merisier",
-        niveau: "Espèce",
-        categorie: "Fruitier",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Prunus_avium_fruit.jpg/500px-Prunus_avium_fruit.jpg",
-        liens: [{ source: "Floriscope", url: "https://floriscope.io/prunus-avium" }],
-        nbDistributions: 9,
-        nbProjets: 3,
-      },
-      {
-        id: "prunus-domestica",
-        nomScientifique: "Prunus domestica",
-        nomCommun: "Prunier commun",
-        niveau: "Espèce",
-        categorie: "Fruitier",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fruits_Prunus_domestica.jpg/500px-Fruits_Prunus_domestica.jpg",
-        liens: [],
-        nbDistributions: 11,
-        nbProjets: 4,
-        children: [
-          {
-            id: "prunus-domestica-reine-claude",
-            nomScientifique: "Prunus domestica 'Reine-Claude Verte'",
-            nomCommun: "Reine-Claude Verte",
-            niveau: "Variété/Cultivar",
-            categorie: "Fruitier",
-            nonTaxonomique: false,
-            liens: [],
-            nbDistributions: 5,
-            nbProjets: 2,
-          },
-        ],
-      },
-      {
-        id: "prunus-spinosa",
-        nomScientifique: "Prunus spinosa",
-        nomCommun: "Prunellier",
-        niveau: "Espèce",
-        categorie: "Arbuste",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Closeup_of_blackthorn_aka_sloe_aka_prunus_spinosa_sweden_20050924.jpg/500px-Closeup_of_blackthorn_aka_sloe_aka_prunus_spinosa_sweden_20050924.jpg",
-        liens: [],
-        nbDistributions: 4,
-        nbProjets: 1,
-      },
-    ],
+  },
+  {
+    id: "prunus-avium",
+    parentId: "prunus",
+    nomScientifique: "Prunus avium",
+    nomCommun: "Merisier",
+    niveau: "Espèce",
+    categorie: "Fruitier",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Prunus_avium_fruit.jpg/500px-Prunus_avium_fruit.jpg",
+    liens: [{ source: "Floriscope", url: "https://floriscope.io/prunus-avium" }],
+    nbDistributions: 9,
+    nbProjets: 3,
+  },
+  {
+    id: "prunus-domestica",
+    parentId: "prunus",
+    nomScientifique: "Prunus domestica",
+    nomCommun: "Prunier commun",
+    niveau: "Espèce",
+    categorie: "Fruitier",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fruits_Prunus_domestica.jpg/500px-Fruits_Prunus_domestica.jpg",
+    liens: [],
+    nbDistributions: 11,
+    nbProjets: 4,
+  },
+  {
+    id: "prunus-domestica-reine-claude",
+    parentId: "prunus-domestica",
+    nomScientifique: "Prunus domestica 'Reine-Claude Verte'",
+    nomCommun: "Reine-Claude Verte",
+    niveau: "Variété/Cultivar",
+    categorie: "Fruitier",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 5,
+    nbProjets: 2,
+  },
+  {
+    id: "prunus-spinosa",
+    parentId: "prunus",
+    nomScientifique: "Prunus spinosa",
+    nomCommun: "Prunellier",
+    niveau: "Espèce",
+    categorie: "Arbuste",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Closeup_of_blackthorn_aka_sloe_aka_prunus_spinosa_sweden_20050924.jpg/500px-Closeup_of_blackthorn_aka_sloe_aka_prunus_spinosa_sweden_20050924.jpg",
+    liens: [],
+    nbDistributions: 4,
+    nbProjets: 1,
   },
 
   // ── MALUS ────────────────────────────────────────────────────────────────────
   {
     id: "malus",
+    parentId: null,
     nomScientifique: "Malus",
     nomCommun: "Pommier",
     niveau: "Genre",
@@ -505,60 +510,61 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "malus-domestica",
-        nomScientifique: "Malus domestica",
-        nomCommun: "Pommier cultivé",
-        niveau: "Espèce",
-        categorie: "Fruitier",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Apple.jpg/500px-Red_Apple.jpg",
-        liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Pommier_commun" }],
-        nbDistributions: 18,
-        nbProjets: 6,
-        children: [
-          {
-            id: "malus-domestica-reinette",
-            nomScientifique: "Malus domestica 'Reinette Grise du Canada'",
-            nomCommun: "Reinette Grise du Canada",
-            niveau: "Variété/Cultivar",
-            categorie: "Fruitier",
-            nonTaxonomique: false,
-            liens: [],
-            nbDistributions: 6,
-            nbProjets: 2,
-          },
-          {
-            id: "malus-domestica-cox",
-            nomScientifique: "Malus domestica 'Cox's Orange Pippin'",
-            nomCommun: "Cox Orange",
-            niveau: "Variété/Cultivar",
-            categorie: "Fruitier",
-            nonTaxonomique: false,
-            liens: [],
-            nbDistributions: 4,
-            nbProjets: 1,
-          },
-        ],
-      },
-      {
-        id: "malus-sylvestris",
-        nomScientifique: "Malus sylvestris",
-        nomCommun: "Pommier sauvage",
-        niveau: "Espèce",
-        categorie: "Fruitier",
-        nonTaxonomique: false,
-        liens: [],
-        nbDistributions: 2,
-        nbProjets: 1,
-      },
-    ],
+  },
+  {
+    id: "malus-domestica",
+    parentId: "malus",
+    nomScientifique: "Malus domestica",
+    nomCommun: "Pommier cultivé",
+    niveau: "Espèce",
+    categorie: "Fruitier",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Apple.jpg/500px-Red_Apple.jpg",
+    liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Pommier_commun" }],
+    nbDistributions: 18,
+    nbProjets: 6,
+  },
+  {
+    id: "malus-domestica-reinette",
+    parentId: "malus-domestica",
+    nomScientifique: "Malus domestica 'Reinette Grise du Canada'",
+    nomCommun: "Reinette Grise du Canada",
+    niveau: "Variété/Cultivar",
+    categorie: "Fruitier",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 6,
+    nbProjets: 2,
+  },
+  {
+    id: "malus-domestica-cox",
+    parentId: "malus-domestica",
+    nomScientifique: "Malus domestica 'Cox's Orange Pippin'",
+    nomCommun: "Cox Orange",
+    niveau: "Variété/Cultivar",
+    categorie: "Fruitier",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 4,
+    nbProjets: 1,
+  },
+  {
+    id: "malus-sylvestris",
+    parentId: "malus",
+    nomScientifique: "Malus sylvestris",
+    nomCommun: "Pommier sauvage",
+    niveau: "Espèce",
+    categorie: "Fruitier",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 2,
+    nbProjets: 1,
   },
 
   // ── HEDERA ───────────────────────────────────────────────────────────────────
   {
     id: "hedera",
+    parentId: null,
     nomScientifique: "Hedera",
     nomCommun: "Lierre",
     niveau: "Genre",
@@ -569,38 +575,37 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "hedera-helix",
-        nomScientifique: "Hedera helix",
-        nomCommun: "Lierre grimpant",
-        niveau: "Espèce",
-        categorie: "Plante grimpante",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Hedera_helix_Dover.jpg/500px-Hedera_helix_Dover.jpg",
-        liens: [{ source: "Floriscope", url: "https://floriscope.io/hedera-helix" }],
-        nbDistributions: 5,
-        nbProjets: 2,
-        children: [
-          {
-            id: "hedera-helix-baltica",
-            nomScientifique: "Hedera helix 'Baltica'",
-            nomCommun: "Lierre de Baltique",
-            niveau: "Variété/Cultivar",
-            categorie: "Plante grimpante",
-            nonTaxonomique: false,
-            liens: [],
-            nbDistributions: 1,
-            nbProjets: 0,
-          },
-        ],
-      },
-    ],
+  },
+  {
+    id: "hedera-helix",
+    parentId: "hedera",
+    nomScientifique: "Hedera helix",
+    nomCommun: "Lierre grimpant",
+    niveau: "Espèce",
+    categorie: "Plante grimpante",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Hedera_helix_Dover.jpg/500px-Hedera_helix_Dover.jpg",
+    liens: [{ source: "Floriscope", url: "https://floriscope.io/hedera-helix" }],
+    nbDistributions: 5,
+    nbProjets: 2,
+  },
+  {
+    id: "hedera-helix-baltica",
+    parentId: "hedera-helix",
+    nomScientifique: "Hedera helix 'Baltica'",
+    nomCommun: "Lierre de Baltique",
+    niveau: "Variété/Cultivar",
+    categorie: "Plante grimpante",
+    nonTaxonomique: false,
+    liens: [],
+    nbDistributions: 1,
+    nbProjets: 0,
   },
 
   // ── LONICERA ─────────────────────────────────────────────────────────────────
   {
     id: "lonicera",
+    parentId: null,
     nomScientifique: "Lonicera",
     nomCommun: "Chèvrefeuille",
     niveau: "Genre",
@@ -611,25 +616,25 @@ export const taxons: Taxon[] = [
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
-    children: [
-      {
-        id: "lonicera-periclymenum",
-        nomScientifique: "Lonicera periclymenum",
-        nomCommun: "Chèvrefeuille des bois",
-        niveau: "Espèce",
-        categorie: "Plante grimpante",
-        nonTaxonomique: false,
-        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/European_honeysuckle_800.jpg/500px-European_honeysuckle_800.jpg",
-        liens: [],
-        nbDistributions: 3,
-        nbProjets: 1,
-      },
-    ],
+  },
+  {
+    id: "lonicera-periclymenum",
+    parentId: "lonicera",
+    nomScientifique: "Lonicera periclymenum",
+    nomCommun: "Chèvrefeuille des bois",
+    niveau: "Espèce",
+    categorie: "Plante grimpante",
+    nonTaxonomique: false,
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/European_honeysuckle_800.jpg/500px-European_honeysuckle_800.jpg",
+    liens: [],
+    nbDistributions: 3,
+    nbProjets: 1,
   },
 
   // ── Non-taxonomique ───────────────────────────────────────────────────────────
   {
     id: "plante-grimpante-ni",
+    parentId: null,
     nomScientifique: null,
     nomCommun: "Plante grimpante non identifiée",
     niveau: "Genre",
@@ -641,32 +646,38 @@ export const taxons: Taxon[] = [
   },
 ];
 
-export function flattenTaxons(nodes: Taxon[]): Taxon[] {
-  return nodes.flatMap((n) => [n, ...(n.children ? flattenTaxons(n.children) : [])]);
-}
-
-export function findTaxonById(id: string, nodes: Taxon[] = taxons): Taxon | null {
-  for (const node of nodes) {
-    if (node.id === id) return node;
-    if (node.children) {
-      const found = findTaxonById(id, node.children);
-      if (found) return found;
+/** Rebuild the Genre → Espèce → Variété/Cultivar hierarchy from flat `parentId` rows. */
+export function buildTree(rows: Taxon[]): TaxonNode[] {
+  const byId = new Map<string, TaxonNode>(rows.map((r) => [r.id, { ...r }]));
+  const roots: TaxonNode[] = [];
+  for (const node of byId.values()) {
+    if (node.parentId && byId.has(node.parentId)) {
+      const parent = byId.get(node.parentId)!;
+      (parent.children ??= []).push(node);
+    } else {
+      roots.push(node);
     }
   }
-  return null;
+  return roots;
 }
 
-export function findAncestors(
-  id: string,
-  nodes: Taxon[] = taxons,
-  path: Taxon[] = [],
-): Taxon[] | null {
-  for (const node of nodes) {
-    if (node.id === id) return path;
-    if (node.children) {
-      const result = findAncestors(id, node.children, [...path, node]);
-      if (result !== null) return result;
-    }
+export function findTaxonById(id: string, rows: Taxon[] = taxons): Taxon | null {
+  return rows.find((r) => r.id === id) ?? null;
+}
+
+export function findAncestors(id: string, rows: Taxon[] = taxons): Taxon[] {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const path: Taxon[] = [];
+  let current = byId.get(id);
+  while (current?.parentId) {
+    const parent = byId.get(current.parentId);
+    if (!parent) break;
+    path.unshift(parent);
+    current = parent;
   }
-  return null;
+  return path;
+}
+
+export function findChildren(id: string, rows: Taxon[] = taxons): Taxon[] {
+  return rows.filter((r) => r.parentId === id);
 }
