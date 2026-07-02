@@ -8,6 +8,7 @@ import {
   ListTodo,
   Lock,
   type LucideIcon,
+  Map,
   MessageSquare,
   Package,
   TreePine,
@@ -57,25 +58,25 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
-    label: "Dashboards",
+    label: "Tableaux de bord",
     items: [
       {
-        id: "default",
-        title: "Default",
-        url: "/dashboard/default",
-        icon: LayoutDashboard,
+        id: "vie-associative",
+        title: "Vie associative",
+        url: "/dashboard/vie-associative",
+        icon: Leaf,
+      },
+      {
+        id: "carte",
+        title: "Carte",
+        url: "/dashboard/carte",
+        icon: Map,
       },
       {
         id: "crm",
         title: "CRM",
         url: "/dashboard/crm",
         icon: ChartBar,
-      },
-      {
-        id: "productivity",
-        title: "Productivity",
-        url: "/dashboard/productivity",
-        icon: ListTodo,
       },
     ],
   },
@@ -85,21 +86,15 @@ export const sidebarItems: NavGroup[] = [
     items: [
       {
         id: "calendar",
-        title: "Calendar",
+        title: "Calendrier",
         url: "/dashboard/calendar",
         icon: Calendar,
       },
       {
         id: "tasks",
-        title: "Tasks",
+        title: "Tâches",
         url: "/dashboard/tasks",
         icon: CheckSquare,
-      },
-      {
-        id: "roles",
-        title: "Roles",
-        url: "/dashboard/roles",
-        icon: Lock,
       },
     ],
   },
@@ -112,6 +107,18 @@ export const sidebarItems: NavGroup[] = [
         title: "Adhérents",
         url: "/admin/adherents",
         icon: UsersRound,
+      },
+      {
+        id: "roles",
+        title: "Rôles",
+        url: "/admin/roles",
+        icon: Lock,
+      },
+      {
+        id: "admin-kanban",
+        title: "Kanban",
+        url: "/admin/kanban",
+        icon: Kanban,
       },
       {
         id: "admin-especes",
