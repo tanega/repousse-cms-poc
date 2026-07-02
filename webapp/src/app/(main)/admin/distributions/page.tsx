@@ -1,8 +1,23 @@
+"use client";
+
+import dynamic from "next/dynamic";
+
+// TanStack DB's useLiveQuery relies on useSyncExternalStore without a
+// server snapshot — SSR crashes without ssr:false (same as especes-vegetales).
+const Distributions = dynamic(() => import("./_components/distributions").then((m) => m.Distributions), {
+  ssr: false,
+});
+
 export default function DistributionsPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-semibold">Distributions</h1>
-      <p className="mt-1 text-muted-foreground text-sm">Suivi des distributions de plants et de semences.</p>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-semibold text-2xl">Distributions</h1>
+        <p className="mt-1 text-muted-foreground text-sm">
+          Créez et publiez des événements de distribution de végétaux pour les Adoptants.
+        </p>
+      </div>
+      <Distributions />
     </div>
   );
 }
