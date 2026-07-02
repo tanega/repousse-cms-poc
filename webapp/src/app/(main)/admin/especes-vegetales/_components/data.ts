@@ -681,3 +681,14 @@ export function findAncestors(id: string, rows: Taxon[] = taxons): Taxon[] {
 export function findChildren(id: string, rows: Taxon[] = taxons): Taxon[] {
   return rows.filter((r) => r.parentId === id);
 }
+
+/** `id` plus every descendant id, for cascade delete. */
+export function collectWithDescendants(id: string, rows: Taxon[] = taxons): string[] {
+  const ids = [id];
+  for (let i = 0; i < ids.length; i++) {
+    for (const row of rows) {
+      if (row.parentId === ids[i]) ids.push(row.id);
+    }
+  }
+  return ids;
+}

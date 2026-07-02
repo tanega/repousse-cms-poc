@@ -27,7 +27,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { taxonCollection } from "./collection";
-import { buildTree, CATEGORIES, NIVEAUX, type TaxonNode } from "./data";
+import { buildTree, CATEGORIES, collectWithDescendants, NIVEAUX, type TaxonNode } from "./data";
 import type { DeleteTarget } from "./delete-alert-dialog";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
 import { getTaxonsColumns } from "./taxons-columns";
@@ -99,13 +99,7 @@ export function Taxons() {
   }
 
   function handleDelete(id: string) {
-    const toDelete = [id];
-    for (let i = 0; i < toDelete.length; i++) {
-      for (const row of rows ?? []) {
-        if (row.parentId === toDelete[i]) toDelete.push(row.id);
-      }
-    }
-    taxonCollection.delete(toDelete);
+    taxonCollection.delete(collectWithDescendants(id, rows ?? []));
   }
 
   const totalTaxons = rows?.length ?? 0;
