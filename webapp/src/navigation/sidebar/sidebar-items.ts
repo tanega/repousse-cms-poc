@@ -125,7 +125,7 @@ export const sidebarItems: NavGroup[] = [
     items: [
       {
         id: "admin-adherents",
-        title: "Adhérents",
+        title: "Membres",
         url: "/admin/adherents",
         icon: UsersRound,
       },

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
-import { CalendarDays, CheckCircle2, Clock, Mail, MapPin } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Mail, MapPin, UserRound } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -17,14 +17,27 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useHankoSession } from "@/lib/auth/use-hanko-session";
 import { cn } from "@/lib/utils";
 
 import { distributionEventCollection } from "../../admin/distributions/_components/collection";
 import { STATUT_COLORS } from "../../admin/distributions/_components/data";
 import { taxons } from "../../admin/especes-vegetales/_components/data";
 import { currentMember } from "./current-member";
+import { DistributionGuestIdentity, type GuestIdentity } from "./distribution-guest-identity";
+import { ReservationStepperHeader, type StepperStep } from "./reservation-stepper-header";
 import { reservationsCollection } from "./reservations-collection";
 import { canCancel, findActiveReservation, type Reservation } from "./reservations-data";
+
+const STEPPER_STEPS: StepperStep[] = [
+  {
+    id: "reservation",
+    label: "Réservation",
+    description: "Créneau et quantités",
+    icon: <CalendarDays className="size-4" />,
+  },
+  { id: "identite", label: "Coordonnées", description: "E-mail et compte", icon: <UserRound className="size-4" /> },
+];
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
   weekday: "long",
@@ -54,7 +67,9 @@ export function DistributionMemberView({ slug }: { slug: string }) {
   );
 
   const isClosed = event.statut === "Clôturé";
+  const { isAuthenticated } = useHankoSession();
 
+  const [step, setStep] = useState<"reservation" | "identite">("reservation");
   const [creneauId, setCreneauId] = useState("");
   const [projetId, setProjetId] = useState("");
   const [quantites, setQuantites] = useState<Record<string, number>>({});
@@ -67,19 +82,20 @@ export function DistributionMemberView({ slug }: { slug: string }) {
   const selectedLines = Object.entries(quantites).filter(([, qty]) => qty > 0);
   const canReserve = !isClosed && !!creneauId && !!projetId && selectedLines.length > 0;
 
-  function handleReserve() {
+  function handleReserve(identity: { nom: string } = currentMember) {
     if (!canReserve) return;
     reservationsCollection.insert({
       id: crypto.randomUUID(),
       eventId,
       creneauId,
       adoptantId: currentMember.id,
-      adoptantNom: currentMember.nom,
+      adoptantNom: identity.nom,
       projetPlantationId: projetId,
       lignes: selectedLines.map(([taxonId, quantite]) => ({ taxonId, quantite })),
       statut: "Confirmée",
       createdAt: new Date().toISOString(),
     });
+    setStep("reservation");
     distributionEventCollection.update(eventId, (draft) => {
       draft.nbInscrits += 1;
       for (const [taxonId, qty] of selectedLines) {
@@ -213,7 +229,11 @@ export function DistributionMemberView({ slug }: { slug: string }) {
         </Card>
       )}
 
-      {!activeReservation && !isClosed && (
+      {!activeReservation && !isClosed && isAuthenticated === false && (
+        <ReservationStepperHeader steps={STEPPER_STEPS} activeId={step} />
+      )}
+
+      {!activeReservation && !isClosed && step === "reservation" && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Réserver un créneau</CardTitle>
@@ -291,11 +311,24 @@ export function DistributionMemberView({ slug }: { slug: string }) {
               </div>
             )}
 
-            <Button className="w-full" disabled={!canReserve} onClick={handleReserve}>
-              Réserver
+            <Button
+              className="w-full"
+              disabled={!canReserve}
+              onClick={() => (isAuthenticated === false ? setStep("identite") : handleReserve())}
+            >
+              {isAuthenticated === false ? "Continuer" : "Réserver"}
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {!activeReservation && !isClosed && step === "identite" && isAuthenticated === false && (
+        <div className="space-y-3">
+          <DistributionGuestIdentity onIdentityReady={(identity: GuestIdentity) => handleReserve(identity)} />
+          <Button variant="ghost" size="sm" onClick={() => setStep("reservation")}>
+            ← Modifier ma réservation
+          </Button>
+        </div>
       )}
 
       {exhaustedSpecies.length > 0 && (

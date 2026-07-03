@@ -1,11 +1,11 @@
 "use client";
 "use no memo";
 
+import Link from "next/link";
+
 import type { ColumnDef } from "@tanstack/react-table";
 import { parse } from "date-fns";
 import { Check, Clock, MoreHorizontal, TreePine, X } from "lucide-react";
-
-import Link from "next/link";
 
 import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn, getInitials } from "@/lib/utils";
 
-import { profileTypeMeta, statusMeta, type AdherentRow } from "./data";
+import { type AdherentRow, isAdhesionActive, profileTypeMeta, statusMeta } from "./data";
 
 function getAvatarTone(name: string) {
   const tones = [
@@ -62,7 +62,13 @@ function AvatarCell({ lastLoginAt, name }: { lastLoginAt: number; name: string }
   );
 }
 
-function ProfileTypeCell({ profileTypes, source }: { profileTypes: AdherentRow["profileTypes"]; source: AdherentRow["source"] }) {
+function ProfileTypeCell({
+  profileTypes,
+  source,
+}: {
+  profileTypes: AdherentRow["profileTypes"];
+  source: AdherentRow["source"];
+}) {
   return (
     <div className="grid gap-1">
       <div className="flex flex-wrap gap-1">
@@ -70,7 +76,10 @@ function ProfileTypeCell({ profileTypes, source }: { profileTypes: AdherentRow["
           const meta = profileTypeMeta[pt];
           const Icon = meta.icon;
           return (
-            <span key={pt} className={cn("flex items-center gap-1 whitespace-nowrap text-xs font-medium", meta.className)}>
+            <span
+              key={pt}
+              className={cn("flex items-center gap-1 whitespace-nowrap text-xs font-medium", meta.className)}
+            >
               <Icon className="size-3" />
               {pt}
             </span>
@@ -88,6 +97,24 @@ function StatusBadge({ status }: { status: AdherentRow["status"] }) {
     <Badge className={cn("gap-1.5 border px-2 py-1 font-medium", meta.badgeClass)} variant="outline">
       <span className={cn("size-1.5 rounded-full", meta.dotClass)} />
       {status}
+    </Badge>
+  );
+}
+
+function AdhesionBadge({ row }: { row: AdherentRow }) {
+  const active = isAdhesionActive(row);
+  return (
+    <Badge
+      className={cn(
+        "gap-1.5 border px-2 py-1 font-medium",
+        active
+          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          : "border-border bg-muted/50 text-muted-foreground",
+      )}
+      variant="outline"
+    >
+      <span className={cn("size-1.5 rounded-full", active ? "bg-emerald-500" : "bg-muted-foreground")} />
+      {active ? "Adhésion active" : "Adhésion inactive"}
     </Badge>
   );
 }
@@ -124,7 +151,7 @@ export const adherentsColumns: ColumnDef<AdherentRow>[] = [
   },
   {
     accessorKey: "name",
-    header: "Adhérent",
+    header: "Membre",
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
         <AvatarCell name={row.original.name} lastLoginAt={row.original.lastLoginAt} />
@@ -139,9 +166,7 @@ export const adherentsColumns: ColumnDef<AdherentRow>[] = [
     accessorKey: "profileTypes",
     header: "Profils / Source",
     filterFn: "arrIncludes",
-    cell: ({ row }) => (
-      <ProfileTypeCell profileTypes={row.original.profileTypes} source={row.original.source} />
-    ),
+    cell: ({ row }) => <ProfileTypeCell profileTypes={row.original.profileTypes} source={row.original.source} />,
   },
   {
     accessorKey: "source",
@@ -151,9 +176,14 @@ export const adherentsColumns: ColumnDef<AdherentRow>[] = [
   },
   {
     accessorKey: "status",
-    header: "Statut",
+    header: "Statut du compte",
     filterFn: "equalsString",
     cell: ({ row }) => <StatusBadge status={row.original.status} />,
+  },
+  {
+    id: "adhesionActive",
+    header: "Adhésion",
+    cell: ({ row }) => <AdhesionBadge row={row.original} />,
   },
   {
     id: "memberSince",
@@ -165,16 +195,12 @@ export const adherentsColumns: ColumnDef<AdherentRow>[] = [
     id: "lastLoginAt",
     accessorFn: (row) => row.lastLoginAt,
     header: "Dernière connexion",
-    cell: ({ row }) => (
-      <div className="text-muted-foreground text-sm">{formatLastLogin(row.original.lastLoginAt)}</div>
-    ),
+    cell: ({ row }) => <div className="text-muted-foreground text-sm">{formatLastLogin(row.original.lastLoginAt)}</div>,
   },
   {
     accessorKey: "loginCount",
     header: "Connexions",
-    cell: ({ row }) => (
-      <div className="font-medium text-sm tabular-nums">{row.original.loginCount}</div>
-    ),
+    cell: ({ row }) => <div className="font-medium text-sm tabular-nums">{row.original.loginCount}</div>,
   },
   {
     accessorKey: "projectCount",
@@ -208,7 +234,7 @@ export const adherentsColumns: ColumnDef<AdherentRow>[] = [
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href={`/admin/adherents/${encodeURIComponent(row.original.email)}/modifier`}>
-                Modifier l'adhérent
+                Modifier le membre
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>Renouveler l'adhésion</DropdownMenuItem>

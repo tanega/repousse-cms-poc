@@ -17,14 +17,21 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { filters, profileTypeMeta, type AdherentProfileType, type AdherentSource, type AdherentStatus } from "./data";
+import {
+  type AdherentProfileType,
+  type AdherentSource,
+  type AdherentStatus,
+  filters,
+  isAdhesionActive,
+  profileTypeMeta,
+} from "./data";
 
 const profileDescriptions: Record<AdherentProfileType, string> = {
-  "Bénévole": "Participe aux ateliers et activités de l'association.",
-  "Adoptant": "Réserve des plants et gère des projets de plantation.",
+  Bénévole: "Participe aux ateliers et activités de l'association.",
+  Adoptant: "Réserve des plants et gère des projets de plantation.",
   "Famille d'accueil": "Héberge de jeunes plants avant leur distribution.",
-  "Coordinateur": "Organise et coordonne les activités sur le terrain.",
-  "Administrateur": "Gère l'association et a accès à l'espace d'administration.",
+  Coordinateur: "Organise et coordonne les activités sur le terrain.",
+  Administrateur: "Gère l'association et a accès à l'espace d'administration.",
 };
 
 type FormValues = {
@@ -92,13 +99,11 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold">
-            {isEdit ? "Modifier l'adhérent" : "Ajouter un adhérent"}
-          </h1>
+          <h1 className="text-2xl font-semibold">{isEdit ? "Modifier le membre" : "Ajouter un membre"}</h1>
           <p className="text-muted-foreground text-sm">
             {isEdit
-              ? "Modifiez les informations du compte adhérent."
-              : "Créez un nouveau compte adhérent pour l'association."}
+              ? "Modifiez les informations du compte membre."
+              : "Créez un nouveau compte membre pour l'association."}
           </p>
         </div>
       </div>
@@ -110,9 +115,7 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Informations personnelles</CardTitle>
-              <CardDescription className="text-xs">
-                Identité et coordonnées de l'adhérent.
-              </CardDescription>
+              <CardDescription className="text-xs">Identité et coordonnées du membre.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -166,7 +169,7 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
             <CardHeader>
               <CardTitle className="text-base">Profils d'engagement</CardTitle>
               <CardDescription className="text-xs">
-                Sélectionnez les profils correspondant à l'engagement de l'adhérent. Au moins un profil est requis.
+                Sélectionnez les profils correspondant à l'engagement du membre. Au moins un profil est requis.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -180,9 +183,7 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
                     htmlFor={`profile-${profile}`}
                     className={cn(
                       "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors",
-                      checked
-                        ? "border-primary/20 bg-primary/5"
-                        : "border-transparent hover:bg-muted/50",
+                      checked ? "border-primary/20 bg-primary/5" : "border-transparent hover:bg-muted/50",
                     )}
                   >
                     <Checkbox
@@ -209,9 +210,7 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Notes internes</CardTitle>
-              <CardDescription className="text-xs">
-                Visibles uniquement par les administrateurs.
-              </CardDescription>
+              <CardDescription className="text-xs">Visibles uniquement par les administrateurs.</CardDescription>
             </CardHeader>
             <CardContent>
               <Textarea
@@ -234,10 +233,7 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="status">Statut</Label>
-                <Select
-                  value={values.status}
-                  onValueChange={(v) => set("status", v as AdherentStatus)}
-                >
+                <Select value={values.status} onValueChange={(v) => set("status", v as AdherentStatus)}>
                   <SelectTrigger id="status">
                     <SelectValue />
                   </SelectTrigger>
@@ -245,17 +241,21 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
                     {filters.status
                       .filter((s) => s !== "Tous")
                       .map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
+                <p className="text-muted-foreground text-xs">
+                  {isAdhesionActive({ status: values.status })
+                    ? "Adhésion active pour l'année en cours."
+                    : "Adhésion inactive pour l'année en cours — le compte reste utilisable, seule l'adhésion payante n'est pas à jour."}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="source">Source</Label>
-                <Select
-                  value={values.source}
-                  onValueChange={(v) => set("source", v as AdherentSource)}
-                >
+                <Select value={values.source} onValueChange={(v) => set("source", v as AdherentSource)}>
                   <SelectTrigger id="source">
                     <SelectValue />
                   </SelectTrigger>
@@ -263,17 +263,16 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
                     {filters.source
                       .filter((s) => s !== "Tous")
                       .map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Date d'adhésion</Label>
-                <DatePicker
-                  value={values.memberSince}
-                  onChange={(v) => set("memberSince", v)}
-                />
+                <DatePicker value={values.memberSince} onChange={(v) => set("memberSince", v)} />
               </div>
             </CardContent>
           </Card>
@@ -304,9 +303,7 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
 
           {/* Actions */}
           <div className="flex flex-col gap-2">
-            <Button className="w-full">
-              {isEdit ? "Enregistrer les modifications" : "Créer l'adhérent"}
-            </Button>
+            <Button className="w-full">{isEdit ? "Enregistrer les modifications" : "Créer le membre"}</Button>
             <Button variant="outline" className="w-full" asChild>
               <Link href="/admin/adherents">Annuler</Link>
             </Button>

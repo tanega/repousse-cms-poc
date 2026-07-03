@@ -27,7 +27,34 @@ hanko_api_url = System.get_env("HANKO_API_URL", "http://localhost:8000")
 
 config :repousse, :hanko,
   api_url: hanko_api_url,
+  admin_url: System.get_env("HANKO_ADMIN_URL", "http://localhost:8001"),
   jwks_url: hanko_api_url <> "/.well-known/jwks.json"
+
+# CORS_ORIGIN is already passed to the backend container in docker-compose
+# but was never actually read anywhere — comma-separate multiple origins
+# (e.g. the deprecated frontend on :3000 alongside the active webapp on :3002).
+if cors_origin = System.get_env("CORS_ORIGIN") do
+  config :cors_plug, origin: String.split(cors_origin, ",", trim: true)
+end
+
+# Gated on MAILPIT_SMTP_HOST rather than `config_env() == :dev`: the
+# docker-compose stack builds the backend with MIX_ENV=prod even for local
+# dev (see Dockerfile), so `config_env()` is never `:dev` there — but
+# MAILPIT_SMTP_HOST is only ever set for this local/dev stack, never in a
+# real production deployment.
+if mailpit_host = System.get_env("MAILPIT_SMTP_HOST") do
+  config :repousse, Repousse.Mailer,
+    adapter: Swoosh.Adapters.SMTP,
+    relay: mailpit_host,
+    port: String.to_integer(System.get_env("MAILPIT_SMTP_PORT", "1025")),
+    ssl: false,
+    tls: :never,
+    auth: :never,
+    retries: 1,
+    no_mx_lookups: true
+end
+
+config :repousse, :webapp_url, System.get_env("WEBAPP_URL", "http://localhost:3002")
 
 if config_env() == :prod do
   database_url =

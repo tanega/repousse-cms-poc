@@ -8,6 +8,9 @@ const PUBLIC_PATHS = [
   "/auth/v2/login",
   "/auth/v2/register",
   "/api/webhooks",
+  // Guest-facing distribution form: reachable without an account, the form
+  // itself handles account creation/login for whoever fills it in.
+  "/distributions",
 ];
 
 function isPublicPath(pathname: string) {

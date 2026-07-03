@@ -2,12 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { Home, ShieldCheck, TreePine, UserCheck, Users } from "lucide-react";
 
 export type AdherentStatus = "Actif" | "En attente" | "Suspendu" | "Expiré";
-export type AdherentProfileType =
-  | "Bénévole"
-  | "Adoptant"
-  | "Famille d'accueil"
-  | "Coordinateur"
-  | "Administrateur";
+export type AdherentProfileType = "Bénévole" | "Adoptant" | "Famille d'accueil" | "Coordinateur" | "Administrateur";
 export type AdherentSource = "HelloAsso" | "Manuel" | "Import CSV";
 
 export type AdherentRow = {
@@ -21,6 +16,15 @@ export type AdherentRow = {
   loginCount: number;
   projectCount: number;
 };
+
+// Un compte membre n'implique pas forcément une adhésion payante en cours
+// (voir Repousse.Accounts.User côté backend : `status` = modération du
+// compte, `adhesion_active` = adhésion à jour pour l'année courante — les
+// deux sont indépendants). Ce mock dérive adhesionActive de `status` faute
+// de champ dédié dans les données de démo.
+export function isAdhesionActive(row: Pick<AdherentRow, "status">): boolean {
+  return row.status === "Actif";
+}
 
 export const adherents: AdherentRow[] = [
   {

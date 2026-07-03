@@ -13,6 +13,7 @@ config :repousse,
 
 config :repousse, :hanko,
   api_url: System.get_env("HANKO_API_URL", "http://localhost:8000"),
+  admin_url: System.get_env("HANKO_ADMIN_URL", "http://localhost:8001"),
   jwks_url: System.get_env("HANKO_API_URL", "http://localhost:8000") <> "/.well-known/jwks.json"
 
 config :repousse, Oban,
@@ -20,8 +21,12 @@ config :repousse, Oban,
   plugins: [Oban.Plugins.Pruner],
   queues: [default: 10, helloasso: 2, email: 5]
 
-config :cors_plug, CORSPlug,
-  origin: ["http://localhost:3000"],
+# NOTE: cors_plug reads its config flat off the `:cors_plug` app env
+# (`Application.get_all_env(:cors_plug)` inside `CORSPlug.init/1`) — nesting
+# it under a `CORSPlug` key (as `config :cors_plug, CORSPlug, ...` would)
+# silently no-ops and falls back to the library default (`origin: "*"`).
+config :cors_plug,
+  origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
   max_age: 86400,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   headers: ["Authorization", "Content-Type", "Accept"]

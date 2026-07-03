@@ -8,7 +8,7 @@ import { HANKO_LANG, hankoTranslations } from "@/lib/hanko-i18n";
 
 const HANKO_API_URL = process.env.NEXT_PUBLIC_HANKO_API_URL ?? "";
 
-export function HankoAuth() {
+export function HankoAuth({ onSessionCreated }: { onSessionCreated?: () => void }) {
   useEffect(() => {
     register(HANKO_API_URL, {
       translations: hankoTranslations,
@@ -16,7 +16,11 @@ export function HankoAuth() {
     }).catch(console.error);
 
     const handler = () => {
-      window.location.href = "/dashboard";
+      if (onSessionCreated) {
+        onSessionCreated();
+      } else {
+        window.location.href = "/dashboard";
+      }
     };
 
     document.addEventListener("hanko-session-created", handler);
@@ -24,7 +28,7 @@ export function HankoAuth() {
     return () => {
       document.removeEventListener("hanko-session-created", handler);
     };
-  }, []);
+  }, [onSessionCreated]);
 
   return <hanko-auth lang={HANKO_LANG} />;
 }
