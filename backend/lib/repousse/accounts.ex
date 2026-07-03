@@ -1,5 +1,7 @@
 defmodule Repousse.Accounts do
   import Ecto.Query
+  alias Repousse.Auth.HankoAdmin
+  alias Repousse.Integrations.Emails
   alias Repousse.Repo
   alias Repousse.Accounts.{User, UserProfile}
 
@@ -40,6 +42,44 @@ defmodule Repousse.Accounts do
     user |> User.changeset(attrs) |> Repo.update()
   end
 
+  def delete_user(%User{} = user) do
+    if user.hanko_id, do: HankoAdmin.delete_user(user.hanko_id)
+    Repo.delete(user)
+  end
+
+  @doc """
+  Creates a user backed by a Hanko identity: finds/creates the Hanko user
+  first, then upserts the Postgres row with the resulting `hanko_id`. Used
+  both by admin-created accounts and by the public guest signup flow.
+  """
+  def create_user_with_hanko(attrs, opts \\ []) do
+    email = attrs["email"] || attrs[:email]
+
+    with {:ok, hanko_id} <- HankoAdmin.create_or_find_user(email, opts),
+         {:ok, user} <- create_user(Map.put(attrs, "hanko_id", hanko_id)) do
+      {:ok, user}
+    end
+  end
+
+  @doc """
+  Guest signup entry point (public distribution form): if the email is
+  already tied to an account, returns `{:existing, user}` so the caller can
+  offer to log in instead of creating a duplicate. Otherwise creates the
+  account (Postgres + Hanko) and sends the confirmation email.
+  """
+  def find_or_create_guest_by_email(email, attrs \\ %{}) do
+    case get_user_by_email(email) do
+      nil ->
+        with {:ok, user} <- create_user_with_hanko(Map.put(attrs, "email", email), is_verified: false) do
+          Emails.send_activation_email(user)
+          {:created, user}
+        end
+
+      user ->
+        {:existing, user}
+    end
+  end
+
   # ── Membership & suspension ────────────────────────────────────────────────
 
   def sync_member(attrs) do
@@ -61,9 +101,9 @@ defmodule Repousse.Accounts do
   def suspend_members_without_current_year_membership(year) do
     {count, _} =
       from(u in User,
-        where: u.membership_year != ^year and u.status == :active
+        where: u.membership_year != ^year and u.adhesion_active == true
       )
-      |> Repo.update_all(set: [status: :suspended])
+      |> Repo.update_all(set: [adhesion_active: false])
 
     count
   end

@@ -27,7 +27,22 @@ hanko_api_url = System.get_env("HANKO_API_URL", "http://localhost:8000")
 
 config :repousse, :hanko,
   api_url: hanko_api_url,
+  admin_url: System.get_env("HANKO_ADMIN_URL", "http://localhost:8001"),
   jwks_url: hanko_api_url <> "/.well-known/jwks.json"
+
+if config_env() == :dev do
+  config :repousse, Repousse.Mailer,
+    adapter: Swoosh.Adapters.SMTP,
+    relay: System.get_env("MAILPIT_SMTP_HOST", "localhost"),
+    port: String.to_integer(System.get_env("MAILPIT_SMTP_PORT", "1025")),
+    ssl: false,
+    tls: :never,
+    auth: :never,
+    retries: 1,
+    no_mx_lookups: true
+end
+
+config :repousse, :webapp_url, System.get_env("WEBAPP_URL", "http://localhost:3002")
 
 if config_env() == :prod do
   database_url =

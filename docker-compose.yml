@@ -63,6 +63,10 @@ services:
       PHX_SERVER: "true"
       PORT: 4000
       HANKO_API_URL: http://hanko:8000
+      HANKO_ADMIN_URL: http://hanko:8001
+      MAILPIT_SMTP_HOST: mailpit
+      MAILPIT_SMTP_PORT: 1025
+      WEBAPP_URL: ${WEBAPP_URL:-http://localhost:3002}
       HELLOASSO_API_URL: ${HELLOASSO_API_URL:-}
       HELLOASSO_API_KEY: ${HELLOASSO_API_KEY:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
@@ -72,6 +76,8 @@ services:
       postgres:
         condition: service_healthy
       hanko:
+        condition: service_started
+      mailpit:
         condition: service_started
 
   webapp:

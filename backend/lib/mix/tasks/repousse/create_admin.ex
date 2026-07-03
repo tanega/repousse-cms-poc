@@ -21,18 +21,12 @@ defmodule Mix.Tasks.Repousse.CreateAdmin do
   @requirements ["app.start"]
 
   def run([email]) do
-    hanko_admin_url = System.get_env("HANKO_ADMIN_URL", "http://localhost:8001")
-
     IO.puts("\n→ Creating Hanko user for #{email}...")
 
     hanko_id =
-      case create_hanko_user(hanko_admin_url, email) do
+      case Repousse.Auth.HankoAdmin.create_or_find_user(email, is_verified: true) do
         {:ok, id} ->
-          IO.puts("  ✓ Hanko user created (id: #{id})")
-          id
-
-        {:exists, id} ->
-          IO.puts("  ℹ Hanko user already exists (id: #{id})")
+          IO.puts("  ✓ Hanko user ready (id: #{id})")
           id
 
         {:error, reason} ->
@@ -61,47 +55,5 @@ defmodule Mix.Tasks.Repousse.CreateAdmin do
 
   def run(_) do
     Mix.raise("Usage: mix repousse.create_admin <email>")
-  end
-
-  defp create_hanko_user(base_url, email) do
-    payload = %{
-      emails: [%{address: email, is_primary: true, is_verified: true}]
-    }
-
-    case Req.post("#{base_url}/users", json: payload) do
-      {:ok, %{status: status, body: body}} when status in [200, 201] ->
-        {:ok, body["id"]}
-
-      {:ok, %{status: 409}} ->
-        case find_hanko_user_by_email(base_url, email) do
-          {:ok, id} -> {:exists, id}
-          error -> error
-        end
-
-      {:ok, %{status: status, body: body}} ->
-        {:error, "HTTP #{status}: #{inspect(body)}"}
-
-      {:error, %{reason: reason}} ->
-        {:error, "Connection error — is Hanko running at #{base_url}? (#{inspect(reason)})"}
-    end
-  end
-
-  defp find_hanko_user_by_email(base_url, email) do
-    case Req.get("#{base_url}/users", params: [email: email, page_size: 1]) do
-      {:ok, %{status: 200, body: [%{"id" => id} | _]}} ->
-        {:ok, id}
-
-      {:ok, %{status: 200, body: %{"id" => id}}} ->
-        {:ok, id}
-
-      {:ok, %{status: 200, body: body}} ->
-        {:error, "User not found after 409: #{inspect(body)}"}
-
-      {:ok, %{status: status, body: body}} ->
-        {:error, "Lookup failed HTTP #{status}: #{inspect(body)}"}
-
-      {:error, reason} ->
-        {:error, inspect(reason)}
-    end
   end
 end

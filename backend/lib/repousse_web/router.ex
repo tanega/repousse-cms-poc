@@ -89,10 +89,17 @@ defmodule RepousseWeb.Router do
     scope "/admin", Admin, as: :admin do
       pipe_through :admin
 
-      resources "/users", UserController, only: [:index, :show, :create, :update]
+      resources "/users", UserController, only: [:index, :show, :create, :update, :delete]
       post "/users/:id/suspend", UserController, :suspend
       post "/users/:id/activate", UserController, :activate
     end
+  end
+
+  # Public — guest account creation from the distribution form, no auth
+  scope "/api/v1/public", RepousseWeb do
+    pipe_through :api
+
+    post "/accounts", PublicAccountController, :create_or_check
   end
 
   # Public webhooks — no auth

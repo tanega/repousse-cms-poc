@@ -13,6 +13,7 @@ config :repousse,
 
 config :repousse, :hanko,
   api_url: System.get_env("HANKO_API_URL", "http://localhost:8000"),
+  admin_url: System.get_env("HANKO_ADMIN_URL", "http://localhost:8001"),
   jwks_url: System.get_env("HANKO_API_URL", "http://localhost:8000") <> "/.well-known/jwks.json"
 
 config :repousse, Oban,
