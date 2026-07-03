@@ -8,6 +8,8 @@ import { notFound } from "next/navigation";
 import { useLiveQuery } from "@tanstack/react-db";
 import { CalendarDays, CheckCircle2, Clock, Mail, MapPin, UserRound } from "lucide-react";
 
+import { type GuestIdentity, GuestIdentityStep } from "@/components/guest-account/guest-identity-step";
+import { StepperHeader, type StepperStep } from "@/components/guest-account/stepper-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,8 +26,6 @@ import { distributionEventCollection } from "../../admin/distributions/_componen
 import { STATUT_COLORS } from "../../admin/distributions/_components/data";
 import { taxons } from "../../admin/especes-vegetales/_components/data";
 import { currentMember } from "./current-member";
-import { DistributionGuestIdentity, type GuestIdentity } from "./distribution-guest-identity";
-import { ReservationStepperHeader, type StepperStep } from "./reservation-stepper-header";
 import { reservationsCollection } from "./reservations-collection";
 import { canCancel, findActiveReservation, type Reservation } from "./reservations-data";
 
@@ -230,7 +230,7 @@ export function DistributionMemberView({ slug }: { slug: string }) {
       )}
 
       {!activeReservation && !isClosed && isAuthenticated === false && (
-        <ReservationStepperHeader steps={STEPPER_STEPS} activeId={step} />
+        <StepperHeader steps={STEPPER_STEPS} activeId={step} />
       )}
 
       {!activeReservation && !isClosed && step === "reservation" && (
@@ -324,7 +324,11 @@ export function DistributionMemberView({ slug }: { slug: string }) {
 
       {!activeReservation && !isClosed && step === "identite" && isAuthenticated === false && (
         <div className="space-y-3">
-          <DistributionGuestIdentity onIdentityReady={(identity: GuestIdentity) => handleReserve(identity)} />
+          <GuestIdentityStep
+            description="L'adresse e-mail est nécessaire pour confirmer votre réservation. Un compte Repousse est créé automatiquement — vous recevrez un e-mail avec la marche à suivre pour vous connecter la prochaine fois."
+            submitLabel="Valider ma réservation"
+            onIdentityReady={(identity: GuestIdentity) => handleReserve(identity)}
+          />
           <Button variant="ghost" size="sm" onClick={() => setStep("reservation")}>
             ← Modifier ma réservation
           </Button>
