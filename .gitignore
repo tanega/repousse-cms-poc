@@ -80,3 +80,8 @@ Desktop.ini
 # ========================
 .claude
 .agents
+
+# ========================
+# PRIVATE / UNVERSIONED NOTES
+# ========================
+*.private.md
