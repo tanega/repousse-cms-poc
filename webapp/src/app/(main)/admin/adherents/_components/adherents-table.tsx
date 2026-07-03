@@ -84,23 +84,24 @@ export function AdherentsTable({ table }: { table: TableType<AdherentRow> }) {
         <div className="flex items-center gap-4 text-muted-foreground text-sm">
           <div className="flex items-center gap-2">
             <span>Lignes par page</span>
-            <Select
-              value={rowsPerPage}
-              onValueChange={(value) => table.setPageSize(Number(value))}
-            >
+            <Select value={rowsPerPage} onValueChange={(value) => table.setPageSize(Number(value))}>
               <SelectTrigger size="sm" className="w-20" id="adherents-rows-per-page">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
               <SelectContent side="top">
                 <SelectGroup>
                   {[10, 20, 30, 40, 50].map((size) => (
-                    <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+                    <SelectItem key={size} value={`${size}`}>
+                      {size}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </div>
-          <span>Page {currentPage} sur {pageCount}</span>
+          <span>
+            Page {currentPage} sur {pageCount}
+          </span>
         </div>
 
         <Pagination className="mx-0 w-auto justify-start md:justify-end">
@@ -110,32 +111,45 @@ export function AdherentsTable({ table }: { table: TableType<AdherentRow> }) {
                 href="#"
                 text=""
                 className={!table.getCanPreviousPage() ? "pointer-events-none opacity-50" : undefined}
-                onClick={(e) => { preventNav(e); table.previousPage(); }}
+                onClick={(e) => {
+                  preventNav(e);
+                  table.previousPage();
+                }}
               />
             </PaginationItem>
             {pageNumbers[0] > 1 && (
-              <PaginationItem><PaginationEllipsis /></PaginationItem>
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
             )}
             {pageNumbers.map((n) => (
               <PaginationItem key={`page-${n}`}>
                 <PaginationLink
                   href="#"
                   isActive={table.getState().pagination.pageIndex === n - 1}
-                  onClick={(e) => { preventNav(e); table.setPageIndex(n - 1); }}
+                  onClick={(e) => {
+                    preventNav(e);
+                    table.setPageIndex(n - 1);
+                  }}
                 >
                   {n}
                 </PaginationLink>
               </PaginationItem>
             ))}
             {pageNumbers[pageNumbers.length - 1] < pageCount && (
-              <PaginationItem><PaginationEllipsis /></PaginationItem>
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
             )}
             <PaginationItem>
               <PaginationNext
                 href="#"
                 text=""
                 className={!table.getCanNextPage() ? "pointer-events-none opacity-50" : undefined}
-                onClick={(e) => { preventNav(e); table.nextPage(); }}
+                onClick={(e) => {
+                  preventNav(e);
+                  table.nextPage();
+                }}
               />
             </PaginationItem>
           </PaginationContent>

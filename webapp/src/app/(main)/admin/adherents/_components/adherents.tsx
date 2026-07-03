@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 
 import { adherentsColumns } from "./adherents-columns";
 import { AdherentsTable } from "./adherents-table";
-import { filters, type AdherentRow } from "./data";
+import { type AdherentRow, filters } from "./data";
 
 export function Adherents({ adherents }: { adherents: AdherentRow[] }) {
   const [rowSelection, setRowSelection] = React.useState({});
@@ -73,9 +73,9 @@ export function Adherents({ adherents }: { adherents: AdherentRow[] }) {
   return (
     <Card>
       <CardHeader className="border-b has-data-[slot=card-action]:grid-cols-1 md:has-data-[slot=card-action]:grid-cols-[1fr_auto]">
-        <CardTitle className="text-xl leading-none">Adhérents</CardTitle>
+        <CardTitle className="text-xl leading-none">Membres</CardTitle>
         <CardDescription className="max-w-sm leading-snug">
-          Gérez les membres et adhérents de l'association Repousse.
+          Gérez les comptes membres de l'association Repousse et leur adhésion.
         </CardDescription>
         <CardAction className="col-start-1 row-start-auto flex w-full flex-wrap justify-start gap-2 justify-self-stretch md:col-start-2 md:row-span-2 md:row-start-1 md:w-auto md:flex-nowrap md:justify-end md:justify-self-end">
           <InputGroup className="h-7 w-full md:w-64">
@@ -84,7 +84,7 @@ export function Adherents({ adherents }: { adherents: AdherentRow[] }) {
             </InputGroupAddon>
             <InputGroupInput
               className="h-7"
-              placeholder="Rechercher un adhérent..."
+              placeholder="Rechercher un membre..."
               value={searchQuery}
               onChange={(e) => {
                 table.getColumn("search")?.setFilterValue(e.target.value || undefined);
@@ -122,7 +122,9 @@ export function Adherents({ adherents }: { adherents: AdherentRow[] }) {
               <SelectContent position="popper" align="start">
                 <SelectGroup>
                   {filters.profileType.map((opt) => (
-                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -136,7 +138,9 @@ export function Adherents({ adherents }: { adherents: AdherentRow[] }) {
               <SelectContent position="popper" align="start">
                 <SelectGroup>
                   {filters.status.map((opt) => (
-                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -150,7 +154,9 @@ export function Adherents({ adherents }: { adherents: AdherentRow[] }) {
               <SelectContent position="popper" align="start">
                 <SelectGroup>
                   {filters.source.map((opt) => (
-                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>

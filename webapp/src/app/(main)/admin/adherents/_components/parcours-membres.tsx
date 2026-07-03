@@ -85,9 +85,7 @@ export function ParcoursMembres() {
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-          Parcours utilisateurs
-        </h2>
+        <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Parcours utilisateurs</h2>
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {journeys.map((journey) => {
@@ -111,9 +109,7 @@ export function ParcoursMembres() {
                         <StepDot index={i} colorClass={journey.colorClass} />
                         <div className="min-w-0 pt-0.5">
                           <p className="font-medium text-sm leading-tight">{step.label}</p>
-                          {step.detail && (
-                            <p className="text-muted-foreground text-xs leading-snug">{step.detail}</p>
-                          )}
+                          {step.detail && <p className="text-muted-foreground text-xs leading-snug">{step.detail}</p>}
                         </div>
                       </div>
                       {i < journey.steps.length - 1 && (
