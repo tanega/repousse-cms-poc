@@ -11,4 +11,5 @@ export const APP_CONFIG = {
     description:
       "Commun numérique pour une pépinière participative qui oeuvre dans la vraie vie en région nantaise",
   },
+  defaultPath: "/dashboard/vie-associative",
 };
