@@ -11,6 +11,10 @@ const PUBLIC_PATHS = [
   // Guest-facing distribution form: reachable without an account, the form
   // itself handles account creation/login for whoever fills it in.
   "/distributions",
+  // Guest-facing planting project creation form. Unlike distributions, the
+  // rest of /projets-plantation (browse, project detail) stays behind
+  // login — only the creation form itself is public.
+  "/projets-plantation/nouveau",
 ];
 
 function isPublicPath(pathname: string) {
