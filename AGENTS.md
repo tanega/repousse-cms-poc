@@ -7,13 +7,12 @@ Plant association management platform. Phoenix API + Next.js frontend.
 ```
 backend/    Phoenix 1.8.8 API-only (Elixir 1.20.2)
 webapp/     Next.js 16 — ACTIVE FRONTEND
-frontend/   DEPRECATED — do not modify
 docs/       Roadmap epics (epic-01 to epic-06) + Starlight site
 ```
 
 ## Frontend: always use `webapp/`
 
-`frontend/` is archived. All new UI work goes in `webapp/`.
+All UI work goes in `webapp/`.
 
 Key files in `webapp/src/`:
 - `navigation/sidebar/sidebar-items.ts` — sidebar nav groups & items

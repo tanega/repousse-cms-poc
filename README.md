@@ -110,7 +110,7 @@ repousse-poc-cms/
 │   └── lib/repousse_web/
 │       ├── controllers/  # JSON API controllers
 │       └── plugs/        # Auth (Hanko JWT), role checks
-├── frontend/         # Next.js 15 app
+├── webapp/           # Next.js 16 app
 │   └── src/
 │       ├── app/
 │       │   ├── (external)/   # Public pages (landing)
@@ -174,7 +174,7 @@ cd backend && mix phx.server
 ### Frontend only (without Docker)
 
 ```sh
-cd frontend
+cd webapp
 cp .env.local.example .env.local
 npm run dev   # http://localhost:3000 with Turbopack
 ```
