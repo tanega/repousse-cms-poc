@@ -23,7 +23,7 @@ end
 config :repousse, RepousseWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
-hanko_api_url = System.get_env("HANKO_API_URL", "http://localhost:8000")
+hanko_api_url = System.get_env("HANKO_API_URL", "http://auth.localhost")
 
 config :repousse, :hanko,
   api_url: hanko_api_url,
@@ -32,7 +32,8 @@ config :repousse, :hanko,
 
 # CORS_ORIGIN is already passed to the backend container in docker-compose
 # but was never actually read anywhere — comma-separate multiple origins
-# (e.g. the deprecated frontend on :3000 alongside the active webapp on :3002).
+# (e.g. the webapp reached via Traefik's www.localhost alongside its native
+# `npm run dev` port and its docker-compose direct-access port).
 if cors_origin = System.get_env("CORS_ORIGIN") do
   config :cors_plug, origin: String.split(cors_origin, ",", trim: true)
 end
@@ -54,7 +55,7 @@ if mailpit_host = System.get_env("MAILPIT_SMTP_HOST") do
     no_mx_lookups: true
 end
 
-config :repousse, :webapp_url, System.get_env("WEBAPP_URL", "http://localhost:3002")
+config :repousse, :webapp_url, System.get_env("WEBAPP_URL", "http://www.localhost")
 
 if config_env() == :prod do
   database_url =

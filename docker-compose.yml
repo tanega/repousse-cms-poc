@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.7.6
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
@@ -75,10 +75,10 @@ services:
       HANKO_ADMIN_URL: http://hanko:8001
       MAILPIT_SMTP_HOST: mailpit
       MAILPIT_SMTP_PORT: 1025
-      WEBAPP_URL: ${WEBAPP_URL:-http://localhost:3002}
+      WEBAPP_URL: ${WEBAPP_URL:-http://www.localhost}
       HELLOASSO_API_URL: ${HELLOASSO_API_URL:-}
       HELLOASSO_API_KEY: ${HELLOASSO_API_KEY:-}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://www.localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://www.localhost,http://localhost:3000,http://localhost:3002}
     labels:
       - traefik.enable=true
       - traefik.http.routers.backend.rule=Host(`api.localhost`)
@@ -96,11 +96,11 @@ services:
       context: ./webapp
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_HANKO_API_URL: ${NEXT_PUBLIC_HANKO_API_URL:-http://localhost:8000}
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+        NEXT_PUBLIC_HANKO_API_URL: ${NEXT_PUBLIC_HANKO_API_URL:-http://auth.localhost}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api.localhost}
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
-      NEXT_PUBLIC_HANKO_API_URL: ${NEXT_PUBLIC_HANKO_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api.localhost}
+      NEXT_PUBLIC_HANKO_API_URL: ${NEXT_PUBLIC_HANKO_API_URL:-http://auth.localhost}
     labels:
       - traefik.enable=true
       - traefik.http.routers.webapp.rule=Host(`www.localhost`)
