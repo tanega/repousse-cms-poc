@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
-import { CalendarDays, CheckCircle2, Clock, Mail, MapPin, UserRound } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Mail, MapPin, Sprout, UserRound } from "lucide-react";
 
 import { type GuestIdentity, GuestIdentityStep } from "@/components/guest-account/guest-identity-step";
 import { StepperHeader, type StepperStep } from "@/components/guest-account/stepper-header";
@@ -17,7 +17,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useHankoSession } from "@/lib/auth/use-hanko-session";
 import { cn } from "@/lib/utils";
@@ -25,18 +24,23 @@ import { cn } from "@/lib/utils";
 import { distributionEventCollection } from "../../admin/distributions/_components/collection";
 import { STATUT_COLORS } from "../../admin/distributions/_components/data";
 import { taxons } from "../../admin/especes-vegetales/_components/data";
+import { projetPlantationCollection } from "../../admin/projets-plantation/_components/collection";
 import { currentMember } from "./current-member";
+import { ProjetSelectOrCreate } from "./projet-select-or-create";
 import { reservationsCollection } from "./reservations-collection";
 import { canCancel, findActiveReservation, type Reservation } from "./reservations-data";
 
+type GuestStep = "identite" | "projet" | "reservation";
+
 const STEPPER_STEPS: StepperStep[] = [
+  { id: "identite", label: "Coordonnées", description: "E-mail et compte", icon: <UserRound className="size-4" /> },
+  { id: "projet", label: "Projet", description: "Sélection ou création", icon: <Sprout className="size-4" /> },
   {
     id: "reservation",
     label: "Réservation",
     description: "Créneau et quantités",
     icon: <CalendarDays className="size-4" />,
   },
-  { id: "identite", label: "Coordonnées", description: "E-mail et compte", icon: <UserRound className="size-4" /> },
 ];
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
@@ -53,6 +57,7 @@ function taxonName(taxonId: string) {
 export function DistributionMemberView({ slug }: { slug: string }) {
   const { data: events } = useLiveQuery(distributionEventCollection);
   const { data: allReservations } = useLiveQuery(reservationsCollection);
+  const { data: projets } = useLiveQuery(projetPlantationCollection);
 
   const event = (events ?? []).find((e) => e.lienPermanent === slug && e.statut !== "Brouillon");
   if (!event) notFound();
@@ -68,11 +73,28 @@ export function DistributionMemberView({ slug }: { slug: string }) {
 
   const isClosed = event.statut === "Clôturé";
   const { isAuthenticated } = useHankoSession();
+  // Guests go through a 3-step wizard (identité → projet → réservation);
+  // signed-in members (and the not-yet-resolved null state) keep the
+  // single-page form with the project field inline, per the e2e contract.
+  const showWizard = isAuthenticated === false;
 
-  const [step, setStep] = useState<"reservation" | "identite">("reservation");
+  const [step, setStep] = useState<GuestStep>("reservation");
+  const [guestIdentity, setGuestIdentity] = useState<GuestIdentity | null>(null);
   const [creneauId, setCreneauId] = useState("");
   const [projetId, setProjetId] = useState("");
   const [quantites, setQuantites] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (isAuthenticated === false) setStep("identite");
+  }, [isAuthenticated]);
+
+  const activeIdentity = guestIdentity ?? currentMember;
+
+  function handleIdentityReady(identity: GuestIdentity) {
+    setGuestIdentity(identity);
+    setProjetId("");
+    setStep("projet");
+  }
 
   function setQuantite(taxonId: string, value: number, max: number | null) {
     const clamped = max === null ? Math.max(0, value) : Math.min(Math.max(0, value), max);
@@ -207,7 +229,7 @@ export function DistributionMemberView({ slug }: { slug: string }) {
             <div className="flex items-center justify-between text-muted-foreground">
               <span>Projet de plantation</span>
               <span className="font-medium text-foreground">
-                {currentMember.projetsPlantation.find((p) => p.id === activeReservation.projetPlantationId)?.nom ??
+                {(projets ?? []).find((p) => p.id === activeReservation.projetPlantationId)?.nom ??
                   activeReservation.projetPlantationId}
               </span>
             </div>
@@ -229,16 +251,49 @@ export function DistributionMemberView({ slug }: { slug: string }) {
         </Card>
       )}
 
-      {!activeReservation && !isClosed && isAuthenticated === false && (
-        <StepperHeader steps={STEPPER_STEPS} activeId={step} />
+      {!activeReservation && !isClosed && showWizard && <StepperHeader steps={STEPPER_STEPS} activeId={step} />}
+
+      {!activeReservation && !isClosed && showWizard && step === "identite" && (
+        <GuestIdentityStep
+          description="L'adresse e-mail est nécessaire pour votre réservation. Un compte Repousse est créé automatiquement — vous recevrez un e-mail avec la marche à suivre pour vous connecter la prochaine fois. Vous pouvez aussi vous connecter directement si vous avez déjà un compte."
+          submitLabel="Continuer"
+          onIdentityReady={handleIdentityReady}
+        />
       )}
 
-      {!activeReservation && !isClosed && step === "reservation" && (
+      {!activeReservation && !isClosed && showWizard && step === "projet" && guestIdentity && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Projet de plantation</CardTitle>
+            <CardDescription className="text-xs">
+              Sélectionnez un de vos projets, ou créez-en un nouveau pour cette réservation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ProjetSelectOrCreate
+              email={guestIdentity.email}
+              nom={guestIdentity.nom}
+              value={projetId}
+              onChange={setProjetId}
+            />
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setStep("identite")}>
+                ← Modifier mes coordonnées
+              </Button>
+              <Button size="sm" className="ml-auto" disabled={!projetId} onClick={() => setStep("reservation")}>
+                Continuer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!activeReservation && !isClosed && (!showWizard || step === "reservation") && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Réserver un créneau</CardTitle>
             <CardDescription className="text-xs">
-              Choisissez un créneau, un projet de plantation, et les quantités souhaitées.
+              Choisissez un créneau{!showWizard && ", un projet de plantation,"} et les quantités souhaitées.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -268,24 +323,30 @@ export function DistributionMemberView({ slug }: { slug: string }) {
               </RadioGroup>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="projet">
-                Projet de plantation
-                <span className="ml-1 text-destructive">*</span>
-              </Label>
-              <Select value={projetId} onValueChange={setProjetId}>
-                <SelectTrigger id="projet" className="w-full">
-                  <SelectValue placeholder="Sélectionnez un projet" />
-                </SelectTrigger>
-                <SelectContent>
-                  {currentMember.projetsPlantation.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {showWizard && guestIdentity ? (
+              <div className="flex items-center justify-between rounded-md border p-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground text-xs">Projet de plantation</div>
+                  <div className="font-medium">{(projets ?? []).find((p) => p.id === projetId)?.nom ?? projetId}</div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setStep("projet")}>
+                  Modifier
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="projet">
+                  Projet de plantation
+                  <span className="ml-1 text-destructive">*</span>
+                </Label>
+                <ProjetSelectOrCreate
+                  email={activeIdentity.email}
+                  nom={activeIdentity.nom}
+                  value={projetId}
+                  onChange={setProjetId}
+                />
+              </div>
+            )}
 
             {availableSpecies.length > 0 && (
               <div className="space-y-2">
@@ -314,25 +375,12 @@ export function DistributionMemberView({ slug }: { slug: string }) {
             <Button
               className="w-full"
               disabled={!canReserve}
-              onClick={() => (isAuthenticated === false ? setStep("identite") : handleReserve())}
+              onClick={() => handleReserve(showWizard ? (guestIdentity ?? undefined) : undefined)}
             >
-              {isAuthenticated === false ? "Continuer" : "Réserver"}
+              {showWizard ? "Valider ma réservation" : "Réserver"}
             </Button>
           </CardContent>
         </Card>
-      )}
-
-      {!activeReservation && !isClosed && step === "identite" && isAuthenticated === false && (
-        <div className="space-y-3">
-          <GuestIdentityStep
-            description="L'adresse e-mail est nécessaire pour confirmer votre réservation. Un compte Repousse est créé automatiquement — vous recevrez un e-mail avec la marche à suivre pour vous connecter la prochaine fois."
-            submitLabel="Valider ma réservation"
-            onIdentityReady={(identity: GuestIdentity) => handleReserve(identity)}
-          />
-          <Button variant="ghost" size="sm" onClick={() => setStep("reservation")}>
-            ← Modifier ma réservation
-          </Button>
-        </div>
       )}
 
       {exhaustedSpecies.length > 0 && (
