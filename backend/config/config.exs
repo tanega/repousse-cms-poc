@@ -12,9 +12,9 @@ config :repousse,
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
 config :repousse, :hanko,
-  api_url: System.get_env("HANKO_API_URL", "http://localhost:8000"),
+  api_url: System.get_env("HANKO_API_URL", "http://auth.localhost"),
   admin_url: System.get_env("HANKO_ADMIN_URL", "http://localhost:8001"),
-  jwks_url: System.get_env("HANKO_API_URL", "http://localhost:8000") <> "/.well-known/jwks.json"
+  jwks_url: System.get_env("HANKO_API_URL", "http://auth.localhost") <> "/.well-known/jwks.json"
 
 config :repousse, Oban,
   repo: Repousse.Repo,
@@ -26,7 +26,7 @@ config :repousse, Oban,
 # it under a `CORSPlug` key (as `config :cors_plug, CORSPlug, ...` would)
 # silently no-ops and falls back to the library default (`origin: "*"`).
 config :cors_plug,
-  origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+  origin: ["http://www.localhost", "http://localhost:3000", "http://localhost:3002"],
   max_age: 86400,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   headers: ["Authorization", "Content-Type", "Accept"]

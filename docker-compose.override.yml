@@ -1,0 +1,30 @@
+# Auto-loaded by `docker compose` alongside docker-compose.yml. Restores
+# direct host-port access to services now fronted by Traefik, for local dev
+# tooling (psql/redis-cli/GUI clients, curling the API directly, the Hanko
+# Admin API used by `make create-admin`). Not part of the routing path.
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  mailpit:
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
+  hanko:
+    ports:
+      - "${HANKO_PUBLIC_PORT:-8000}:8000"
+      - "${HANKO_ADMIN_PORT:-8001}:8001"
+
+  backend:
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+
+  webapp:
+    ports:
+      - "${WEBAPP_PORT:-3002}:3000"

@@ -4,6 +4,7 @@ server:
     cors:
       enabled: true
       allow_origins:
+        - "http://www.localhost"
         - "http://localhost:3000"
         - "http://localhost:3001"
         - "http://localhost:3002"
@@ -24,6 +25,7 @@ webauthn:
     id: "localhost"
     display_name: "Repousse"
     origins:
+      - "http://www.localhost"
       - "http://localhost:3000"
       - "http://localhost:3001"
       - "http://localhost:3002"

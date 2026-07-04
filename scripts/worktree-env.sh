@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates/updates a worktree-local .env so its docker-compose stack
-# (postgres, redis, mailpit, hanko, backend, frontend) can run alongside the
-# main checkout's stack without port or volume collisions.
+# (postgres, redis, mailpit, hanko, backend, webapp, traefik) can run alongside
+# the main checkout's stack without port or volume collisions.
 #
 # Run from the root of a worktree (not the main checkout):
 #   ../../scripts/worktree-env.sh [name]
@@ -24,7 +24,8 @@ mailpit_ui_port=$((8025 + offset))
 hanko_public_port=$((8000 + offset))
 hanko_admin_port=$((8001 + offset))
 backend_port=$((4000 + offset))
-frontend_port=$((3000 + offset))
+webapp_port=$((3000 + offset))
+traefik_port=$((80 + offset))
 
 env_file=".env"
 if [ ! -f "$env_file" ]; then
@@ -50,17 +51,18 @@ set_kv MAILPIT_UI_PORT "$mailpit_ui_port"
 set_kv HANKO_PUBLIC_PORT "$hanko_public_port"
 set_kv HANKO_ADMIN_PORT "$hanko_admin_port"
 set_kv BACKEND_PORT "$backend_port"
-set_kv FRONTEND_PORT "$frontend_port"
+set_kv WEBAPP_PORT "$webapp_port"
+set_kv TRAEFIK_PORT "$traefik_port"
 set_kv PHX_HOST "localhost"
 set_kv NEXT_PUBLIC_API_URL "http://localhost:${backend_port}"
 set_kv NEXT_PUBLIC_HANKO_API_URL "http://localhost:${hanko_public_port}"
-set_kv CORS_ORIGIN "http://localhost:${frontend_port}"
+set_kv CORS_ORIGIN "http://localhost:${webapp_port},http://www.localhost:${traefik_port}"
 
 cat <<EOF
 
 Worktree '${name}' stack configured in ${env_file}:
   compose project : repousse-${name}
-  frontend        : http://localhost:${frontend_port}
+  webapp          : http://localhost:${webapp_port}  (or http://www.localhost:${traefik_port} via Traefik)
   backend api     : http://localhost:${backend_port}
   hanko           : http://localhost:${hanko_public_port}
   postgres        : localhost:${postgres_port}

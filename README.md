@@ -51,9 +51,9 @@ SECRET_KEY_BASE=<generated>
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=repousse_dev
-NEXT_PUBLIC_HANKO_API_URL=http://localhost:8000
-NEXT_PUBLIC_API_URL=http://localhost:4000
-CORS_ORIGIN=http://localhost:3000
+NEXT_PUBLIC_HANKO_API_URL=http://auth.localhost
+NEXT_PUBLIC_API_URL=http://api.localhost
+CORS_ORIGIN=http://www.localhost,http://localhost:3000,http://localhost:3002
 
 # Optional — for HelloAsso sync:
 HELLOASSO_API_URL=
@@ -72,15 +72,17 @@ HELLOASSO_API_KEY=
 make dev
 ```
 
-Starts 5 Docker services:
+Starts 7 Docker services, fronted by Traefik on subdomains of `.localhost`
+(direct ports below still work too — see `docker-compose.override.yml`):
 
-| Service    | URL                       | Role                          |
-|------------|---------------------------|-------------------------------|
-| Frontend   | http://localhost:3000     | Next.js app                   |
-| Backend    | http://localhost:4000     | Phoenix JSON API              |
-| Hanko      | http://localhost:8000     | Passwordless auth server      |
-| PostgreSQL | localhost:5432            | Primary database              |
-| Redis      | localhost:6379            | Cache / Oban job queue        |
+| Service    | Traefik URL              | Direct URL             | Role                          |
+|------------|--------------------------|-------------------------|-------------------------------|
+| Webapp     | http://www.localhost     | http://localhost:3002   | Next.js app                   |
+| Backend    | http://api.localhost     | http://localhost:4000   | Phoenix JSON API              |
+| Hanko      | http://auth.localhost    | http://localhost:8000   | Passwordless auth server      |
+| Mailpit    | http://mail.localhost    | http://localhost:8025   | Dev SMTP inbox (UI)           |
+| PostgreSQL | —                        | localhost:5432          | Primary database (not proxied) |
+| Redis      | —                        | localhost:6379          | Cache / Oban job queue (not proxied) |
 
 ### Stop
 

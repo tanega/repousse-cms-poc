@@ -44,5 +44,5 @@ defmodule Repousse.Integrations.Emails do
 
   defp display_name(_user), do: ""
 
-  defp webapp_url, do: Application.get_env(:repousse, :webapp_url, "http://localhost:3002")
+  defp webapp_url, do: Application.get_env(:repousse, :webapp_url, "http://www.localhost")
 end
