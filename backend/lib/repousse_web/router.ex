@@ -4,6 +4,7 @@ defmodule RepousseWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
     plug CORSPlug
+    plug OpenApiSpex.Plug.PutApiSpec, module: RepousseWeb.ApiSpec
   end
 
   pipeline :authenticated do
@@ -41,9 +42,15 @@ defmodule RepousseWeb.Router do
       post "/distributions/:id/publish", DistributionController, :publish
       post "/distributions/:id/close", DistributionController, :close
       resources "/distributions/:distribution_id/slots", SlotController, except: [:new, :edit]
-      resources "/distributions/:distribution_id/stocks", StockController, except: [:new, :edit, :show]
+
+      resources "/distributions/:distribution_id/stocks", StockController,
+        except: [:new, :edit, :show]
+
       get "/distributions/:distribution_id/attendees", DistributionController, :attendees
-      put "/distributions/:distribution_id/validate/:reservation_id", ReservationController, :validate
+
+      put "/distributions/:distribution_id/validate/:reservation_id",
+          ReservationController,
+          :validate
     end
 
     # Planting projects
@@ -100,6 +107,13 @@ defmodule RepousseWeb.Router do
     pipe_through :api
 
     post "/accounts", PublicAccountController, :create_or_check
+  end
+
+  # OpenAPI spec (generated from controller `operation/2` specs)
+  scope "/api/v1" do
+    pipe_through :api
+
+    get "/openapi", OpenApiSpex.Plug.RenderSpec, []
   end
 
   # Public webhooks — no auth

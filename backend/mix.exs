@@ -56,6 +56,9 @@ defmodule Repousse.MixProject do
       # Auth & security
       {:joken, "~> 2.6"},
       {:cors_plug, "~> 3.0"},
+      {:bodyguard, "~> 2.4"},
+      # API documentation
+      {:open_api_spex, "~> 3.21"},
       # Background jobs
       {:oban, "~> 2.18"},
       # Dev & test

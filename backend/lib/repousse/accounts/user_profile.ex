@@ -5,7 +5,7 @@ defmodule Repousse.Accounts.UserProfile do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @profile_types [:volunteer, :adoptant, :host_family, :admin]
+  @profile_types [:volunteer, :adoptant, :host_family]
 
   @derive {Jason.Encoder,
            only: [
@@ -46,9 +46,17 @@ defmodule Repousse.Accounts.UserProfile do
   def changeset(profile, attrs) do
     profile
     |> cast(attrs, [
-      :profile_type, :engagement_note, :address, :avatar_url,
-      :notification_prefs, :hosting_capacity, :hosting_address,
-      :hosting_lat, :hosting_lng, :hosting_availability, :user_id
+      :profile_type,
+      :engagement_note,
+      :address,
+      :avatar_url,
+      :notification_prefs,
+      :hosting_capacity,
+      :hosting_address,
+      :hosting_lat,
+      :hosting_lng,
+      :hosting_availability,
+      :user_id
     ])
     |> validate_required([:profile_type, :user_id])
     |> validate_inclusion(:profile_type, @profile_types)

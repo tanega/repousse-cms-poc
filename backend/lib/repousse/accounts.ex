@@ -30,7 +30,9 @@ defmodule Repousse.Accounts do
         user
 
       user ->
-        Repo.update!(User.changeset(user, %{last_seen_at: DateTime.utc_now() |> DateTime.truncate(:second)}))
+        Repo.update!(
+          User.changeset(user, %{last_seen_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+        )
     end
   end
 
@@ -70,7 +72,8 @@ defmodule Repousse.Accounts do
   def find_or_create_guest_by_email(email, attrs \\ %{}) do
     case get_user_by_email(email) do
       nil ->
-        with {:ok, user} <- create_user_with_hanko(Map.put(attrs, "email", email), is_verified: false) do
+        with {:ok, user} <-
+               create_user_with_hanko(Map.put(attrs, "email", email), is_verified: false) do
           Emails.send_activation_email(user)
           {:created, user}
         end
@@ -136,12 +139,31 @@ defmodule Repousse.Accounts do
     profile |> UserProfile.changeset(attrs) |> Repo.update()
   end
 
-  def has_role?(%User{} = user, :admin) do
-    user = Repo.preload(user, :profiles)
-    Enum.any?(user.profiles, &(&1.profile_type == :admin))
+  def has_role?(%User{role: role}, :superadmin), do: role == :superadmin
+  def has_role?(%User{role: role}, :admin), do: role in [:admin, :superadmin]
+  def has_role?(_, _), do: false
+
+  def admin?(%User{} = user), do: has_role?(user, :admin)
+  def superadmin?(%User{} = user), do: has_role?(user, :superadmin)
+
+  def count_superadmins, do: Repo.aggregate(from(u in User, where: u.role == :superadmin), :count)
+
+  @doc """
+  Superadmin-only role grant/revoke. Refuses to demote the last remaining
+  superadmin (epic-02 US-AUTH-11: "un superadmin ne peut pas se révoquer
+  lui-même" / at least one superadmin must remain active).
+  """
+  def assign_role(%User{} = user, role) when role in [:member, :admin, :superadmin] do
+    if user.role == :superadmin and role != :superadmin and count_superadmins() <= 1 do
+      {:error, :last_superadmin}
+    else
+      user |> User.role_changeset(role) |> Repo.update()
+    end
   end
 
-  def has_role?(_, _), do: false
+  def set_taxon_editor(%User{} = user, taxon_editor?) when is_boolean(taxon_editor?) do
+    user |> User.taxon_editor_changeset(taxon_editor?) |> Repo.update()
+  end
 
   # ── Private helpers ────────────────────────────────────────────────────────
 
@@ -149,5 +171,7 @@ defmodule Repousse.Accounts do
   defp maybe_filter_status(query, status), do: where(query, [u], u.status == ^status)
 
   defp maybe_filter_membership_year(query, nil), do: query
-  defp maybe_filter_membership_year(query, year), do: where(query, [u], u.membership_year == ^year)
+
+  defp maybe_filter_membership_year(query, year),
+    do: where(query, [u], u.membership_year == ^year)
 end
