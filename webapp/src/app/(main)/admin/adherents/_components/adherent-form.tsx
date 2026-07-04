@@ -3,7 +3,9 @@
 import { useState } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
+import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+import { adherentCollection } from "./collection";
 import {
   type AdherentProfileType,
   type AdherentSource,
@@ -49,12 +52,15 @@ type FormValues = {
 type AdherentFormProps = {
   mode: "create" | "edit";
   defaultValues?: Partial<FormValues>;
+  /** Email identifying the member being edited (immutable collection key). */
+  adherentEmail?: string;
 };
 
 const today = new Date().toISOString().split("T")[0];
 
-export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
+export function AdherentForm({ mode, defaultValues, adherentEmail }: AdherentFormProps) {
   const isEdit = mode === "edit";
+  const router = useRouter();
 
   const [values, setValues] = useState<FormValues>({
     firstName: defaultValues?.firstName ?? "",
@@ -88,6 +94,42 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
     "Coordinateur",
     "Administrateur",
   ];
+
+  const canSubmit =
+    values.firstName.trim().length > 0 && values.lastName.trim().length > 0 && values.profileTypes.length > 0;
+
+  function handleSubmit() {
+    if (!canSubmit) return;
+    const record = {
+      name: `${values.firstName.trim()} ${values.lastName.trim()}`.trim(),
+      phone: values.phone.trim() || undefined,
+      profileTypes: values.profileTypes,
+      source: values.source,
+      status: values.status,
+      memberSince: format(new Date(`${values.memberSince}T09:00:00`), "dd MMM yyyy, h:mm a"),
+      notes: values.notes.trim() || undefined,
+    };
+    if (isEdit && adherentEmail) {
+      adherentCollection.update(adherentEmail, (draft) => Object.assign(draft, record));
+    } else {
+      adherentCollection.insert({
+        ...record,
+        email: values.email.trim(),
+        lastLoginAt: 0,
+        loginCount: 0,
+        projectCount: 0,
+      });
+    }
+    router.push("/admin/adherents");
+  }
+
+  function handleDeactivate() {
+    if (!adherentEmail) return;
+    adherentCollection.update(adherentEmail, (draft) => {
+      draft.status = "Suspendu";
+    });
+    router.push("/admin/adherents");
+  }
 
   return (
     <div className="space-y-6">
@@ -145,8 +187,14 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
                   type="email"
                   placeholder="prenom.nom@email.fr"
                   value={values.email}
+                  disabled={isEdit}
                   onChange={(e) => set("email", e.target.value)}
                 />
+                {isEdit && (
+                  <p className="text-muted-foreground text-xs">
+                    L'adresse email identifie le compte et ne peut pas être modifiée.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">
@@ -303,14 +351,16 @@ export function AdherentForm({ mode, defaultValues }: AdherentFormProps) {
 
           {/* Actions */}
           <div className="flex flex-col gap-2">
-            <Button className="w-full">{isEdit ? "Enregistrer les modifications" : "Créer le membre"}</Button>
+            <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
+              {isEdit ? "Enregistrer les modifications" : "Créer le membre"}
+            </Button>
             <Button variant="outline" className="w-full" asChild>
               <Link href="/admin/adherents">Annuler</Link>
             </Button>
             {isEdit && (
               <>
                 <Separator />
-                <Button variant="destructive" className="w-full">
+                <Button variant="destructive" className="w-full" onClick={handleDeactivate}>
                   Désactiver le compte
                 </Button>
               </>

@@ -119,7 +119,8 @@ function AdhesionBadge({ row }: { row: AdherentRow }) {
   );
 }
 
-export const adherentsColumns: ColumnDef<AdherentRow>[] = [
+export function getAdherentsColumns(onDeactivate: (email: string) => void): ColumnDef<AdherentRow>[] {
+  return [
   {
     id: "select",
     header: ({ table }) => (
@@ -240,7 +241,13 @@ export const adherentsColumns: ColumnDef<AdherentRow>[] = [
             <DropdownMenuItem>Renouveler l'adhésion</DropdownMenuItem>
             <DropdownMenuItem>Envoyer un email</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">Désactiver le compte</DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              disabled={row.original.status === "Suspendu"}
+              onClick={() => onDeactivate(row.original.email)}
+            >
+              Désactiver le compte
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -248,4 +255,5 @@ export const adherentsColumns: ColumnDef<AdherentRow>[] = [
     enableHiding: false,
     enableSorting: false,
   },
-];
+  ];
+}

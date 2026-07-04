@@ -1,18 +1,15 @@
-import { AdherentForm } from "../../_components/adherent-form";
+"use client";
 
-export default function ModifierAdherentPage() {
-  return (
-    <AdherentForm
-      mode="edit"
-      defaultValues={{
-        firstName: "Marie",
-        lastName: "Dupont",
-        email: "marie.dupont@gmail.com",
-        profileTypes: ["Administrateur", "Bénévole"],
-        status: "Actif",
-        source: "Manuel",
-        memberSince: "2020-01-10",
-      }}
-    />
-  );
+import { use } from "react";
+
+import dynamic from "next/dynamic";
+
+const AdherentEditView = dynamic(
+  () => import("../../_components/adherent-edit-view").then((m) => m.AdherentEditView),
+  { ssr: false },
+);
+
+export default function ModifierAdherentPage({ params }: { params: Promise<{ adherentId: string }> }) {
+  const { adherentId } = use(params);
+  return <AdherentEditView email={decodeURIComponent(adherentId)} />;
 }
