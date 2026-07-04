@@ -8,6 +8,7 @@ export type AdherentSource = "HelloAsso" | "Manuel" | "Import CSV";
 export type AdherentRow = {
   email: string;
   name: string;
+  phone?: string;
   profileTypes: AdherentProfileType[]; // un utilisateur peut cumuler plusieurs profils
   source: AdherentSource;
   status: AdherentStatus;
@@ -15,6 +16,7 @@ export type AdherentRow = {
   lastLoginAt: number; // minutes ago
   loginCount: number;
   projectCount: number;
+  notes?: string;
 };
 
 // Un compte membre n'implique pas forcément une adhésion payante en cours

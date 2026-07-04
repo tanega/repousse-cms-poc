@@ -5,6 +5,7 @@ import * as React from "react";
 
 import Link from "next/link";
 
+import { useLiveQuery } from "@tanstack/react-db";
 import {
   type ColumnFiltersState,
   getCoreRowModel,
@@ -23,11 +24,22 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { adherentsColumns } from "./adherents-columns";
+import { getAdherentsColumns } from "./adherents-columns";
 import { AdherentsTable } from "./adherents-table";
-import { type AdherentRow, filters } from "./data";
+import { adherentCollection } from "./collection";
+import { filters } from "./data";
 
-export function Adherents({ adherents }: { adherents: AdherentRow[] }) {
+export function Adherents() {
+  const { data: rows } = useLiveQuery(adherentCollection);
+  const adherents = React.useMemo(() => rows ?? [], [rows]);
+
+  const handleDeactivate = React.useCallback((email: string) => {
+    adherentCollection.update(email, (draft) => {
+      draft.status = "Suspendu";
+    });
+  }, []);
+  const adherentsColumns = React.useMemo(() => getAdherentsColumns(handleDeactivate), [handleDeactivate]);
+
   const [rowSelection, setRowSelection] = React.useState({});
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "memberSince", desc: true }]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
