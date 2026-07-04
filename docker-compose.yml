@@ -1,4 +1,15 @@
 services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+    ports:
+      - "${TRAEFIK_PORT:-80}:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -8,8 +19,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
@@ -18,14 +27,13 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    ports:
-      - "${MAILPIT_SMTP_PORT:-1025}:1025"
-      - "${MAILPIT_UI_PORT:-8025}:8025"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.mailpit.rule=Host(`mail.localhost`)
+      - traefik.http.services.mailpit.loadbalancer.server.port=8025
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -39,9 +47,10 @@ services:
       - CONFIG_FILE=/etc/hanko/config.yaml
     volumes:
       - ./hanko/config.yaml:/etc/hanko/config.yaml:ro
-    ports:
-      - "${HANKO_PUBLIC_PORT:-8000}:8000"
-      - "${HANKO_ADMIN_PORT:-8001}:8001"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hanko.rule=Host(`auth.localhost`)
+      - traefik.http.services.hanko.loadbalancer.server.port=8000
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,9 +78,11 @@ services:
       WEBAPP_URL: ${WEBAPP_URL:-http://localhost:3002}
       HELLOASSO_API_URL: ${HELLOASSO_API_URL:-}
       HELLOASSO_API_KEY: ${HELLOASSO_API_KEY:-}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:3001,http://localhost:3002}
-    ports:
-      - "${BACKEND_PORT:-4000}:4000"
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://www.localhost}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=Host(`api.localhost`)
+      - traefik.http.services.backend.loadbalancer.server.port=4000
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,8 +101,10 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
       NEXT_PUBLIC_HANKO_API_URL: ${NEXT_PUBLIC_HANKO_API_URL:-http://localhost:8000}
-    ports:
-      - "${WEBAPP_PORT:-3002}:3000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.webapp.rule=Host(`www.localhost`)
+      - traefik.http.services.webapp.loadbalancer.server.port=3000
     depends_on:
       - backend
       - hanko
