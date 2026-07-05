@@ -1,17 +1,14 @@
 defmodule RepousseWeb.Admin.TaxonEditorRouterGapTest do
   @moduledoc """
-  End-to-end (real router + real signed JWT) regression test documenting a
-  known architecture gap for epic-05: `Repousse.Taxa.Policy` allows a member
-  with `taxon_editor: true` to perform `:manage_taxa` actions, but every
-  `/admin/taxa*` route is declared under `pipe_through :admin`
-  (`RequireRolePlug role: :admin`), which only checks the platform-wide
-  `User.role` field and 403s *before* the controller (and therefore
-  Bodyguard) ever runs. A `taxon_editor` who isn't also a platform admin
-  currently cannot reach any taxa endpoint at all — including the ones
-  US-TAX-08/US-TAX-09 say they should be able to use (external links,
-  community resources). Fixing this needs a router change (splitting those
-  actions out from under the admin-only pipe, or relaxing
-  `RequireRolePlug`), which is out of scope here — see the final report.
+  End-to-end (real router + real signed JWT) regression test for epic-05
+  US-TAX-08/09: a member with `taxon_editor: true` (but no platform admin
+  role) must be able to reach `/admin/taxa*` mutation routes. This used to
+  be blocked by the router: those routes were declared under
+  `pipe_through :admin` (`RequireRolePlug role: :admin`), which only checks
+  the platform-wide `User.role` field and 403'd before the controller (and
+  therefore `Repousse.Taxa.Policy`, which does allow `taxon_editor`) ever
+  ran. Fixed by dropping the `:admin` pipe from this scope and relying on
+  each action's own `Bodyguard.permit(Taxa.Policy, :manage_taxa, ...)` check.
   """
   use RepousseWeb.ConnCase, async: false
 
@@ -19,7 +16,7 @@ defmodule RepousseWeb.Admin.TaxonEditorRouterGapTest do
 
   alias Repousse.TaxaAuthHelper
 
-  test "a taxon_editor who is not a platform admin is 403'd by the router before reaching Bodyguard" do
+  test "a taxon_editor who is not a platform admin reaches the controller through the router" do
     editor = insert(:user, role: :member, taxon_editor: true)
 
     conn =
@@ -28,7 +25,19 @@ defmodule RepousseWeb.Admin.TaxonEditorRouterGapTest do
       |> Plug.Conn.put_req_header("content-type", "application/json")
       |> post("/api/v1/admin/taxa/categories", %{"taxon_category" => %{"name" => "Grimpante"}})
 
-    assert conn.status == 403
+    assert conn.status == 201
+  end
+
+  test "a plain member (no taxon_editor, no admin) is still rejected by Bodyguard" do
+    member = insert(:user, role: :member, taxon_editor: false)
+
+    conn =
+      build_conn()
+      |> TaxaAuthHelper.put_jwt(member)
+      |> Plug.Conn.put_req_header("content-type", "application/json")
+      |> post("/api/v1/admin/taxa/categories", %{"taxon_category" => %{"name" => "Grimpante"}})
+
+    assert conn.status == 401
   end
 
   test "a platform admin reaches the controller through the same route" do
