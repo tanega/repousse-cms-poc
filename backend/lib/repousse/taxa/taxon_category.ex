@@ -5,6 +5,11 @@ defmodule Repousse.Taxa.TaxonCategory do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # Scalar-only, like `Repousse.Accounts.User` — `:taxa` is a has_many that
+  # isn't always preloaded, and Ecto raises if `Jason.Encoder` ever tries to
+  # serialize a `NotLoaded` association.
+  @derive {Jason.Encoder, only: [:id, :name, :slug, :inserted_at, :updated_at]}
+
   schema "taxon_categories" do
     field :name, :string
     field :slug, :string
@@ -25,9 +30,13 @@ defmodule Repousse.Taxa.TaxonCategory do
 
   defp generate_slug(changeset) do
     case get_change(changeset, :name) do
-      nil -> changeset
+      nil ->
+        changeset
+
       name ->
-        slug = name |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "-") |> String.trim("-")
+        slug =
+          name |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "-") |> String.trim("-")
+
         put_change(changeset, :slug, slug)
     end
   end
