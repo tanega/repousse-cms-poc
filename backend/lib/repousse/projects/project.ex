@@ -5,6 +5,25 @@ defmodule Repousse.Projects.Project do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :name,
+             :description,
+             :management_type,
+             :address,
+             :lat,
+             :lng,
+             :surface_m2,
+             :soil_type,
+             :publication_status,
+             :published_at,
+             :archived_at,
+             :owner_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "planting_projects" do
     field :name, :string
     field :description, :string
@@ -14,7 +33,11 @@ defmodule Repousse.Projects.Project do
     field :lng, :float
     field :surface_m2, :float
     field :soil_type, :string
-    field :publication_status, Ecto.Enum, values: [:private, :public, :unpublished], default: :private
+
+    field :publication_status, Ecto.Enum,
+      values: [:private, :public, :unpublished],
+      default: :private
+
     field :published_at, :utc_datetime
     field :archived_at, :utc_datetime
 
@@ -28,12 +51,30 @@ defmodule Repousse.Projects.Project do
     timestamps(type: :utc_datetime)
   end
 
+  @updatable_fields [
+    :name,
+    :description,
+    :management_type,
+    :address,
+    :lat,
+    :lng,
+    :surface_m2,
+    :soil_type,
+    :publication_status
+  ]
+
+  @doc "Regular admin/editor edit — owner_id is fixed at creation, not editable here."
   def changeset(project, attrs) do
     project
-    |> cast(attrs, [
-      :name, :description, :management_type, :address, :lat, :lng,
-      :surface_m2, :soil_type, :publication_status, :owner_id
-    ])
+    |> cast(attrs, @updatable_fields)
+    |> validate_required([:name])
+    |> validate_length(:name, min: 2, max: 200)
+  end
+
+  @doc "US-PROJET-01 creation: also requires and accepts owner_id."
+  def create_changeset(project, attrs) do
+    project
+    |> cast(attrs, @updatable_fields ++ [:owner_id])
     |> validate_required([:name, :owner_id])
     |> validate_length(:name, min: 2, max: 200)
   end
