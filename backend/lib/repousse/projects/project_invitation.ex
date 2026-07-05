@@ -5,6 +5,21 @@ defmodule Repousse.Projects.ProjectInvitation do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # :token is deliberately excluded — it's only ever delivered via the
+  # invitation email, never echoed back through a JSON response.
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :email,
+             :role,
+             :accepted_at,
+             :expires_at,
+             :project_id,
+             :invited_by_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "project_invitations" do
     field :email, :string
     field :role, Ecto.Enum, values: [:editor, :reader], default: :reader
@@ -36,7 +51,11 @@ defmodule Repousse.Projects.ProjectInvitation do
   end
 
   defp put_token(changeset) do
-    put_change(changeset, :token, Base.url_encode64(:crypto.strong_rand_bytes(32), padding: false))
+    put_change(
+      changeset,
+      :token,
+      Base.url_encode64(:crypto.strong_rand_bytes(32), padding: false)
+    )
   end
 
   defp put_expiry(changeset) do

@@ -5,11 +5,30 @@ defmodule Repousse.Distributions.WaitlistEntry do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # Associations are excluded: they're not always preloaded, and
+  # `Ecto.Association.NotLoaded` deliberately raises when JSON-encoded.
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :position,
+             :notified_at,
+             :notification_expires_at,
+             :status,
+             :user_id,
+             :event_id,
+             :taxon_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "waitlist_entries" do
     field :position, :integer
     field :notified_at, :utc_datetime
     field :notification_expires_at, :utc_datetime
-    field :status, Ecto.Enum, values: [:waiting, :notified, :expired, :converted], default: :waiting
+
+    field :status, Ecto.Enum,
+      values: [:waiting, :notified, :expired, :converted],
+      default: :waiting
 
     belongs_to :user, Repousse.Accounts.User
     belongs_to :event, Repousse.Distributions.Event

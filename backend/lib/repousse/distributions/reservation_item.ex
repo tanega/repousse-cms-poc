@@ -5,6 +5,21 @@ defmodule Repousse.Distributions.ReservationItem do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # Associations are excluded: `:taxon` belongs to another track's schema
+  # that doesn't derive Jason.Encoder yet, and `Ecto.Association.NotLoaded`
+  # deliberately raises when JSON-encoded regardless.
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :reserved_qty,
+             :distributed_qty,
+             :reservation_id,
+             :stock_id,
+             :taxon_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "reservation_items" do
     field :reserved_qty, :integer
     field :distributed_qty, :integer

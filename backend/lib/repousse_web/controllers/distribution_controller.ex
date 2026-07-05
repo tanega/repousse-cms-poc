@@ -1,46 +1,40 @@
 defmodule RepousseWeb.DistributionController do
+  @moduledoc """
+  Member-facing read access to distribution events (US-DIST-06). Management
+  actions (create/update/publish/close) live under
+  `RepousseWeb.Admin.DistributionController`, gated by the `:admin` role.
+  """
   use RepousseWeb, :controller
+  use OpenApiSpex.ControllerSpecs
   action_fallback RepousseWeb.FallbackController
 
+  alias OpenApiSpex.Schema
   alias Repousse.Distributions
+
+  tags(["distributions"])
+  security([%{"bearerAuth" => []}])
+
+  operation(:index,
+    summary: "List distribution events (US-DIST-06)",
+    responses: [ok: {"Distribution events", "application/json", %Schema{type: :object}}]
+  )
 
   def index(conn, _params) do
     events = Distributions.list_events()
     json(conn, %{data: events})
   end
 
+  operation(:show,
+    summary: "Consult a distribution event (US-DIST-06)",
+    parameters: [id: [in: :path, type: :string, required: true, description: "Event ID"]],
+    responses: [
+      ok: {"Distribution event", "application/json", %Schema{type: :object}},
+      not_found: {"Not found", "application/json", %Schema{type: :object}}
+    ]
+  )
+
   def show(conn, %{"id" => id}) do
     event = Distributions.get_event!(id)
     json(conn, %{data: event})
-  end
-
-  def create(conn, %{"event" => params}) do
-    with {:ok, event} <- Distributions.create_event(params) do
-      conn |> put_status(:created) |> json(%{data: event})
-    end
-  end
-
-  def update(conn, %{"id" => id, "event" => params}) do
-    event = Distributions.get_event!(id)
-
-    with {:ok, updated} <- Distributions.update_event(event, params) do
-      json(conn, %{data: updated})
-    end
-  end
-
-  def publish(conn, %{"id" => id}) do
-    event = Distributions.get_event!(id)
-
-    with {:ok, published} <- Distributions.publish_event(event) do
-      json(conn, %{data: published})
-    end
-  end
-
-  def close(conn, %{"id" => id}) do
-    event = Distributions.get_event!(id)
-
-    with {:ok, closed} <- Distributions.close_event(event) do
-      json(conn, %{data: closed})
-    end
   end
 end

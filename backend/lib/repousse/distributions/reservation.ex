@@ -5,6 +5,23 @@ defmodule Repousse.Distributions.Reservation do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # Associations are excluded: they're not always preloaded, and
+  # `Ecto.Association.NotLoaded` deliberately raises when JSON-encoded.
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :status,
+             :cancelled_at,
+             :validated_at,
+             :coordinator_note,
+             :user_id,
+             :slot_id,
+             :event_id,
+             :project_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "reservations" do
     field :status, Ecto.Enum,
       values: [:confirmed, :cancelled, :no_show, :validated],
@@ -27,7 +44,9 @@ defmodule Repousse.Distributions.Reservation do
     reservation
     |> cast(attrs, [:user_id, :slot_id, :event_id, :project_id])
     |> validate_required([:user_id, :slot_id, :event_id, :project_id])
-    |> unique_constraint([:user_id, :event_id], message: "already has a reservation for this event")
+    |> unique_constraint([:user_id, :event_id],
+      message: "already has a reservation for this event"
+    )
   end
 
   def cancel_changeset(reservation) do
