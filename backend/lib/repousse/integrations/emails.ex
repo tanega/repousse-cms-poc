@@ -38,7 +38,36 @@ defmodule Repousse.Integrations.Emails do
     |> Mailer.deliver()
   end
 
-  defp display_name(%User{first_name: first, last_name: last}) when is_binary(first) or is_binary(last) do
+  @doc """
+  Notifies a waitlisted adoptant that stock just freed up for the taxon
+  they're waiting on (epic-01 US-DIST-08), after a reservation cancellation
+  restored stock to the event's pool. Expects a `WaitlistEntry` preloaded
+  with `:user` and `:taxon`.
+  """
+  def notify_waitlist_stock_available(%Repousse.Distributions.WaitlistEntry{} = entry) do
+    new()
+    |> to({display_name(entry.user), entry.user.email})
+    |> from({"Repousse", "no-reply@repousse.org"})
+    |> subject(
+      "Des plants se sont libérés — #{entry.taxon.common_name || entry.taxon.scientific_name}"
+    )
+    |> text_body("""
+    Bonjour#{if entry.user.first_name, do: " #{entry.user.first_name}", else: ""},
+
+    Bonne nouvelle : des plants de #{entry.taxon.common_name || entry.taxon.scientific_name} viennent
+    de se libérer suite à une annulation, et vous êtes le prochain sur la
+    liste d'attente.
+
+    Rendez-vous sur votre espace Repousse pour confirmer votre réservation.
+
+    À bientôt,
+    L'équipe Repousse
+    """)
+    |> Mailer.deliver()
+  end
+
+  defp display_name(%User{first_name: first, last_name: last})
+       when is_binary(first) or is_binary(last) do
     [first, last] |> Enum.filter(& &1) |> Enum.join(" ")
   end
 
