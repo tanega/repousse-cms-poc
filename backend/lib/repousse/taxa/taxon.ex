@@ -5,6 +5,24 @@ defmodule Repousse.Taxa.Taxon do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # Scalar-only — associations (`:parent`, `:category`, `:children`,
+  # `:external_links`, ...) are preloaded inconsistently across call sites
+  # (list vs. show vs. create/update), and Ecto raises if `Jason.Encoder`
+  # ever tries to serialize a `NotLoaded` association.
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :scientific_name,
+             :common_name,
+             :taxonomic_level,
+             :is_non_taxonomic,
+             :notes,
+             :parent_id,
+             :category_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   @levels [:genus, :species, :variety]
 
   schema "taxa" do
@@ -17,7 +35,7 @@ defmodule Repousse.Taxa.Taxon do
     belongs_to :parent, Repousse.Taxa.Taxon
     belongs_to :category, Repousse.Taxa.TaxonCategory
     has_many :children, Repousse.Taxa.Taxon, foreign_key: :parent_id
-    has_many :external_links, Repousse.Taxa.TaxonExternalLink
+    has_many :external_links, Repousse.Taxa.TaxonExternalLink, on_replace: :delete
     has_many :versions, Repousse.Taxa.TaxonVersion
     has_many :distribution_stocks, Repousse.Distributions.Stock
     has_many :preferred_in_projects, Repousse.Projects.PreferredSpecies
@@ -27,12 +45,21 @@ defmodule Repousse.Taxa.Taxon do
 
   def changeset(taxon, attrs) do
     taxon
-    |> cast(attrs, [:scientific_name, :common_name, :taxonomic_level, :is_non_taxonomic, :notes, :parent_id, :category_id])
+    |> cast(attrs, [
+      :scientific_name,
+      :common_name,
+      :taxonomic_level,
+      :is_non_taxonomic,
+      :notes,
+      :parent_id,
+      :category_id
+    ])
     |> validate_required([:common_name])
     |> maybe_require_scientific_name()
     |> validate_length(:common_name, min: 1, max: 200)
     |> validate_parent_level()
     |> unique_constraint(:scientific_name)
+    |> cast_assoc(:external_links, with: &Repousse.Taxa.TaxonExternalLink.changeset/2)
   end
 
   def levels, do: @levels

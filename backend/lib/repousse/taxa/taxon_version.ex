@@ -5,6 +5,16 @@ defmodule Repousse.Taxa.TaxonVersion do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # Scalar-only, excluding `:taxon`/`:changed_by` — besides `:taxon` not
+  # always being preloaded, `Repousse.Accounts.User`'s own `@derive` lists
+  # `:profiles`, which isn't preloaded by `Taxa.list_versions/1`'s `:changed_by`
+  # preload either, so embedding the full user here would just move the same
+  # `NotLoaded` crash one level down. `:changed_by_id` is enough for callers
+  # to attribute the change; expose the author's name via a dedicated
+  # endpoint/preload later if needed.
+  @derive {Jason.Encoder,
+           only: [:id, :changes, :snapshot, :taxon_id, :changed_by_id, :inserted_at, :updated_at]}
+
   schema "taxon_versions" do
     field :changes, :map
     field :snapshot, :map

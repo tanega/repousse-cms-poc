@@ -75,9 +75,13 @@ defmodule RepousseWeb.Router do
     get "/taxa/:id", TaxonController, :show
     get "/taxa/categories", TaxonCategoryController, :index
 
+    # Not gated by the `:admin` pipeline: mutation actions here are
+    # authorized per-action by `Repousse.Taxa.Policy` (platform admin OR
+    # the narrower `taxon_editor` grant, epic-05 US-TAX-08/09 "Administrateur
+    # ou Éditeur taxons") — the blanket admin-role plug would otherwise
+    # reject a taxon_editor who isn't also a platform admin before the
+    # controller's own check ever runs.
     scope "/admin", Admin, as: :admin do
-      pipe_through :admin
-
       resources "/taxa", TaxonController, except: [:new, :edit]
       resources "/taxa/categories", TaxonCategoryController, except: [:new, :edit, :show]
       get "/taxa/:id/versions", TaxonController, :versions
