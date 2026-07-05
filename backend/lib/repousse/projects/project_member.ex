@@ -7,6 +7,9 @@ defmodule Repousse.Projects.ProjectMember do
 
   @roles [:admin, :editor, :reader]
 
+  @derive {Jason.Encoder,
+           only: [:id, :role, :joined_at, :project_id, :user_id, :inserted_at, :updated_at]}
+
   schema "project_members" do
     field :role, Ecto.Enum, values: @roles, default: :reader
     field :joined_at, :utc_datetime

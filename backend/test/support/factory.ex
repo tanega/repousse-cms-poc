@@ -3,7 +3,7 @@ defmodule Repousse.Factory do
 
   alias Repousse.Accounts.{User, UserProfile}
   alias Repousse.Distributions.{Event, Slot, Stock, Reservation, ReservationItem, WaitlistEntry}
-  alias Repousse.Projects.{Project, ProjectMember}
+  alias Repousse.Projects.{Project, ProjectMember, ProjectInvitation, JournalEntry, ProjectMedia}
   alias Repousse.Taxa.{TaxonCategory, Taxon}
 
   def user_factory do
@@ -120,6 +120,37 @@ defmodule Repousse.Factory do
       taxon: build(:taxon),
       position: 1,
       status: :waiting
+    }
+  end
+
+  def project_invitation_factory do
+    %ProjectInvitation{
+      project: build(:project),
+      invited_by: build(:user),
+      email: sequence(:invitation_email, &"invitee#{&1}@example.com"),
+      role: :reader,
+      token: Ecto.UUID.generate(),
+      expires_at: DateTime.utc_now() |> DateTime.add(7, :day) |> DateTime.truncate(:second)
+    }
+  end
+
+  def journal_entry_factory do
+    %JournalEntry{
+      project: build(:project),
+      author: build(:user),
+      content: "Plantation de 3 érables ce week-end."
+    }
+  end
+
+  def project_media_factory do
+    %ProjectMedia{
+      project: build(:project),
+      uploaded_by: build(:user),
+      file_type: "image",
+      mime_type: "image/jpeg",
+      url: sequence(:media_url, &"https://cdn.example.com/media-#{&1}.jpg"),
+      filename: sequence(:media_filename, &"photo-#{&1}.jpg"),
+      size_bytes: 1024
     }
   end
 end
