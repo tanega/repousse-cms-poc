@@ -5,6 +5,22 @@ defmodule Repousse.Distributions.Event do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # Associations are excluded: they're not always preloaded, and
+  # `Ecto.Association.NotLoaded` deliberately raises when JSON-encoded.
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :title,
+             :description,
+             :general_contact,
+             :image_url,
+             :slug,
+             :status,
+             :published_at,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "distribution_events" do
     field :title, :string
     field :description, :string

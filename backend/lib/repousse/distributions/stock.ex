@@ -5,6 +5,21 @@ defmodule Repousse.Distributions.Stock do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  # Associations are excluded: `:taxon` belongs to another track's schema
+  # that doesn't derive Jason.Encoder yet, and `Ecto.Association.NotLoaded`
+  # deliberately raises when JSON-encoded regardless.
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :quantity,
+             :quantity_unknown,
+             :reserved_quantity,
+             :event_id,
+             :taxon_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "distribution_stocks" do
     field :quantity, :integer
     field :quantity_unknown, :boolean, default: false

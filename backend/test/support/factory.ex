@@ -2,7 +2,7 @@ defmodule Repousse.Factory do
   use ExMachina.Ecto, repo: Repousse.Repo
 
   alias Repousse.Accounts.{User, UserProfile}
-  alias Repousse.Distributions.{Event, Slot, Stock, Reservation}
+  alias Repousse.Distributions.{Event, Slot, Stock, Reservation, ReservationItem, WaitlistEntry}
   alias Repousse.Projects.{Project, ProjectMember}
   alias Repousse.Taxa.{TaxonCategory, Taxon}
 
@@ -72,6 +72,54 @@ defmodule Repousse.Factory do
       project: build(:project),
       user: build(:user),
       role: :reader
+    }
+  end
+
+  def distribution_slot_factory do
+    %Slot{
+      event: build(:distribution_event),
+      location_name: sequence(:slot_location, &"Lieu #{&1}"),
+      date: Date.utc_today() |> Date.add(30),
+      start_time: ~T[09:00:00],
+      end_time: ~T[12:00:00]
+    }
+  end
+
+  def distribution_stock_factory do
+    %Stock{
+      event: build(:distribution_event),
+      taxon: build(:taxon),
+      quantity: 10,
+      reserved_quantity: 0
+    }
+  end
+
+  def reservation_factory do
+    %Reservation{
+      user: build(:user),
+      event: build(:distribution_event),
+      slot: build(:distribution_slot),
+      project: build(:project),
+      status: :confirmed
+    }
+  end
+
+  def reservation_item_factory do
+    %ReservationItem{
+      reservation: build(:reservation),
+      stock: build(:distribution_stock),
+      taxon: build(:taxon),
+      reserved_qty: 2
+    }
+  end
+
+  def waitlist_entry_factory do
+    %WaitlistEntry{
+      user: build(:user),
+      event: build(:distribution_event),
+      taxon: build(:taxon),
+      position: 1,
+      status: :waiting
     }
   end
 end
