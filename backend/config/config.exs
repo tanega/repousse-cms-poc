@@ -18,7 +18,19 @@ config :repousse, :hanko,
 
 config :repousse, Oban,
   repo: Repousse.Repo,
-  plugins: [Oban.Plugins.Pruner],
+  plugins: [
+    Oban.Plugins.Pruner,
+    {Oban.Plugins.Cron,
+     crontab: [
+       # epic-02 US-AUTH-03: "Batch planifié (fréquence recommandée : quotidienne)".
+       {"0 3 * * *", Repousse.Integrations.Workers.HelloassoSyncWorker},
+       # epic-02 US-AUTH-06: "Relance hebdomadaire". Must stay weekly, not
+       # daily — the worker's own eligibility query has no "last reminder
+       # sent at" timestamp, only a count cap (activation_sent_count < 4),
+       # so a daily trigger would send reminders daily instead of weekly.
+       {"0 9 * * 1", Repousse.Integrations.Workers.ActivationReminderWorker}
+     ]}
+  ],
   queues: [default: 10, helloasso: 2, email: 5]
 
 # NOTE: cors_plug reads its config flat off the `:cors_plug` app env
