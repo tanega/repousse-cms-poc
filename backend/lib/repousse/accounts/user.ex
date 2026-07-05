@@ -14,11 +14,15 @@ defmodule Repousse.Accounts.User do
              :membership_year,
              :adhesion_active,
              :status,
+             :role,
+             :taxon_editor,
              :last_seen_at,
              :profiles,
              :inserted_at,
              :updated_at
            ]}
+
+  @roles [:member, :admin, :superadmin]
 
   schema "users" do
     field :email, :string
@@ -28,6 +32,8 @@ defmodule Repousse.Accounts.User do
     field :membership_year, :integer
     field :adhesion_active, :boolean, default: false
     field :status, Ecto.Enum, values: [:active, :suspended], default: :active
+    field :role, Ecto.Enum, values: @roles, default: :member
+    field :taxon_editor, :boolean, default: false
     field :activation_sent_count, :integer, default: 0
     field :last_seen_at, :utc_datetime
 
@@ -41,7 +47,15 @@ defmodule Repousse.Accounts.User do
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :first_name, :last_name, :hanko_id, :membership_year, :adhesion_active, :status])
+    |> cast(attrs, [
+      :email,
+      :first_name,
+      :last_name,
+      :hanko_id,
+      :membership_year,
+      :adhesion_active,
+      :status
+    ])
     |> validate_required([:email])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
     |> unique_constraint(:email)
@@ -69,4 +83,20 @@ defmodule Repousse.Accounts.User do
     status = if suspended?, do: :suspended, else: :active
     change(user, status: status)
   end
+
+  # Deliberately separate from `changeset/2` so a generic profile/account
+  # update can never accidentally grant admin/superadmin — only callers that
+  # explicitly go through this path (gated by `Accounts.Policy` on the
+  # `:assign_role` action) can change it.
+  def role_changeset(user, role) when role in @roles do
+    user
+    |> change(role: role)
+    |> validate_inclusion(:role, @roles)
+  end
+
+  def taxon_editor_changeset(user, taxon_editor?) when is_boolean(taxon_editor?) do
+    change(user, taxon_editor: taxon_editor?)
+  end
+
+  def roles, do: @roles
 end

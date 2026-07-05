@@ -18,10 +18,11 @@ defmodule Repousse.Factory do
   end
 
   def admin_user_factory do
-    struct!(
-      user_factory(),
-      %{}
-    )
+    struct!(user_factory(), %{role: :admin})
+  end
+
+  def superadmin_user_factory do
+    struct!(user_factory(), %{role: :superadmin})
   end
 
   def user_profile_factory do
