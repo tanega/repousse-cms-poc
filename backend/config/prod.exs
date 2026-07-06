@@ -21,5 +21,10 @@ config :swoosh, local: false
 # Do not print debug messages in production
 config :logger, level: :info
 
+# This is a local POC stack (accessed via api.localhost, not a public
+# deploy) — keep Swagger UI, LiveDashboard, and the mailbox preview
+# available on the "prod" release too. Drop this before any real deploy.
+config :repousse, dev_routes: true
+
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.
