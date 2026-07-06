@@ -6,6 +6,7 @@ defmodule RepousseWeb.ProjectController do
   alias Repousse.Projects
   alias Repousse.Projects.Policy
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.{Project, ProjectInvitation, ProjectMedia, ProjectMember, JournalEntry}
 
   tags ["Projects"]
   security [%{"bearerAuth" => []}]
@@ -15,7 +16,7 @@ defmodule RepousseWeb.ProjectController do
     parameters: [
       public_only: [in: :query, type: :boolean, required: false, description: "Only return public projects"]
     ],
-    responses: [ok: API.list("Planting projects")]
+    responses: [ok: API.list(Project, "Planting projects")]
 
   def index(conn, params) do
     user_id = conn.assigns.current_user.id
@@ -27,7 +28,7 @@ defmodule RepousseWeb.ProjectController do
   operation :show,
     summary: "Get a planting project",
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
-    responses: [ok: API.object("Planting project")]
+    responses: [ok: API.object(Project, "Planting project")]
 
   def show(conn, %{"id" => id}) do
     project = Projects.get_project!(id)
@@ -37,7 +38,7 @@ defmodule RepousseWeb.ProjectController do
   operation :create,
     summary: "Create a planting project",
     request_body: {"Project attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created project")]
+    responses: [created: API.object(Project, "Created project")]
 
   def create(conn, %{"project" => params}) do
     user_id = conn.assigns.current_user.id
@@ -51,7 +52,7 @@ defmodule RepousseWeb.ProjectController do
     summary: "Update a planting project",
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
     request_body: {"Project attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated project")]
+    responses: [ok: API.object(Project, "Updated project")]
 
   def update(conn, %{"id" => id, "project" => params}) do
     project = Projects.get_project!(id)
@@ -64,7 +65,7 @@ defmodule RepousseWeb.ProjectController do
   operation :archive,
     summary: "Archive a planting project",
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
-    responses: [ok: API.object("Archived project")]
+    responses: [ok: API.object(Project, "Archived project")]
 
   def archive(conn, %{"id" => id}) do
     project = Projects.get_project!(id)
@@ -77,7 +78,7 @@ defmodule RepousseWeb.ProjectController do
   operation :members,
     summary: "List a project's members",
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
-    responses: [ok: API.list("Project members")]
+    responses: [ok: API.list(ProjectMember, "Project members")]
 
   def members(conn, %{"id" => id}) do
     project = Projects.get_project!(id)
@@ -93,7 +94,7 @@ defmodule RepousseWeb.ProjectController do
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
     request_body:
       {"Invitation attributes (email, role)", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created invitation")]
+    responses: [created: API.object(ProjectInvitation, "Created invitation")]
 
   def invite(conn, %{"id" => id, "invitation" => %{"email" => email} = params}) do
     project = Projects.get_project!(id)
@@ -113,7 +114,7 @@ defmodule RepousseWeb.ProjectController do
       user_id: [in: :path, type: :string, description: "User ID"]
     ],
     request_body: {"Member attributes (role)", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated member")]
+    responses: [ok: API.object(ProjectMember, "Updated member")]
 
   def update_member(conn, %{"id" => id, "user_id" => user_id, "member" => %{"role" => role}}) do
     project = Projects.get_project!(id)
@@ -148,7 +149,7 @@ defmodule RepousseWeb.ProjectController do
     summary: "Add a media item to a project",
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
     request_body: {"Media attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created media")]
+    responses: [created: API.object(ProjectMedia, "Created media")]
 
   def upload_media(conn, %{"id" => id, "media" => params}) do
     project = Projects.get_project!(id)
@@ -182,7 +183,7 @@ defmodule RepousseWeb.ProjectController do
   operation :journal,
     summary: "List a project's journal entries",
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
-    responses: [ok: API.list("Journal entries")]
+    responses: [ok: API.list(JournalEntry, "Journal entries")]
 
   def journal(conn, %{"id" => id}) do
     project = Projects.get_project!(id)
@@ -198,7 +199,7 @@ defmodule RepousseWeb.ProjectController do
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
     request_body:
       {"Journal entry attributes (content)", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created journal entry")]
+    responses: [created: API.object(JournalEntry, "Created journal entry")]
 
   def add_journal_entry(conn, %{"id" => id, "journal_entry" => params}) do
     project = Projects.get_project!(id)
@@ -218,7 +219,7 @@ defmodule RepousseWeb.ProjectController do
     ],
     request_body:
       {"Journal entry attributes (content)", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated journal entry")]
+    responses: [ok: API.object(JournalEntry, "Updated journal entry")]
 
   def update_journal_entry(conn, %{"entry_id" => entry_id, "journal_entry" => params}) do
     entry = Projects.get_journal_entry!(entry_id)
