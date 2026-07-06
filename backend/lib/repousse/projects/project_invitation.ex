@@ -5,6 +5,20 @@ defmodule Repousse.Projects.ProjectInvitation do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :email,
+             :role,
+             :token,
+             :project_id,
+             :invited_by_id,
+             :accepted_at,
+             :expires_at,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "project_invitations" do
     field :email, :string
     field :role, Ecto.Enum, values: [:editor, :reader], default: :reader

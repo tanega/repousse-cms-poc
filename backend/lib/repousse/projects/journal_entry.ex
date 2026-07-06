@@ -5,6 +5,9 @@ defmodule Repousse.Projects.JournalEntry do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [:id, :content, :edited_at, :project_id, :author_id, :inserted_at, :updated_at]}
+
   schema "journal_entries" do
     field :content, :string
     field :edited_at, :utc_datetime

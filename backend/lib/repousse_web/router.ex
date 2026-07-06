@@ -58,7 +58,7 @@ defmodule RepousseWeb.Router do
     get "/projects/:id", ProjectController, :show
     post "/projects", ProjectController, :create
     put "/projects/:id", ProjectController, :update
-    delete "/projects/:id", ProjectController, :delete
+    delete "/projects/:id", ProjectController, :archive
     get "/projects/:id/members", ProjectController, :members
     post "/projects/:id/invitations", ProjectController, :invite
     put "/projects/:id/members/:user_id", ProjectController, :update_member
@@ -136,6 +136,12 @@ defmodule RepousseWeb.Router do
 
       live_dashboard "/dashboard", metrics: RepousseWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+
+    scope "/api/v1" do
+      pipe_through :api
+
+      get "/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/v1/openapi"
     end
   end
 end

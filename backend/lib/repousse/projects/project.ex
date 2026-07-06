@@ -5,6 +5,25 @@ defmodule Repousse.Projects.Project do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :name,
+             :description,
+             :management_type,
+             :address,
+             :lat,
+             :lng,
+             :surface_m2,
+             :soil_type,
+             :publication_status,
+             :published_at,
+             :archived_at,
+             :owner_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "planting_projects" do
     field :name, :string
     field :description, :string
