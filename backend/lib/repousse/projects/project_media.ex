@@ -8,6 +8,22 @@ defmodule Repousse.Projects.ProjectMedia do
   @max_files_per_project 10
   @allowed_types ["image/jpeg", "image/png", "video/mp4", "video/webm", "application/pdf"]
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :file_type,
+             :mime_type,
+             :url,
+             :filename,
+             :title,
+             :caption,
+             :size_bytes,
+             :project_id,
+             :uploaded_by_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "project_media" do
     field :file_type, :string
     field :mime_type, :string

@@ -82,15 +82,44 @@ defmodule Repousse.Projects do
     )
   end
 
+  def list_members(project_id) do
+    Repo.all(
+      from pm in ProjectMember, where: pm.project_id == ^project_id, preload: [user: :profiles]
+    )
+  end
+
+  def get_member!(project_id, user_id) do
+    ProjectMember
+    |> Repo.get_by!(project_id: project_id, user_id: user_id)
+    |> Repo.preload(user: :profiles)
+  end
+
+  def update_member_role(%ProjectMember{} = member, role) do
+    case parse_role(role) do
+      {:ok, role} -> member |> ProjectMember.role_changeset(role) |> Repo.update()
+      :error -> {:error, "Invalid role"}
+    end
+  end
+
+  defp parse_role(role) when is_atom(role) do
+    if role in ProjectMember.roles(), do: {:ok, role}, else: :error
+  end
+
+  defp parse_role(role) when is_binary(role) do
+    Enum.find_value(ProjectMember.roles(), :error, fn valid ->
+      if Atom.to_string(valid) == role, do: {:ok, valid}
+    end)
+  end
+
   # --- Invitations ---
 
-  def create_invitation(project_id, email) do
+  def create_invitation(project_id, invited_by_id, email, role) do
     %ProjectInvitation{}
     |> ProjectInvitation.changeset(%{
       project_id: project_id,
+      invited_by_id: invited_by_id,
       email: email,
-      token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false),
-      expires_at: DateTime.add(DateTime.utc_now(), 7 * 24 * 3600, :second)
+      role: role
     })
     |> Repo.insert()
   end
@@ -105,9 +134,11 @@ defmodule Repousse.Projects do
     Repo.all(from j in JournalEntry, where: j.project_id == ^project_id, order_by: [desc: j.inserted_at])
   end
 
+  def get_journal_entry!(id), do: Repo.get!(JournalEntry, id)
+
   def create_journal_entry(project_id, author_id, attrs) do
     %JournalEntry{}
-    |> JournalEntry.changeset(Map.merge(attrs, %{project_id: project_id, author_id: author_id}))
+    |> JournalEntry.changeset(Map.merge(attrs, %{"project_id" => project_id, "author_id" => author_id}))
     |> Repo.insert()
   end
 
@@ -119,11 +150,21 @@ defmodule Repousse.Projects do
     end
   end
 
+  def delete_journal_entry(%JournalEntry{} = entry, author_id) do
+    if entry.author_id == author_id do
+      Repo.delete(entry)
+    else
+      {:error, :forbidden}
+    end
+  end
+
   # --- Media ---
 
   def list_project_media(project_id) do
     Repo.all(from m in ProjectMedia, where: m.project_id == ^project_id, order_by: m.position)
   end
+
+  def get_media!(id), do: Repo.get!(ProjectMedia, id)
 
   def add_media(project_id, uploader_id, attrs) do
     count = Repo.aggregate(from(m in ProjectMedia, where: m.project_id == ^project_id), :count)

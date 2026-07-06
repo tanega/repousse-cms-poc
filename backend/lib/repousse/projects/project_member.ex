@@ -5,6 +5,9 @@ defmodule Repousse.Projects.ProjectMember do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [:id, :role, :joined_at, :project_id, :user_id, :user, :inserted_at, :updated_at]}
+
   @roles [:admin, :editor, :reader]
 
   schema "project_members" do
