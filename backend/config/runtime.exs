@@ -88,11 +88,19 @@ if config_env() == :prod do
       """
 
   host = System.get_env("PHX_HOST") || "example.com"
+  # Behind a real deploy this is TLS-terminated upstream (https/443). The
+  # local Traefik stack has no TLS and serves everything on plain http/80,
+  # so docker-compose overrides these two — this is also what
+  # Server.from_endpoint/1 uses to build the OpenAPI spec's server URL,
+  # so a wrong value here is what makes Swagger UI's "Try it out" hit the
+  # wrong scheme/host.
+  url_scheme = System.get_env("PHX_URL_SCHEME", "https")
+  url_port = String.to_integer(System.get_env("PHX_URL_PORT", "443"))
 
   config :repousse, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :repousse, RepousseWeb.Endpoint,
-    url: [host: host, port: 443, scheme: "https"],
+    url: [host: host, port: url_port, scheme: url_scheme],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
