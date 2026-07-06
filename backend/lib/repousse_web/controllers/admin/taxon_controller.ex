@@ -5,6 +5,7 @@ defmodule RepousseWeb.Admin.TaxonController do
 
   alias Repousse.Taxa
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.{Taxon, TaxonVersion}
 
   tags ["Admin — Taxa"]
   security [%{"bearerAuth" => []}]
@@ -14,7 +15,7 @@ defmodule RepousseWeb.Admin.TaxonController do
     parameters: [
       q: [in: :query, type: :string, required: false, description: "Search query"]
     ],
-    responses: [ok: API.list("Taxa")]
+    responses: [ok: API.list(Taxon, "Taxa")]
 
   def index(conn, %{"q" => q}), do: json(conn, %{data: Taxa.search_taxa(q)})
   def index(conn, _params), do: json(conn, %{data: Taxa.list_taxa()})
@@ -22,14 +23,14 @@ defmodule RepousseWeb.Admin.TaxonController do
   operation :show,
     summary: "Get a taxon (admin)",
     parameters: [id: [in: :path, type: :string, description: "Taxon ID"]],
-    responses: [ok: API.object("Taxon")]
+    responses: [ok: API.object(Taxon, "Taxon")]
 
   def show(conn, %{"id" => id}), do: json(conn, %{data: Taxa.get_taxon!(id)})
 
   operation :create,
     summary: "Create a taxon (admin)",
     request_body: {"Taxon attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created taxon")]
+    responses: [created: API.object(Taxon, "Created taxon")]
 
   def create(conn, %{"taxon" => params}) do
     with {:ok, taxon} <- Taxa.create_taxon(params) do
@@ -41,7 +42,7 @@ defmodule RepousseWeb.Admin.TaxonController do
     summary: "Update a taxon (admin)",
     parameters: [id: [in: :path, type: :string, description: "Taxon ID"]],
     request_body: {"Taxon attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated taxon")]
+    responses: [ok: API.object(Taxon, "Updated taxon")]
 
   def update(conn, %{"id" => id, "taxon" => params}) do
     taxon = Taxa.get_taxon!(id)
@@ -62,7 +63,7 @@ defmodule RepousseWeb.Admin.TaxonController do
   operation :versions,
     summary: "List a taxon's version history (admin)",
     parameters: [id: [in: :path, type: :string, description: "Taxon ID"]],
-    responses: [ok: API.list("Taxon versions")]
+    responses: [ok: API.list(TaxonVersion, "Taxon versions")]
 
   def versions(conn, %{"id" => id}) do
     versions = Taxa.list_taxon_versions(id)
@@ -75,7 +76,7 @@ defmodule RepousseWeb.Admin.TaxonController do
       id: [in: :path, type: :string, description: "Taxon ID"],
       version_id: [in: :path, type: :string, description: "Taxon version ID"]
     ],
-    responses: [ok: API.object("Restored taxon")]
+    responses: [ok: API.object(Taxon, "Restored taxon")]
 
   def restore(conn, %{"version_id" => version_id}) do
     version = Repousse.Repo.get!(Repousse.Taxa.TaxonVersion, version_id)

@@ -5,13 +5,14 @@ defmodule RepousseWeb.TaxonCategoryController do
 
   alias Repousse.Taxa
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.TaxonCategory
 
   tags ["Taxa"]
   security [%{"bearerAuth" => []}]
 
   operation :index,
     summary: "List taxon categories",
-    responses: [ok: API.list("Taxon categories")]
+    responses: [ok: API.list(TaxonCategory, "Taxon categories")]
 
   def index(conn, _params) do
     categories = Taxa.list_taxon_categories()
@@ -21,7 +22,7 @@ defmodule RepousseWeb.TaxonCategoryController do
   operation :create,
     summary: "Create a taxon category",
     request_body: {"Taxon category attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created taxon category")]
+    responses: [created: API.object(TaxonCategory, "Created taxon category")]
 
   def create(conn, %{"taxon_category" => params}) do
     with {:ok, category} <- Taxa.create_taxon_category(params) do
@@ -33,7 +34,7 @@ defmodule RepousseWeb.TaxonCategoryController do
     summary: "Update a taxon category",
     parameters: [id: [in: :path, type: :string, description: "Taxon category ID"]],
     request_body: {"Taxon category attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated taxon category")]
+    responses: [ok: API.object(TaxonCategory, "Updated taxon category")]
 
   def update(conn, %{"id" => id, "taxon_category" => params}) do
     category = Taxa.get_taxon_category!(id)
