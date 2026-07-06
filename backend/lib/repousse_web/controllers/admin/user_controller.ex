@@ -6,6 +6,7 @@ defmodule RepousseWeb.Admin.UserController do
   alias Repousse.{Accounts, Repo}
   alias Repousse.Accounts.User
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.User, as: UserSchema
   import Ecto.Query
 
   tags ["Admin — Users"]
@@ -13,7 +14,7 @@ defmodule RepousseWeb.Admin.UserController do
 
   operation :index,
     summary: "List users (admin)",
-    responses: [ok: API.list("Users")]
+    responses: [ok: API.list(UserSchema, "Users")]
 
   def index(conn, _params) do
     users = Repo.all(from u in User, order_by: [desc: u.inserted_at])
@@ -23,7 +24,7 @@ defmodule RepousseWeb.Admin.UserController do
   operation :show,
     summary: "Get a user (admin)",
     parameters: [id: [in: :path, type: :string, description: "User ID"]],
-    responses: [ok: API.object("User")]
+    responses: [ok: API.object(UserSchema, "User")]
 
   def show(conn, %{"id" => id}) do
     user = Accounts.get_user!(id)
@@ -33,7 +34,7 @@ defmodule RepousseWeb.Admin.UserController do
   operation :create,
     summary: "Create a user (admin)",
     request_body: {"User attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created user")]
+    responses: [created: API.object(UserSchema, "Created user")]
 
   def create(conn, %{"user" => params}) do
     with {:ok, user} <- Accounts.create_user_with_hanko(params, is_verified: true) do
@@ -45,7 +46,7 @@ defmodule RepousseWeb.Admin.UserController do
     summary: "Update a user (admin)",
     parameters: [id: [in: :path, type: :string, description: "User ID"]],
     request_body: {"User attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated user")]
+    responses: [ok: API.object(UserSchema, "Updated user")]
 
   def update(conn, %{"id" => id, "user" => params}) do
     user = Accounts.get_user!(id)
@@ -65,7 +66,7 @@ defmodule RepousseWeb.Admin.UserController do
   operation :suspend,
     summary: "Suspend a user (admin)",
     parameters: [id: [in: :path, type: :string, description: "User ID"]],
-    responses: [ok: API.object("Suspended user")]
+    responses: [ok: API.object(UserSchema, "Suspended user")]
 
   def suspend(conn, %{"id" => id}) do
     user = Accounts.get_user!(id)
@@ -75,7 +76,7 @@ defmodule RepousseWeb.Admin.UserController do
   operation :activate,
     summary: "Activate a user (admin)",
     parameters: [id: [in: :path, type: :string, description: "User ID"]],
-    responses: [ok: API.object("Activated user")]
+    responses: [ok: API.object(UserSchema, "Activated user")]
 
   def activate(conn, %{"id" => id}) do
     user = Accounts.get_user!(id)

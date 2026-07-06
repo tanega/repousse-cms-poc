@@ -5,13 +5,14 @@ defmodule RepousseWeb.DistributionController do
 
   alias Repousse.Distributions
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.Event
 
   tags ["Distributions"]
   security [%{"bearerAuth" => []}]
 
   operation :index,
     summary: "List distribution events",
-    responses: [ok: API.list("Distribution events")]
+    responses: [ok: API.list(Event, "Distribution events")]
 
   def index(conn, _params) do
     events = Distributions.list_events()
@@ -21,7 +22,7 @@ defmodule RepousseWeb.DistributionController do
   operation :show,
     summary: "Get a distribution event",
     parameters: [id: [in: :path, type: :string, description: "Event ID"]],
-    responses: [ok: API.object("Distribution event")]
+    responses: [ok: API.object(Event, "Distribution event")]
 
   def show(conn, %{"id" => id}) do
     event = Distributions.get_event!(id)
@@ -31,7 +32,7 @@ defmodule RepousseWeb.DistributionController do
   operation :create,
     summary: "Create a distribution event",
     request_body: {"Event attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created event")]
+    responses: [created: API.object(Event, "Created event")]
 
   def create(conn, %{"event" => params}) do
     with {:ok, event} <- Distributions.create_event(params) do
@@ -43,7 +44,7 @@ defmodule RepousseWeb.DistributionController do
     summary: "Update a distribution event",
     parameters: [id: [in: :path, type: :string, description: "Event ID"]],
     request_body: {"Event attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated event")]
+    responses: [ok: API.object(Event, "Updated event")]
 
   def update(conn, %{"id" => id, "event" => params}) do
     event = Distributions.get_event!(id)
@@ -56,12 +57,12 @@ defmodule RepousseWeb.DistributionController do
   operation :publish,
     summary: "Publish a distribution event",
     parameters: [id: [in: :path, type: :string, description: "Event ID"]],
-    responses: [ok: API.object("Published event")]
+    responses: [ok: API.object(Event, "Published event")]
 
   def publish(conn, %{"id" => id}) do
     event = Distributions.get_event!(id)
 
-    with {:ok, published} <- Distributions.publish_event(event) do
+    with {:ok, %{event: published}} <- Distributions.publish_event(event) do
       json(conn, %{data: published})
     end
   end
@@ -69,7 +70,7 @@ defmodule RepousseWeb.DistributionController do
   operation :close,
     summary: "Close a distribution event",
     parameters: [id: [in: :path, type: :string, description: "Event ID"]],
-    responses: [ok: API.object("Closed event")]
+    responses: [ok: API.object(Event, "Closed event")]
 
   def close(conn, %{"id" => id}) do
     event = Distributions.get_event!(id)

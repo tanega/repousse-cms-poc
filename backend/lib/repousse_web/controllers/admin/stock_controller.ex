@@ -5,6 +5,7 @@ defmodule RepousseWeb.Admin.StockController do
 
   alias Repousse.Distributions
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.Stock
 
   tags ["Admin — Stocks"]
   security [%{"bearerAuth" => []}]
@@ -12,7 +13,7 @@ defmodule RepousseWeb.Admin.StockController do
   operation :index,
     summary: "List stocks for a distribution event (admin)",
     parameters: [distribution_id: [in: :path, type: :string, description: "Event ID"]],
-    responses: [ok: API.list("Stocks")]
+    responses: [ok: API.list(Stock, "Stocks")]
 
   def index(conn, %{"distribution_id" => event_id}) do
     stocks = Distributions.list_stocks(event_id)
@@ -23,7 +24,7 @@ defmodule RepousseWeb.Admin.StockController do
     summary: "Create a stock for a distribution event (admin)",
     parameters: [distribution_id: [in: :path, type: :string, description: "Event ID"]],
     request_body: {"Stock attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created stock")]
+    responses: [created: API.object(Stock, "Created stock")]
 
   def create(conn, %{"distribution_id" => event_id, "stock" => params}) do
     with {:ok, stock} <- Distributions.create_stock(Map.put(params, "event_id", event_id)) do
@@ -38,7 +39,7 @@ defmodule RepousseWeb.Admin.StockController do
       id: [in: :path, type: :string, description: "Stock ID"]
     ],
     request_body: {"Stock attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated stock")]
+    responses: [ok: API.object(Stock, "Updated stock")]
 
   def update(conn, %{"id" => id, "stock" => params}) do
     stock = Distributions.get_stock!(id)
