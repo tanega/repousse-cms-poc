@@ -137,5 +137,11 @@ defmodule RepousseWeb.Router do
       live_dashboard "/dashboard", metrics: RepousseWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+
+    scope "/api/v1" do
+      pipe_through :api
+
+      get "/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/v1/openapi"
+    end
   end
 end
