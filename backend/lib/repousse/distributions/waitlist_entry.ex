@@ -5,6 +5,20 @@ defmodule Repousse.Distributions.WaitlistEntry do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :position,
+             :notified_at,
+             :notification_expires_at,
+             :status,
+             :user_id,
+             :event_id,
+             :taxon_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "waitlist_entries" do
     field :position, :integer
     field :notified_at, :utc_datetime

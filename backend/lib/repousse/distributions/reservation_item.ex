@@ -5,6 +5,18 @@ defmodule Repousse.Distributions.ReservationItem do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :reserved_qty,
+             :distributed_qty,
+             :reservation_id,
+             :stock_id,
+             :taxon_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "reservation_items" do
     field :reserved_qty, :integer
     field :distributed_qty, :integer

@@ -5,6 +5,7 @@ defmodule RepousseWeb.Admin.SlotController do
 
   alias Repousse.Distributions
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.Slot
 
   tags ["Admin — Slots"]
   security [%{"bearerAuth" => []}]
@@ -12,7 +13,7 @@ defmodule RepousseWeb.Admin.SlotController do
   operation :index,
     summary: "List slots for a distribution event (admin)",
     parameters: [distribution_id: [in: :path, type: :string, description: "Event ID"]],
-    responses: [ok: API.list("Slots")]
+    responses: [ok: API.list(Slot, "Slots")]
 
   def index(conn, %{"distribution_id" => event_id}) do
     slots = Distributions.list_slots(event_id)
@@ -25,7 +26,7 @@ defmodule RepousseWeb.Admin.SlotController do
       distribution_id: [in: :path, type: :string, description: "Event ID"],
       id: [in: :path, type: :string, description: "Slot ID"]
     ],
-    responses: [ok: API.object("Slot")]
+    responses: [ok: API.object(Slot, "Slot")]
 
   def show(conn, %{"id" => id}) do
     json(conn, %{data: Distributions.get_slot!(id)})
@@ -35,7 +36,7 @@ defmodule RepousseWeb.Admin.SlotController do
     summary: "Create a slot for a distribution event (admin)",
     parameters: [distribution_id: [in: :path, type: :string, description: "Event ID"]],
     request_body: {"Slot attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created slot")]
+    responses: [created: API.object(Slot, "Created slot")]
 
   def create(conn, %{"distribution_id" => event_id, "slot" => params}) do
     with {:ok, slot} <- Distributions.create_slot(Map.put(params, "event_id", event_id)) do
@@ -50,7 +51,7 @@ defmodule RepousseWeb.Admin.SlotController do
       id: [in: :path, type: :string, description: "Slot ID"]
     ],
     request_body: {"Slot attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
-    responses: [ok: API.object("Updated slot")]
+    responses: [ok: API.object(Slot, "Updated slot")]
 
   def update(conn, %{"id" => id, "slot" => params}) do
     slot = Distributions.get_slot!(id)

@@ -5,6 +5,7 @@ defmodule RepousseWeb.WaitlistController do
 
   alias Repousse.Distributions
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.WaitlistEntry
 
   tags ["Waitlist"]
   security [%{"bearerAuth" => []}]
@@ -15,7 +16,7 @@ defmodule RepousseWeb.WaitlistController do
       id: [in: :path, type: :string, description: "Event ID"],
       taxon_id: [in: :query, type: :string, description: "Taxon ID"]
     ],
-    responses: [created: API.object("Waitlist entry")]
+    responses: [created: API.object(WaitlistEntry, "Waitlist entry")]
 
   def join(conn, %{"id" => event_id, "taxon_id" => taxon_id}) do
     user_id = conn.assigns.current_user.id

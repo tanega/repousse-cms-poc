@@ -5,6 +5,7 @@ defmodule RepousseWeb.ReservationController do
 
   alias Repousse.Distributions
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.Reservation
 
   tags ["Reservations"]
   security [%{"bearerAuth" => []}]
@@ -15,7 +16,7 @@ defmodule RepousseWeb.ReservationController do
     request_body:
       {"Reservation attributes (slot_id, event_id, project_id, items)", "application/json",
        %OpenApiSpex.Schema{type: :object}},
-    responses: [created: API.object("Created reservation")]
+    responses: [created: API.object(Reservation, "Created reservation")]
 
   def create(conn, %{"reservation" => %{"slot_id" => slot_id, "event_id" => event_id, "project_id" => project_id, "items" => items}}) do
     user = conn.assigns.current_user
@@ -32,7 +33,7 @@ defmodule RepousseWeb.ReservationController do
   operation :mine,
     summary: "Get the current user's reservation for a distribution event",
     parameters: [id: [in: :path, type: :string, description: "Event ID"]],
-    responses: [ok: API.object("Reservation")]
+    responses: [ok: API.object(Reservation, "Reservation")]
 
   def mine(conn, %{"id" => event_id}) do
     user_id = conn.assigns.current_user.id
@@ -46,7 +47,7 @@ defmodule RepousseWeb.ReservationController do
       distribution_id: [in: :path, type: :string, description: "Event ID"],
       id: [in: :path, type: :string, description: "Reservation ID"]
     ],
-    responses: [ok: API.object("Cancelled reservation"), forbidden: API.object("Not your reservation")]
+    responses: [ok: API.object(Reservation, "Cancelled reservation"), forbidden: API.object("Not your reservation")]
 
   def cancel(conn, %{"id" => id}) do
     reservation = Distributions.get_reservation!(id)

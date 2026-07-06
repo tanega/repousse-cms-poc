@@ -7,6 +7,20 @@ defmodule Repousse.Taxa.Taxon do
 
   @levels [:genus, :species, :variety]
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :scientific_name,
+             :common_name,
+             :taxonomic_level,
+             :is_non_taxonomic,
+             :notes,
+             :parent_id,
+             :category_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "taxa" do
     field :scientific_name, :string
     field :common_name, :string

@@ -5,6 +5,21 @@ defmodule Repousse.Distributions.Reservation do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :status,
+             :cancelled_at,
+             :validated_at,
+             :coordinator_note,
+             :user_id,
+             :slot_id,
+             :event_id,
+             :project_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "reservations" do
     field :status, Ecto.Enum,
       values: [:confirmed, :cancelled, :no_show, :validated],

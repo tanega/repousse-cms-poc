@@ -5,6 +5,7 @@ defmodule RepousseWeb.Admin.ReservationController do
 
   alias Repousse.Distributions
   alias RepousseWeb.OpenApiHelpers, as: API
+  alias RepousseWeb.Schemas.Reservation
 
   tags ["Admin — Reservations"]
   security [%{"bearerAuth" => []}]
@@ -15,7 +16,7 @@ defmodule RepousseWeb.Admin.ReservationController do
       distribution_id: [in: :path, type: :string, description: "Event ID"],
       reservation_id: [in: :path, type: :string, description: "Reservation ID"]
     ],
-    responses: [ok: API.object("Validated reservation")]
+    responses: [ok: API.object(Reservation, "Validated reservation")]
 
   def validate(conn, %{"reservation_id" => id}) do
     reservation = Distributions.get_reservation!(id)
