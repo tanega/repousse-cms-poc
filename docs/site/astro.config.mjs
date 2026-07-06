@@ -1,6 +1,11 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
+
+// Reachable from inside the `docs` container over the Compose network
+// (see docker-compose.yml). Override for local `npm run dev` outside Docker.
+const openApiSchemaUrl = process.env.OPENAPI_SCHEMA_URL ?? 'http://localhost:4000/api/v1/openapi';
 
 // https://astro.build/config
 export default defineConfig({
@@ -12,6 +17,15 @@ export default defineConfig({
 			locales: {
 				root: { label: 'Français', lang: 'fr' },
 			},
+			plugins: [
+				starlightOpenAPI([
+					{
+						base: 'api',
+						label: 'API',
+						schema: openApiSchemaUrl,
+					},
+				]),
+			],
 			sidebar: [
 				{
 					label: 'Vue d\'ensemble',
@@ -30,6 +44,7 @@ export default defineConfig({
 						{ label: 'EP-06 — Tableau de bord', slug: 'roadmap/ep-06-tableau-de-bord' },
 					],
 				},
+				...openAPISidebarGroups,
 			],
 		}),
 	],
