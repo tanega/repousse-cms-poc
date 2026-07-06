@@ -132,7 +132,13 @@ defmodule Repousse.Projects do
       {:error, :max_files_reached}
     else
       %ProjectMedia{}
-      |> ProjectMedia.changeset(Map.merge(attrs, %{project_id: project_id, uploader_id: uploader_id, position: count + 1}))
+      |> ProjectMedia.changeset(
+        Map.merge(attrs, %{
+          "project_id" => project_id,
+          "uploaded_by_id" => uploader_id,
+          "position" => count + 1
+        })
+      )
       |> Repo.insert()
     end
   end
