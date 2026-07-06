@@ -7,6 +7,8 @@ defmodule Repousse.Taxa.TaxonExternalLink do
 
   @known_sources ["Floriscope", "Wikipedia", "Wikidata", "Encyclopedia of Life", "DoPI", "GloBI", "Other"]
 
+  @derive {Jason.Encoder, only: [:id, :source_name, :url, :taxon_id, :inserted_at, :updated_at]}
+
   schema "taxon_external_links" do
     field :source_name, :string
     field :url, :string

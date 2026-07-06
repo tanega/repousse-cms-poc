@@ -5,6 +5,20 @@ defmodule Repousse.Distributions.Slot do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :location_name,
+             :address,
+             :date,
+             :start_time,
+             :end_time,
+             :contact,
+             :event_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   schema "distribution_slots" do
     field :location_name, :string
     field :address, :string
