@@ -5,6 +5,8 @@ defmodule Repousse.Taxa.TaxonCategory do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder, only: [:id, :name, :slug, :inserted_at, :updated_at]}
+
   schema "taxon_categories" do
     field :name, :string
     field :slug, :string

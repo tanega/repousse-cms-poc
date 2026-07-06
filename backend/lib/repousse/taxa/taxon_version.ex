@@ -5,6 +5,9 @@ defmodule Repousse.Taxa.TaxonVersion do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @derive {Jason.Encoder,
+           only: [:id, :changes, :snapshot, :taxon_id, :changed_by_id, :inserted_at, :updated_at]}
+
   schema "taxon_versions" do
     field :changes, :map
     field :snapshot, :map
