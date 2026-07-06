@@ -20,7 +20,9 @@ defmodule Repousse.AuthHelper do
   def sign(user, private_map) do
     claims = %{
       "sub" => user.hanko_id,
-      "email" => user.email,
+      # Real Hanko JWTs nest email as an object (address/is_primary/is_verified),
+      # not a plain string — LoadCurrentUserPlug matches on this shape.
+      "email" => %{"address" => user.email, "is_primary" => true, "is_verified" => true},
       "exp" => System.system_time(:second) + 3600
     }
 
