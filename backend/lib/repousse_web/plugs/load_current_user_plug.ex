@@ -8,7 +8,11 @@ defmodule RepousseWeb.Plugs.LoadCurrentUserPlug do
 
   def init(opts), do: opts
 
-  def call(%{assigns: %{hanko_claims: %{"sub" => hanko_id, "email" => email}}} = conn, _opts) do
+  def call(
+        %{assigns: %{hanko_claims: %{"sub" => hanko_id, "email" => %{"address" => email}}}} =
+          conn,
+        _opts
+      ) do
     user = Accounts.find_or_create_by_hanko_id!(hanko_id, email)
     assign(conn, :current_user, user)
   end
