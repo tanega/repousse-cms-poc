@@ -1,19 +1,39 @@
 defmodule RepousseWeb.TaxonCategoryController do
   use RepousseWeb, :controller
+  use OpenApiSpex.ControllerSpecs
   action_fallback RepousseWeb.FallbackController
 
   alias Repousse.Taxa
+  alias RepousseWeb.OpenApiHelpers, as: API
+
+  tags ["Taxa"]
+  security [%{"bearerAuth" => []}]
+
+  operation :index,
+    summary: "List taxon categories",
+    responses: [ok: API.list("Taxon categories")]
 
   def index(conn, _params) do
     categories = Taxa.list_taxon_categories()
     json(conn, %{data: categories})
   end
 
+  operation :create,
+    summary: "Create a taxon category",
+    request_body: {"Taxon category attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
+    responses: [created: API.object("Created taxon category")]
+
   def create(conn, %{"taxon_category" => params}) do
     with {:ok, category} <- Taxa.create_taxon_category(params) do
       conn |> put_status(:created) |> json(%{data: category})
     end
   end
+
+  operation :update,
+    summary: "Update a taxon category",
+    parameters: [id: [in: :path, type: :string, description: "Taxon category ID"]],
+    request_body: {"Taxon category attributes", "application/json", %OpenApiSpex.Schema{type: :object}},
+    responses: [ok: API.object("Updated taxon category")]
 
   def update(conn, %{"id" => id, "taxon_category" => params}) do
     category = Taxa.get_taxon_category!(id)
@@ -22,6 +42,11 @@ defmodule RepousseWeb.TaxonCategoryController do
       json(conn, %{data: updated})
     end
   end
+
+  operation :delete,
+    summary: "Delete a taxon category",
+    parameters: [id: [in: :path, type: :string, description: "Taxon category ID"]],
+    responses: [no_content: API.no_content()]
 
   def delete(conn, %{"id" => id}) do
     category = Taxa.get_taxon_category!(id)
