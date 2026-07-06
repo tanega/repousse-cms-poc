@@ -28,3 +28,7 @@ services:
   webapp:
     ports:
       - "${WEBAPP_PORT:-3002}:3000"
+
+  docs:
+    ports:
+      - "${DOCS_PORT:-4321}:4321"
