@@ -14,7 +14,7 @@ export function requireRole(user: CurrentUser | null, minRole: UserRole): Curren
     redirect("/auth/v2/login");
   }
   if (!hasMinRole(user.role, minRole)) {
-    redirect("/unauthorized");
+    redirect("/non-autorise");
   }
   return user;
 }
