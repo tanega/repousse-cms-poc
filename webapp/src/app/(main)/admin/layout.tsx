@@ -6,9 +6,9 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { rootUser } from "@/data/users";
 import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
 import { cn } from "@/lib/utils";
+import { getCurrentUserServer } from "@/server/current-user";
 import { getPreference } from "@/server/server-actions";
 
 import { AccountSwitcher } from "../dashboard/_components/sidebar/account-switcher";
@@ -17,8 +17,9 @@ import { SearchDialog } from "../dashboard/_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "../dashboard/_components/sidebar/theme-switcher";
 
 export default async function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
-  // Role guard — replace with real JWT/session role check when auth is wired
-  if (rootUser.role !== "administrateur") {
+  const user = await getCurrentUserServer();
+
+  if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
     redirect("/unauthorized");
   }
 
@@ -63,7 +64,17 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
             <div className="flex items-center gap-2">
               <LayoutControls />
               <ThemeSwitcher />
-              <AccountSwitcher users={[rootUser]} />
+              <AccountSwitcher
+                users={[
+                  {
+                    id: user.id,
+                    name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
+                    email: user.email,
+                    avatar: "",
+                    role: user.role,
+                  },
+                ]}
+              />
             </div>
           </div>
         </header>

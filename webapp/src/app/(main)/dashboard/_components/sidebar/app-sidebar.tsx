@@ -23,7 +23,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { APP_CONFIG } from "@/config/app-config";
-import { rootUser } from "@/data/users";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
@@ -75,9 +75,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       isSynced: s.isSynced,
     })),
   );
+  const { user } = useCurrentUser();
 
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
+
+  const navUser = {
+    name: user ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email : "",
+    email: user?.email ?? "",
+    avatar: "",
+  };
 
   return (
     <Sidebar {...props} variant={variant} collapsible={collapsible}>
@@ -101,7 +108,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={rootUser} />
+        <NavUser user={navUser} />
       </SidebarFooter>
     </Sidebar>
   );

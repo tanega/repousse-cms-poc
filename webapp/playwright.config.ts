@@ -10,7 +10,9 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // Real passcode login for admin-page specs — see e2e/auth.setup.ts.
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, dependencies: ["setup"] },
   ],
   webServer: {
     command: "npm run dev",
