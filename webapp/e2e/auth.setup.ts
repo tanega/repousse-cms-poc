@@ -3,7 +3,7 @@ import { expect, test as setup } from "@playwright/test";
 // Runs once before the admin-page specs. The admin role gate
 // (admin/layout.tsx) now calls the real backend GET /api/v1/me — a dummy
 // "hanko" cookie value (the old convention used elsewhere, see
-// especes-vegetales.spec.ts) gets a 401 and redirects to /unauthorized. This
+// especes-vegetales.spec.ts) gets a 401 and redirects to /non-autorise. This
 // does a real passcode login as the seeded superadmin and saves the session
 // so admin specs can reuse it via `test.use({ storageState: ADMIN_AUTH_FILE })`.
 const ADMIN_AUTH_FILE = "e2e/.auth/admin.json";

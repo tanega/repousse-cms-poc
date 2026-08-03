@@ -112,6 +112,6 @@ test.describe("Real authenticated user — profile display and edit", () => {
     await loginViaPasscode(page, "lecteur@repousse.local");
 
     await page.goto("/admin");
-    await expect(page).toHaveURL(/\/unauthorized/);
+    await expect(page).toHaveURL(/\/non-autorise/);
   });
 });
