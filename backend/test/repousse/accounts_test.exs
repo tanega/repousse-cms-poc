@@ -5,6 +5,41 @@ defmodule Repousse.AccountsTest do
 
   alias Repousse.Accounts
 
+  describe "find_or_create_by_hanko_id!/2" do
+    test "claims an existing ghost user (no hanko_id) by email instead of crashing" do
+      ghost = insert(:user, hanko_id: nil, email: "ghost@example.com")
+
+      user = Accounts.find_or_create_by_hanko_id!("new-hanko-id", "ghost@example.com")
+
+      assert user.id == ghost.id
+      assert user.hanko_id == "new-hanko-id"
+    end
+
+    test "creates a brand new user when neither hanko_id nor email match" do
+      user = Accounts.find_or_create_by_hanko_id!("fresh-hanko-id", "brand-new@example.com")
+
+      assert user.hanko_id == "fresh-hanko-id"
+      assert user.email == "brand-new@example.com"
+    end
+
+    test "updates last_seen_at when the hanko_id already matches a user" do
+      existing = insert(:user, hanko_id: "known-hanko-id", last_seen_at: nil)
+
+      user = Accounts.find_or_create_by_hanko_id!("known-hanko-id", existing.email)
+
+      assert user.id == existing.id
+      assert user.last_seen_at != nil
+    end
+
+    test "raises if the email is already linked to a different hanko_id" do
+      insert(:user, hanko_id: "other-hanko-id", email: "taken@example.com")
+
+      assert_raise RuntimeError, ~r/already linked to a different hanko_id/, fn ->
+        Accounts.find_or_create_by_hanko_id!("new-hanko-id", "taken@example.com")
+      end
+    end
+  end
+
   describe "has_role?/2" do
     test "superadmin satisfies both :admin and :superadmin checks" do
       user = build(:user, role: :superadmin)

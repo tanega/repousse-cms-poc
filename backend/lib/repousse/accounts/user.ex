@@ -54,7 +54,8 @@ defmodule Repousse.Accounts.User do
       :hanko_id,
       :membership_year,
       :adhesion_active,
-      :status
+      :status,
+      :last_seen_at
     ])
     |> validate_required([:email])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
