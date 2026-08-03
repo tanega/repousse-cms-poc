@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { requireRole } from "@/lib/auth/require-role";
@@ -18,7 +17,7 @@ import { SearchDialog } from "../dashboard/_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "../dashboard/_components/sidebar/theme-switcher";
 
 export default async function MembresLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const user = requireRole(await getCurrentUserServer(), "member");
+  requireRole(await getCurrentUserServer(), "member");
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
   const [variant, collapsible] = await Promise.all([
@@ -60,17 +59,7 @@ export default async function MembresLayout({ children }: Readonly<{ children: R
             <div className="flex items-center gap-2">
               <LayoutControls />
               <ThemeSwitcher />
-              <AccountSwitcher
-                users={[
-                  {
-                    id: user.id,
-                    name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
-                    email: user.email,
-                    avatar: "",
-                    role: user.role,
-                  },
-                ]}
-              />
+              <AccountSwitcher />
             </div>
           </div>
         </header>

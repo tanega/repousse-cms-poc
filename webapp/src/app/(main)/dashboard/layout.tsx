@@ -22,7 +22,7 @@ import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
-  const user = requireRole(await getCurrentUserServer(), "member");
+  requireRole(await getCurrentUserServer(), "member");
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
   const [variant, collapsible] = await Promise.all([
@@ -80,17 +80,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
                   <SimpleIcon icon={siGithub} className="fill-primary-foreground" />
                 </Link>
               </Button>
-              <AccountSwitcher
-                users={[
-                  {
-                    id: user.id,
-                    name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
-                    email: user.email,
-                    avatar: "",
-                    role: user.role,
-                  },
-                ]}
-              />
+              <AccountSwitcher />
             </div>
           </div>
         </header>
