@@ -49,16 +49,18 @@ async function loginViaPasscode(page: Page, email: string) {
     if (code) break;
   }
   expect(code, "OTP email never arrived at Mailpit").not.toBeNull();
+  if (!code) throw new Error("unreachable — asserted above");
 
   // Real keystrokes (not .fill()) so the digit-box component's own
   // paste/auto-advance handling places each character correctly.
   await firstDigit.click();
-  await page.keyboard.type(code!, { delay: 50 });
+  await page.keyboard.type(code, { delay: 50 });
 
   // Some flows auto-submit on the 6th digit, others need an explicit click.
   const continueButton = hankoAuth.locator("button[type='submit'], button").filter({ hasText: /continuer|continue/i });
   if ((await continueButton.count()) > 0 && (await continueButton.first().isVisible())) {
-    await continueButton.first().click().catch(() => {});
+    // Some flows have already auto-submitted by the time we get here.
+    await continueButton.first().click().catch(() => undefined);
   }
 
   // An optional onboarding step (e.g. "add a passkey") may appear before the
@@ -68,7 +70,8 @@ async function loginViaPasscode(page: Page, email: string) {
     await page.waitForTimeout(1000);
     const passer = hankoAuth.getByText("Passer", { exact: true });
     if ((await passer.count()) > 0) {
-      await passer.click({ force: true }).catch(() => {});
+      // The button can detach mid-click if the session finishes right then.
+      await passer.click({ force: true }).catch(() => undefined);
     }
   }
 
@@ -92,20 +95,24 @@ test.describe("Real authenticated user — profile display and edit", () => {
 
     // Settings: edit the first name, save, reload, confirm it persisted server-side.
     await page.goto("/membres/me/settings");
-    const firstNameInput = page.locator("#first-name");
+    const firstNameInput = page.locator("#first_name");
     await expect(firstNameInput).toHaveValue("Super");
 
     await firstNameInput.fill("SuperE2E");
     await page.getByRole("button", { name: "Mettre à jour le compte" }).click();
-    await expect(page.getByText("Enregistré.")).toBeVisible();
+    await expect(page.getByText("Profil mis à jour.")).toBeVisible();
+
+    // Sidebar and header must reflect the new name immediately — no reload —
+    // this is the regression check for the cross-component desync bug.
+    await expect(page.getByText("SuperE2E Admin")).toBeVisible();
 
     await page.reload();
-    await expect(page.locator("#first-name")).toHaveValue("SuperE2E");
+    await expect(page.locator("#first_name")).toHaveValue("SuperE2E");
 
     // Restore the seed value so re-runs stay idempotent.
-    await page.locator("#first-name").fill("Super");
+    await page.locator("#first_name").fill("Super");
     await page.getByRole("button", { name: "Mettre à jour le compte" }).click();
-    await expect(page.getByText("Enregistré.")).toBeVisible();
+    await expect(page.getByText("Profil mis à jour.")).toBeVisible();
   });
 
   test("non-admin member is redirected away from /admin", async ({ page }) => {
