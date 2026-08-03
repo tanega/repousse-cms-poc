@@ -2,22 +2,32 @@
 
 import { useEffect, useState } from "react";
 
+import { useForm } from "@tanstack/react-form";
 import { Bell, CircleUser, Home, Layers, Settings2, TreePine, Users } from "lucide-react";
+import { toast } from "sonner";
+import * as z from "zod";
 
 import { updateCurrentUser } from "@/lib/api/me";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
 import type { EngagementProfileId } from "@/lib/engagement/use-engagement-profiles";
+import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+
+const accountFormSchema = z.object({
+  first_name: z.string().trim().min(1, "Le prénom est requis"),
+  last_name: z.string().trim().min(1, "Le nom est requis"),
+});
 
 type SettingsTab = "account" | "profile" | "engagements" | "notifications";
 
@@ -86,28 +96,27 @@ function SectionHeader({ title, description }: { title: string; description: str
 }
 
 function AccountSection() {
-  const { user, isLoading, refetch } = useCurrentUser();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const { user, isLoading } = useCurrentUser();
+
+  const form = useForm({
+    defaultValues: { first_name: "", last_name: "" },
+    validators: { onChange: accountFormSchema },
+    onSubmit: async ({ value }) => {
+      try {
+        const updated = await updateCurrentUser(value);
+        useCurrentUserStore.getState().setUser(updated);
+        toast.success("Profil mis à jour.");
+      } catch {
+        toast.error("Échec de l'enregistrement.");
+      }
+    },
+  });
 
   useEffect(() => {
     if (user) {
-      setFirstName(user.first_name ?? "");
-      setLastName(user.last_name ?? "");
+      form.reset({ first_name: user.first_name ?? "", last_name: user.last_name ?? "" });
     }
-  }, [user]);
-
-  async function handleSave() {
-    setStatus("saving");
-    try {
-      await updateCurrentUser({ first_name: firstName, last_name: lastName });
-      await refetch();
-      setStatus("saved");
-    } catch {
-      setStatus("error");
-    }
-  }
+  }, [user, form.reset]);
 
   return (
     <div>
@@ -115,45 +124,75 @@ function AccountSection() {
         title="Compte"
         description="Mettez à jour les paramètres de votre compte."
       />
-      <div className="space-y-5 max-w-lg">
-        <div className="space-y-2">
-          <Label htmlFor="first-name">Prénom</Label>
-          <Input
-            id="first-name"
-            placeholder="Votre prénom"
-            value={firstName}
-            disabled={isLoading}
-            onChange={(e) => setFirstName(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="last-name">Nom</Label>
-          <Input
-            id="last-name"
-            placeholder="Votre nom"
-            value={lastName}
-            disabled={isLoading}
-            onChange={(e) => setLastName(e.target.value)}
-          />
-          <p className="text-muted-foreground text-xs">
-            Ce nom sera affiché sur votre profil et dans les communications.
-          </p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={user?.email ?? ""} disabled />
-          <p className="text-muted-foreground text-xs">
-            Contactez un administrateur pour modifier votre email.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={handleSave} disabled={isLoading || status === "saving"}>
-            {status === "saving" ? "Enregistrement…" : "Mettre à jour le compte"}
-          </Button>
-          {status === "saved" && <span className="text-emerald-600 text-sm dark:text-emerald-400">Enregistré.</span>}
-          {status === "error" && <span className="text-destructive text-sm">Échec de l'enregistrement.</span>}
-        </div>
-      </div>
+      <form
+        className="space-y-5 max-w-lg"
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
+        <FieldGroup>
+          <form.Field name="first_name">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Prénom</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    placeholder="Votre prénom"
+                    value={field.state.value}
+                    disabled={isLoading}
+                    aria-invalid={isInvalid}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          </form.Field>
+          <form.Field name="last_name">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Nom</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    placeholder="Votre nom"
+                    value={field.state.value}
+                    disabled={isLoading}
+                    aria-invalid={isInvalid}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  <p className="text-muted-foreground text-xs">
+                    Ce nom sera affiché sur votre profil et dans les communications.
+                  </p>
+                </Field>
+              );
+            }}
+          </form.Field>
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <Input id="email" type="email" value={user?.email ?? ""} disabled />
+            <p className="text-muted-foreground text-xs">
+              Contactez un administrateur pour modifier votre email.
+            </p>
+          </Field>
+        </FieldGroup>
+        <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
+          {([canSubmit, isSubmitting]) => (
+            <Button type="submit" disabled={isLoading || !canSubmit || isSubmitting}>
+              {isSubmitting ? "Enregistrement…" : "Mettre à jour le compte"}
+            </Button>
+          )}
+        </form.Subscribe>
+      </form>
     </div>
   );
 }
