@@ -14,6 +14,7 @@ import csv
 import difflib
 import re
 import unicodedata
+from collections import Counter
 from pathlib import Path
 
 import openpyxl
@@ -123,6 +124,41 @@ def clean_email(raw):
     if EMAIL_RE.match(swapped):
         return swapped
     return None
+
+
+def normalize_phone(value):
+    if not value:
+        return ""
+    digits = re.sub(r"\D", "", str(value))
+    return digits[-9:] if digits else ""
+
+
+def summarize_phone(phones):
+    """Picks a representative phone number and a confidence level.
+
+    Some campaigns have a copy-paste/fill-handle bug where the phone
+    increments by 1 on every extra species line for the same person
+    (789912516, 789912517, 789912518...) instead of repeating the real
+    number — seen on ~70 beneficiaries, not just one or two. Detected as 3+
+    normalized values forming a consecutive run.
+
+    Confidence:
+      high   - no broken-sequence pattern detected
+      medium - broken sequence, but one value repeats (>=2) -> likely real
+      low    - broken sequence, all values distinct -> no way to tell which
+               one (if any) is real; the pick is an arbitrary placeholder
+    """
+    if not phones:
+        return "", "high"
+    norm_digits = sorted({int(normalize_phone(p)) for p in phones if normalize_phone(p).isdigit()})
+    is_broken = len(norm_digits) >= 3 and all(b - a == 1 for a, b in zip(norm_digits, norm_digits[1:]))
+    if not is_broken:
+        return phones[0], "high"
+
+    counts = Counter(normalize_phone(p) for p in phones)
+    best_norm, best_count = counts.most_common(1)[0]
+    representative = next(p for p in phones if normalize_phone(p) == best_norm)
+    return representative, ("medium" if best_count >= 2 else "low")
 
 
 def as_int(value):
@@ -235,16 +271,6 @@ def main():
     with_email = [r for r in dist_rows if r["email"]]
     without_email = [r for r in dist_rows if not r["email"]]
 
-    write_csv(
-        OUT / "no_email_beneficiaries.csv",
-        [
-            "annee", "beneficiaire_type", "code_distribution", "cp", "departement",
-            "ville", "nom_prenom", "email", "telephone", "racines_nues", "nombre",
-            "espece_raw", "typologie",
-        ],
-        without_email,
-    )
-
     # ---- users.csv + planting_projects.csv (one row per unique email) ----
     by_email = {}
     for r in with_email:
@@ -255,7 +281,8 @@ def main():
         first = records[0]
         temp_id = f"U{idx:04d}"
         first_name, last_name, needs_review = split_name(first["nom_prenom"], first["beneficiaire_type"])
-        phones = {str(r["telephone"]) for r in records if r["telephone"]}
+        phones = [str(r["telephone"]) for r in records if r["telephone"]]
+        phone, phone_confidence = summarize_phone(phones)
         users.append(
             {
                 "temp_id": temp_id,
@@ -263,7 +290,8 @@ def main():
                 "first_name": first_name,
                 "last_name": last_name,
                 "full_name_raw": first["nom_prenom"],
-                "phone": next(iter(phones), ""),
+                "phone": phone,
+                "telephone_confidence": phone_confidence,
                 "hanko_id": "",
                 "status": "active",
                 "role": "member",
@@ -294,8 +322,8 @@ def main():
         OUT / "users.csv",
         [
             "temp_id", "email", "first_name", "last_name", "full_name_raw",
-            "phone", "hanko_id", "status", "role", "adhesion_active",
-            "needs_name_review",
+            "phone", "telephone_confidence", "hanko_id", "status", "role",
+            "adhesion_active", "needs_name_review",
         ],
         users,
     )
@@ -331,6 +359,64 @@ def main():
         ],
     )
 
+    # ---- recover no-email rows that share a phone or exact name with a
+    # known user (their email is on a different distribution line) ----
+    phone_owners, name_owners = {}, {}
+    for u in users:
+        # skip "low" confidence phones: an arbitrary pick among an all-distinct
+        # broken sequence, matching on it would be a coincidence, not a signal
+        if u["telephone_confidence"] != "low":
+            pn = normalize_phone(u["phone"])
+            if pn:
+                phone_owners.setdefault(pn, set()).add(u["temp_id"])
+        nn = normalize(u["full_name_raw"])
+        name_owners.setdefault(nn, set()).add(u["temp_id"])
+    phone_owners = {p: next(iter(ids)) for p, ids in phone_owners.items() if len(ids) == 1}
+    name_owners = {n: next(iter(ids)) for n, ids in name_owners.items() if len(ids) == 1}
+
+    recovered, unrecoverable = [], []
+    for r in without_email:
+        pn = normalize_phone(r["telephone"])
+        nn = normalize(r["nom_prenom"])
+        temp_id = phone_owners.get(pn) or name_owners.get(nn)
+        if temp_id:
+            recovered.append((r, temp_id, "telephone" if pn in phone_owners else "nom_exact"))
+        else:
+            unrecoverable.append(r)
+
+    # ---- no_email_beneficiaries.csv: one row per remaining person, not
+    # per distribution line, so the association has an actual contact list ----
+    by_person = {}
+    for r in unrecoverable:
+        key = normalize(r["nom_prenom"])
+        person = by_person.setdefault(key, {"rows": [], "phones": set()})
+        person["rows"].append(r)
+        if r["telephone"]:
+            person["phones"].add(str(r["telephone"]))
+
+    no_email_out = []
+    for key, group in sorted(by_person.items()):
+        rows = group["rows"]
+        first = rows[0]
+        villes = {r["ville"] for r in rows if r["ville"]}
+        especes = [f"{r['espece_raw'] or r['typologie']} x{r['nombre'] or '?'}" for r in rows]
+        _, phone_confidence = summarize_phone(list(group["phones"]))
+        no_email_out.append(
+            {
+                "nom_prenom": first["nom_prenom"],
+                "telephones": "|".join(sorted(group["phones"])),
+                "telephone_confidence": phone_confidence,
+                "ville": "|".join(sorted(villes)),
+                "n_lignes": len(rows),
+                "especes_qty": "; ".join(especes),
+            }
+        )
+    write_csv(
+        OUT / "no_email_beneficiaries.csv",
+        ["nom_prenom", "telephones", "telephone_confidence", "ville", "n_lignes", "especes_qty"],
+        no_email_out,
+    )
+
     # ---- distribution_records.csv (flat staging, one row per source line) ----
     email_to_temp = {u["email"]: u["temp_id"] for u in users}
     records_out = []
@@ -339,6 +425,20 @@ def main():
         records_out.append(
             {
                 "user_temp_id": email_to_temp[r["email"]],
+                "annee": r["annee"],
+                "code_distribution": r["code_distribution"] or "",
+                "typologie": r["typologie"],
+                "espece_raw": r["espece_raw"] or "",
+                "espece_matched": matched or "",
+                "racines_nues": r["racines_nues"] or "",
+                "nombre": r["nombre"] or "",
+            }
+        )
+    for r, temp_id, _method in recovered:
+        matched, method, score = resolve_species(r["espece_raw"])
+        records_out.append(
+            {
+                "user_temp_id": temp_id,
                 "annee": r["annee"],
                 "code_distribution": r["code_distribution"] or "",
                 "typologie": r["typologie"],
@@ -360,12 +460,16 @@ def main():
     # ---- report ----
     review_count = sum(1 for m in mapping_rows if m["needs_review"])
     name_review_count = sum(1 for u in users if u["needs_name_review"])
+    users_medium = sum(1 for u in users if u["telephone_confidence"] == "medium")
+    users_low = sum(1 for u in users if u["telephone_confidence"] == "low")
     print()
     print("=== rapport ===")
     print(f"taxa reference        : {len(taxa)}")
     print(f"especes brutes        : {len(raw_species)} ({review_count} a valider)")
     print(f"utilisateurs (email)  : {len(users)} ({name_review_count} noms a verifier)")
-    print(f"lignes sans email     : {len(without_email)}")
+    print(f"telephones fiabilite  : {users_medium} moyenne (majorite trouvee), {users_low} basse (pick arbitraire)")
+    print(f"lignes sans email     : {len(without_email)} dont {len(recovered)} recuperees (tel/nom deja connu)")
+    print(f"personnes a contacter  : {len(no_email_out)}")
     print(f"projets               : {len(projects)}")
     print(f"campagnes (evenements): {len(events)}")
     print(f"lignes distribution   : {len(records_out)}")

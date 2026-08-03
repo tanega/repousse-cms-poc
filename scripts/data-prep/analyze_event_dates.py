@@ -27,7 +27,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RECORDS = ROOT / "data" / "prepared" / "distribution_records.csv"
-NO_EMAIL = ROOT / "data" / "prepared" / "no_email_beneficiaries.csv"
 OUT = ROOT / "data" / "prepared" / "distribution_events_review.csv"
 
 DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})")
@@ -67,8 +66,6 @@ def detect(code, annee_hint):
 def main():
     with open(RECORDS, encoding="utf-8") as f:
         records = list(csv.DictReader(f))
-    with open(NO_EMAIL, encoding="utf-8") as f:
-        records += list(csv.DictReader(f))
 
     events = {}
     for r in records:
