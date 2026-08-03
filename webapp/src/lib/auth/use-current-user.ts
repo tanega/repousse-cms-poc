@@ -1,31 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 
-import { fetchCurrentUser } from "@/lib/api/me";
-import type { CurrentUser } from "@/types/user";
+import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
 
 export function useCurrentUser() {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const refetch = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchCurrentUser();
-      setUser(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const user = useCurrentUserStore((s) => s.user);
+  const status = useCurrentUserStore((s) => s.status);
+  const error = useCurrentUserStore((s) => s.error);
+  const load = useCurrentUserStore((s) => s.load);
 
   useEffect(() => {
-    void refetch();
-  }, [refetch]);
+    if (status === "idle") {
+      void load();
+    }
+  }, [status, load]);
 
-  return { user, isLoading, error, refetch };
+  return { user, isLoading: status === "loading" || status === "idle", error, refetch: load };
 }

@@ -17,7 +17,7 @@ import { SearchDialog } from "../dashboard/_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "../dashboard/_components/sidebar/theme-switcher";
 
 export default async function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const user = requireRole(await getCurrentUserServer(), "admin");
+  requireRole(await getCurrentUserServer(), "admin");
 
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
@@ -60,17 +60,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
             <div className="flex items-center gap-2">
               <LayoutControls />
               <ThemeSwitcher />
-              <AccountSwitcher
-                users={[
-                  {
-                    id: user.id,
-                    name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
-                    email: user.email,
-                    avatar: "",
-                    role: user.role,
-                  },
-                ]}
-              />
+              <AccountSwitcher />
             </div>
           </div>
         </header>
