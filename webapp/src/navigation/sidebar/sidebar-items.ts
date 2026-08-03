@@ -4,6 +4,7 @@ import {
   ChartBar,
   CheckSquare,
   GraduationCap,
+  Home,
   Kanban,
   LayoutDashboard,
   Leaf,
@@ -65,6 +66,18 @@ export interface NavGroup {
 }
 
 export const sidebarItems: NavGroup[] = [
+  {
+    id: 0,
+    label: "Mes ressources",
+    items: [
+      {
+        id: "me",
+        title: "Accueil",
+        url: "/dashboard/me",
+        icon: Home,
+      },
+    ],
+  },
   {
     id: 1,
     label: "Tableaux de bord",

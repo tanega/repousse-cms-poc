@@ -94,6 +94,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
   const visibleItems = filterByRole(sidebarItems, user?.role);
+  const homeHref = user && hasMinRole(user.role, "admin") ? APP_CONFIG.defaultPath : "/dashboard/me";
 
   const navUser = {
     name: user ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email : "",
@@ -107,7 +108,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link prefetch={false} href={APP_CONFIG.defaultPath}>
+              <Link prefetch={false} href={homeHref}>
                 <Command />
                 <span className="font-semibold text-base">
                   {APP_CONFIG.name}
