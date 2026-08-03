@@ -158,6 +158,30 @@ ENRICHMENT = {
     "Cotoneaster": ("Cotoneaster", "genus", None, "high", "vrai doublon (meme rang genre) avec 'Costonaer', coquille du fichier source, a fusionner"),
 }
 
+# (kept, dropped) pairs: same taxon counted twice under two vernacular
+# names/spellings in the client's own Typologie sheet. The dropped name is
+# kept as an alias on the surviving row, its source_nb_arbre folded in.
+MERGE_PAIRS = [
+    ("Cotoneaster", "Costonaer"),
+    ("Prunelier", "Prunelier (spinosa)"),
+    ("Pyracantha", "Piracantha"),
+    ("Althéa", "Hibiscus"),
+    ("Viorne tin", "Laurier tin"),
+]
+
+
+def merge_duplicates(out_rows):
+    by_name = {r["common_name"]: r for r in out_rows}
+    for keep_name, drop_name in MERGE_PAIRS:
+        keep, drop = by_name[keep_name], by_name[drop_name]
+        keep["aliases"] = drop_name
+        keep["source_nb_arbre"] = (int(keep["source_nb_arbre"] or 0) + int(drop["source_nb_arbre"] or 0))
+        keep["notes"] = f"fusionne avec l'entree '{drop_name}' du fichier source Typologie (meme taxon)"
+        out_rows.remove(drop)
+    for r in out_rows:
+        r.setdefault("aliases", "")
+    return out_rows
+
 
 def main():
     with open(SOURCE, encoding="utf-8") as f:
@@ -187,6 +211,8 @@ def main():
             }
         )
 
+    out_rows = merge_duplicates(out_rows)
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
@@ -194,7 +220,7 @@ def main():
             fieldnames=[
                 "temp_id", "common_name", "scientific_name", "taxonomic_level",
                 "is_non_taxonomic", "parent_temp_id", "category_slug",
-                "confidence", "notes", "source_nb_arbre",
+                "confidence", "notes", "source_nb_arbre", "aliases",
             ],
         )
         writer.writeheader()
@@ -202,10 +228,11 @@ def main():
     print(f"wrote {len(out_rows):5d} rows -> {OUT.relative_to(ROOT)}")
 
     low = [r for r in out_rows if r["confidence"] == "low"]
-    dup_notes = [r for r in out_rows if "vrai doublon" in r["notes"]]
     genus_species_notes = [r for r in out_rows if "pas un doublon" in r["notes"]]
+    merged = [r for r in out_rows if r["aliases"]]
+    merged_desc = ", ".join(f"{r['common_name']} <- {r['aliases']}" for r in merged)
     print(f"confidence low        : {len(low)} ({', '.join(r['common_name'] for r in low)})")
-    print(f"vrais doublons        : {len(dup_notes)} ({len(dup_notes)//2} paires)")
+    print(f"doublons fusionnes    : {len(merged)} ({merged_desc})")
     print(f"paires genre/espece   : {len(genus_species_notes)} (pas des doublons, ex. Frene/Frene commun)")
 
 
