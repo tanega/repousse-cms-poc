@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { requireRole } from "@/lib/auth/require-role";
 import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
 import { cn } from "@/lib/utils";
 import { getCurrentUserServer } from "@/server/current-user";
@@ -16,7 +17,7 @@ import { SearchDialog } from "../dashboard/_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "../dashboard/_components/sidebar/theme-switcher";
 
 export default async function AcademieLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const user = await getCurrentUserServer();
+  const user = requireRole(await getCurrentUserServer(), "member");
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
   const [variant, collapsible] = await Promise.all([
@@ -59,19 +60,15 @@ export default async function AcademieLayout({ children }: Readonly<{ children: 
               <LayoutControls />
               <ThemeSwitcher />
               <AccountSwitcher
-                users={
-                  user
-                    ? [
-                        {
-                          id: user.id,
-                          name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
-                          email: user.email,
-                          avatar: "",
-                          role: user.role,
-                        },
-                      ]
-                    : []
-                }
+                users={[
+                  {
+                    id: user.id,
+                    name: [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email,
+                    email: user.email,
+                    avatar: "",
+                    role: user.role,
+                  },
+                ]}
               />
             </div>
           </div>

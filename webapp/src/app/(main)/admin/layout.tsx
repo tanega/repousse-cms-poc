@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { requireRole } from "@/lib/auth/require-role";
 import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
 import { cn } from "@/lib/utils";
 import { getCurrentUserServer } from "@/server/current-user";
@@ -17,11 +17,7 @@ import { SearchDialog } from "../dashboard/_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "../dashboard/_components/sidebar/theme-switcher";
 
 export default async function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const user = await getCurrentUserServer();
-
-  if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
-    redirect("/unauthorized");
-  }
+  const user = requireRole(await getCurrentUserServer(), "admin");
 
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";

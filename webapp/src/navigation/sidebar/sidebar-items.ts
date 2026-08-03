@@ -20,6 +20,8 @@ import {
   Zap,
 } from "lucide-react";
 
+import type { UserRole } from "@/types/user";
+
 export type NavBadge = "new" | "soon";
 
 export interface NavSubItem {
@@ -30,6 +32,8 @@ export interface NavSubItem {
   badge?: NavBadge;
   disabled?: boolean;
   newTab?: boolean;
+  /** Minimum role required to see this item. Omit for any authenticated user (member+). */
+  minRole?: UserRole;
 }
 
 interface NavItemBase {
@@ -39,6 +43,8 @@ interface NavItemBase {
   badge?: NavBadge;
   disabled?: boolean;
   newTab?: boolean;
+  /** Minimum role required to see this item. Omit for any authenticated user (member+). */
+  minRole?: UserRole;
 }
 
 export interface NavMainLinkItem extends NavItemBase {
@@ -110,6 +116,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Kanban",
         url: "/admin/kanban",
         icon: Kanban,
+        minRole: "admin",
       },
       {
         id: "tasks",
@@ -128,36 +135,43 @@ export const sidebarItems: NavGroup[] = [
         title: "Membres",
         url: "/admin/adherents",
         icon: UsersRound,
+        minRole: "admin",
       },
       {
         id: "roles",
         title: "Rôles",
         url: "/admin/roles",
         icon: Lock,
+        // Only superadmin can assign roles (Accounts.Policy :assign_role).
+        minRole: "superadmin",
       },
       {
         id: "admin-especes",
         title: "Espèces végétales",
         url: "/admin/especes-vegetales",
         icon: Leaf,
+        minRole: "admin",
       },
       {
         id: "admin-distributions",
         title: "Distributions",
         url: "/admin/distributions",
         icon: Package,
+        minRole: "admin",
       },
       {
         id: "admin-projets",
         title: "Projets de plantation",
         url: "/admin/projets-plantation",
         icon: TreePine,
+        minRole: "admin",
       },
       {
         id: "admin-automatisations",
         title: "Automatisations",
         url: "/admin/automatisations",
         icon: Zap,
+        minRole: "admin",
       },
     ],
   },
