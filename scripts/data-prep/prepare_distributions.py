@@ -316,12 +316,18 @@ def main():
         e["annees"].add(str(r["annee"]))
         e["n_records"] += 1
         e["total_qty"] += r["nombre"] or 0
+    sorted_events = sorted(events.values(), key=lambda e: -e["n_records"])
     write_csv(
         OUT / "distribution_events.csv",
-        ["code", "annees", "n_records", "total_qty"],
+        ["temp_id", "code", "annees", "n_records", "total_qty", "status"],
         [
-            {**e, "annees": "|".join(sorted(e["annees"]))}
-            for e in sorted(events.values(), key=lambda e: -e["n_records"])
+            {
+                "temp_id": f"E{i + 1:04d}",
+                **e,
+                "annees": "|".join(sorted(e["annees"])),
+                "status": "closed",
+            }
+            for i, e in enumerate(sorted_events)
         ],
     )
 
