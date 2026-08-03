@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
 import type { EngagementProfileId } from "@/lib/engagement/use-engagement-profiles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -149,6 +150,19 @@ export default function MemberProfilePage() {
   const id = params.id as string;
   const isOwnProfile = id === "me";
   const { profiles, hydrated } = useEngagementProfiles();
+  const { user } = useCurrentUser();
+
+  // For "me", source identity fields from the real authenticated user —
+  // everything else (title, location, contacts, groups, stats, activity,
+  // projects) has no backend field yet and stays mocked.
+  const displayName =
+    isOwnProfile && user
+      ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email
+      : mockProfile.name;
+  const displayEmail = isOwnProfile && user ? user.email : mockProfile.contacts.email;
+  const ownStatusLabel = user?.status === "active" ? "Actif" : "Suspendu";
+  const displayStatus = isOwnProfile && user ? ownStatusLabel : mockProfile.about.status;
+  const displayAvatar = isOwnProfile ? undefined : mockProfile.avatar;
 
   return (
     <div className="space-y-4">
@@ -168,14 +182,14 @@ export default function MemberProfilePage() {
           <div className="flex items-end gap-4">
             <div className="-mt-12 shrink-0">
               <Avatar className="size-24 rounded-xl border-4 border-card shadow-md">
-                <AvatarImage src={mockProfile.avatar} alt={mockProfile.name} />
+                <AvatarImage src={displayAvatar} alt={displayName} />
                 <AvatarFallback className="rounded-xl text-2xl">
-                  {getInitials(mockProfile.name)}
+                  {getInitials(displayName)}
                 </AvatarFallback>
               </Avatar>
             </div>
             <div className="pb-1">
-              <h1 className="text-2xl font-semibold">{mockProfile.name}</h1>
+              <h1 className="text-2xl font-semibold">{displayName}</h1>
               <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-sm">
                 <span className="flex items-center gap-1.5">
                   <Briefcase className="size-3.5" />
@@ -244,8 +258,8 @@ export default function MemberProfilePage() {
                     À propos
                   </p>
                   <div className="space-y-2.5 text-sm">
-                    <Row icon={<Users className="size-4" />} label="Nom" value={mockProfile.about.fullName} />
-                    <Row icon={<UserCheck className="size-4" />} label="Statut" value={mockProfile.about.status} />
+                    <Row icon={<Users className="size-4" />} label="Nom" value={displayName} />
+                    <Row icon={<UserCheck className="size-4" />} label="Statut" value={displayStatus} />
                     <Row icon={<Briefcase className="size-4" />} label="Type" value={mockProfile.about.type} />
                     <Row icon={<Flag className="size-4" />} label="Région" value={mockProfile.about.region} />
                     <Row icon={<Languages className="size-4" />} label="Langue" value={mockProfile.about.languages} />
@@ -257,7 +271,7 @@ export default function MemberProfilePage() {
                   <div className="space-y-2.5 text-sm">
                     <Row icon={<MessageSquare className="size-4" />} label="Tél." value={mockProfile.contacts.phone} />
                     <Row icon={<Globe className="size-4" />} label="Site" value={mockProfile.contacts.website} />
-                    <Row icon={<UserPlus className="size-4" />} label="Email" value={mockProfile.contacts.email} />
+                    <Row icon={<UserPlus className="size-4" />} label="Email" value={displayEmail} />
                   </div>
 
                   <p className="mt-5 mb-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide">

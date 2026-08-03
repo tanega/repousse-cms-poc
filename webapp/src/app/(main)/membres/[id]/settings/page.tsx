@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Bell, CircleUser, Home, Layers, Settings2, TreePine, Users } from "lucide-react";
 
+import { updateCurrentUser } from "@/lib/api/me";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
 import type { EngagementProfileId } from "@/lib/engagement/use-engagement-profiles";
 
@@ -12,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,6 +86,29 @@ function SectionHeader({ title, description }: { title: string; description: str
 }
 
 function AccountSection() {
+  const { user, isLoading, refetch } = useCurrentUser();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.first_name ?? "");
+      setLastName(user.last_name ?? "");
+    }
+  }, [user]);
+
+  async function handleSave() {
+    setStatus("saving");
+    try {
+      await updateCurrentUser({ first_name: firstName, last_name: lastName });
+      await refetch();
+      setStatus("saved");
+    } catch {
+      setStatus("error");
+    }
+  }
+
   return (
     <div>
       <SectionHeader
@@ -93,35 +117,42 @@ function AccountSection() {
       />
       <div className="space-y-5 max-w-lg">
         <div className="space-y-2">
-          <Label htmlFor="name">Nom</Label>
-          <Input id="name" placeholder="Votre nom" defaultValue="Association Repousse" />
+          <Label htmlFor="first-name">Prénom</Label>
+          <Input
+            id="first-name"
+            placeholder="Votre prénom"
+            value={firstName}
+            disabled={isLoading}
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="last-name">Nom</Label>
+          <Input
+            id="last-name"
+            placeholder="Votre nom"
+            value={lastName}
+            disabled={isLoading}
+            onChange={(e) => setLastName(e.target.value)}
+          />
           <p className="text-muted-foreground text-xs">
             Ce nom sera affiché sur votre profil et dans les communications.
           </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="votre@email.org" defaultValue="contact@repousse.org" />
+          <Input id="email" type="email" value={user?.email ?? ""} disabled />
           <p className="text-muted-foreground text-xs">
-            Adresse email principale pour les notifications.
+            Contactez un administrateur pour modifier votre email.
           </p>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="language">Langue</Label>
-          <Select defaultValue="fr">
-            <SelectTrigger id="language">
-              <SelectValue placeholder="Sélectionnez une langue" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fr">Français</SelectItem>
-              <SelectItem value="en">English</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-muted-foreground text-xs">
-            Langue utilisée dans l'interface.
-          </p>
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSave} disabled={isLoading || status === "saving"}>
+            {status === "saving" ? "Enregistrement…" : "Mettre à jour le compte"}
+          </Button>
+          {status === "saved" && <span className="text-emerald-600 text-sm dark:text-emerald-400">Enregistré.</span>}
+          {status === "error" && <span className="text-destructive text-sm">Échec de l'enregistrement.</span>}
         </div>
-        <Button>Mettre à jour le compte</Button>
       </div>
     </div>
   );

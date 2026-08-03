@@ -1,11 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-// middleware.ts only checks that a "hanko" cookie is *present*, not that its
-// value is a valid JWT — so a dummy value is enough to get past the redirect
-// to /auth/v2/login for these local e2e runs.
-test.beforeEach(async ({ context }) => {
-  await context.addCookies([{ name: "hanko", value: "e2e-test-token", url: "http://localhost:3000" }]);
-});
+// /admin/* routes now check the real authenticated user's role
+// (admin/layout.tsx), so the dummy-cookie convention used elsewhere doesn't
+// get past it — reuse the real admin session saved by e2e/auth.setup.ts.
+test.use({ storageState: "e2e/.auth/admin.json" });
 
 test.describe("Admin projets de plantation — create, publish, edit, delete", () => {
   test("create a project, publish it, edit it, then delete it", async ({ page }) => {
