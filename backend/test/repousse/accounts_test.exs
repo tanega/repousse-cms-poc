@@ -84,6 +84,37 @@ defmodule Repousse.AccountsTest do
     end
   end
 
+  describe "update_own_profile/2" do
+    test "updates first_name and last_name" do
+      user = insert(:user, first_name: "Alice", last_name: "Dupont")
+
+      assert {:ok, updated} =
+               Accounts.update_own_profile(user, %{"first_name" => "Alicia", "last_name" => "Durand"})
+
+      assert updated.first_name == "Alicia"
+      assert updated.last_name == "Durand"
+    end
+
+    test "ignores role, status, email and adhesion_active in the attrs" do
+      user = insert(:user, role: :member, status: :active, adhesion_active: false)
+
+      assert {:ok, updated} =
+               Accounts.update_own_profile(user, %{
+                 "first_name" => "Alicia",
+                 "role" => "superadmin",
+                 "status" => "suspended",
+                 "email" => "hijacked@example.com",
+                 "adhesion_active" => true
+               })
+
+      assert updated.first_name == "Alicia"
+      assert updated.role == :member
+      assert updated.status == :active
+      assert updated.email == user.email
+      refute updated.adhesion_active
+    end
+  end
+
   describe "set_taxon_editor/2" do
     test "grants and revokes the taxon_editor flag" do
       user = insert(:user, taxon_editor: false)

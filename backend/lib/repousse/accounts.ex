@@ -62,6 +62,12 @@ defmodule Repousse.Accounts do
     user |> User.changeset(attrs) |> Repo.update()
   end
 
+  # Self-service update (`PUT /api/v1/me`) — scoped changeset so a member
+  # can never touch role/status/email/adhesion via their own profile form.
+  def update_own_profile(%User{} = user, attrs) do
+    user |> User.self_service_changeset(attrs) |> Repo.update()
+  end
+
   def delete_user(%User{} = user) do
     if user.hanko_id, do: HankoAdmin.delete_user(user.hanko_id)
     Repo.delete(user)

@@ -27,8 +27,8 @@ defmodule RepousseWeb.AccountsController do
   def update_me(conn, %{"user" => params}) do
     user = conn.assigns.current_user
 
-    with {:ok, updated} <- Accounts.update_user(user, params) do
-      json(conn, %{data: updated})
+    with {:ok, updated} <- Accounts.update_own_profile(user, params) do
+      json(conn, %{data: Repousse.Repo.preload(updated, :profiles)})
     end
   end
 
