@@ -110,6 +110,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Calendrier",
         url: "/dashboard/calendar",
         icon: Calendar,
+        minRole: "admin",
       },
       {
         id: "admin-kanban",
@@ -123,6 +124,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Tâches",
         url: "/dashboard/tasks",
         icon: CheckSquare,
+        minRole: "admin",
       },
     ],
   },
@@ -208,18 +210,21 @@ export const sidebarItems: NavGroup[] = [
         title: "Chat",
         url: "/dashboard/chat",
         icon: MessageSquare,
+        minRole: "admin",
       },
       {
         id: "kanban",
         title: "Kanban",
         url: "/dashboard/kanban",
         icon: Kanban,
+        minRole: "admin",
       },
       {
         id: "dashboard",
         title: "Dashboard",
         url: "/dashboard/default",
         icon: LayoutDashboard,
+        minRole: "admin",
       },
     ],
   },
@@ -230,6 +235,7 @@ export const sidebarItems: NavGroup[] = [
       {
         id: "legacy-dashboards",
         title: "Dashboards",
+        minRole: "admin",
         subItems: [
           {
             id: "legacy-default",
@@ -274,6 +280,7 @@ export const sidebarItems: NavGroup[] = [
       {
         id: "legacy-pages",
         title: "Pages",
+        minRole: "admin",
         subItems: [
           { id: "legacy-email", title: "Email", url: "/dashboard/mail" },
           { id: "legacy-invoice", title: "Invoice", url: "/dashboard/invoice" },
