@@ -99,5 +99,13 @@ defmodule Repousse.Accounts.User do
     change(user, taxon_editor: taxon_editor?)
   end
 
+  # Deliberately separate from `changeset/2` — used by the self-service
+  # `PUT /api/v1/me` endpoint, where the caller controls the request body.
+  # Only name fields are castable here so a user can never smuggle a
+  # `role`/`status`/`email` change through their own profile update.
+  def self_service_changeset(user, attrs) do
+    cast(user, attrs, [:first_name, :last_name])
+  end
+
   def roles, do: @roles
 end
