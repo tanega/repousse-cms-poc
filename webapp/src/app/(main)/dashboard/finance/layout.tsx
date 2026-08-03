@@ -1,1 +1,1 @@
-export { AdminOnlyLayout as default } from "../_guards/admin-only-layout";
+export { AdminOnlyLayout as default } from "@/lib/auth/admin-only-layout";

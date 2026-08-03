@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 // TanStack DB's useLiveQuery relies on useSyncExternalStore without a
 // server snapshot — SSR crashes without ssr:false (same as especes-vegetales).
 const ProjetsPlantationBrowse = dynamic(
-  () => import("./_components/projets-plantation-browse").then((m) => m.ProjetsPlantationBrowse),
+  () => import("../_components/projets-plantation-browse").then((m) => m.ProjetsPlantationBrowse),
   { ssr: false },
 );
 

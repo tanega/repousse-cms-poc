@@ -74,30 +74,37 @@ export const sidebarItems: NavGroup[] = [
         title: "Vie associative",
         url: "/dashboard/vie-associative",
         icon: Leaf,
+        minRole: "admin",
       },
       {
         id: "carte",
         title: "Carte",
         url: "/dashboard/carte",
         icon: Map,
+        minRole: "admin",
       },
       {
         id: "crm",
         title: "CRM",
         url: "/dashboard/crm",
         icon: ChartBar,
+        minRole: "admin",
       },
       {
         id: "distributions",
         title: "Distributions",
         url: "/distributions",
         icon: Package,
+        // /distributions itself stays a public guest-facing form (see
+        // middleware PUBLIC_PATHS) — only the sidebar entry is hidden.
+        minRole: "admin",
       },
       {
         id: "projets-plantation",
         title: "Projets de plantation",
         url: "/projets-plantation",
         icon: TreePine,
+        minRole: "admin",
       },
     ],
   },
