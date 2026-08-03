@@ -21,6 +21,16 @@ defmodule Repousse.Accounts do
 
   def find_or_create_by_hanko_id!(hanko_id, email) do
     case get_user_by_hanko_id(hanko_id) do
+      nil -> claim_or_create_by_email!(hanko_id, email)
+      user -> touch_last_seen!(user)
+    end
+  end
+
+  # A ghost user (imported with no hanko_id) claims their real identity the
+  # first time they log in: without this, inserting a fresh row here would
+  # hit the email unique_constraint and crash on every request from them.
+  defp claim_or_create_by_email!(hanko_id, email) do
+    case get_user_by_email(email) do
       nil ->
         {:ok, user} =
           %User{}
@@ -29,11 +39,19 @@ defmodule Repousse.Accounts do
 
         user
 
-      user ->
-        Repo.update!(
-          User.changeset(user, %{last_seen_at: DateTime.utc_now() |> DateTime.truncate(:second)})
-        )
+      %User{hanko_id: nil} = ghost ->
+        {:ok, user} = ghost |> User.changeset(%{hanko_id: hanko_id}) |> Repo.update()
+        touch_last_seen!(user)
+
+      %User{} = user ->
+        raise "email #{email} already linked to a different hanko_id (existing=#{user.hanko_id}, incoming=#{hanko_id})"
     end
+  end
+
+  defp touch_last_seen!(user) do
+    Repo.update!(
+      User.changeset(user, %{last_seen_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+    )
   end
 
   def create_user(attrs) do
