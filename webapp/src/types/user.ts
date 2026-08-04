@@ -19,6 +19,7 @@ export interface CurrentUser {
   role: UserRole;
   status: UserStatus;
   taxon_editor: boolean;
+  avatar_url: string | null;
   adhesion_active: boolean;
   membership_year: number | null;
   last_seen_at: string | null;
