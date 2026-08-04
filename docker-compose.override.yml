@@ -21,6 +21,11 @@ services:
       - "${HANKO_PUBLIC_PORT:-8000}:8000"
       - "${HANKO_ADMIN_PORT:-8001}:8001"
 
+  minio:
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+
   backend:
     ports:
       - "${BACKEND_PORT:-4000}:4000"
