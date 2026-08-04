@@ -16,8 +16,8 @@ import { LayoutControls } from "../../dashboard/_components/sidebar/layout-contr
 import { SearchDialog } from "../../dashboard/_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "../../dashboard/_components/sidebar/theme-switcher";
 
-export default async function ProjetsPlantationBrowseLayout({ children }: Readonly<{ children: ReactNode }>) {
-  requireRole(await getCurrentUserServer(), "admin");
+export default async function NouveauProjetPlantationLayout({ children }: Readonly<{ children: ReactNode }>) {
+  requireRole(await getCurrentUserServer(), "member");
 
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
