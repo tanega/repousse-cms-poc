@@ -16,6 +16,7 @@ defmodule Repousse.Accounts.User do
              :status,
              :role,
              :taxon_editor,
+             :avatar_url,
              :last_seen_at,
              :profiles,
              :inserted_at,
@@ -34,6 +35,7 @@ defmodule Repousse.Accounts.User do
     field :status, Ecto.Enum, values: [:active, :suspended], default: :active
     field :role, Ecto.Enum, values: @roles, default: :member
     field :taxon_editor, :boolean, default: false
+    field :avatar_url, :string
     field :activation_sent_count, :integer, default: 0
     field :last_seen_at, :utc_datetime
 
@@ -105,6 +107,10 @@ defmodule Repousse.Accounts.User do
   # `role`/`status`/`email` change through their own profile update.
   def self_service_changeset(user, attrs) do
     cast(user, attrs, [:first_name, :last_name])
+  end
+
+  def avatar_changeset(user, avatar_url) do
+    change(user, avatar_url: avatar_url)
   end
 
   def roles, do: @roles

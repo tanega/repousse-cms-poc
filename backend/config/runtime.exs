@@ -57,6 +57,23 @@ end
 
 config :repousse, :webapp_url, System.get_env("WEBAPP_URL", "http://www.localhost")
 
+minio_endpoint_uri = URI.parse(System.get_env("MINIO_ENDPOINT", "http://minio:9000"))
+
+config :repousse, :minio,
+  public_url: System.get_env("MINIO_PUBLIC_URL", "http://media.localhost"),
+  avatars_bucket: System.get_env("MINIO_AVATARS_BUCKET", "avatars")
+
+config :ex_aws,
+  access_key_id: System.get_env("MINIO_ACCESS_KEY", "minioadmin"),
+  secret_access_key: System.get_env("MINIO_SECRET_KEY", "minioadmin"),
+  json_codec: Jason
+
+config :ex_aws, :s3,
+  scheme: "#{minio_endpoint_uri.scheme}://",
+  host: minio_endpoint_uri.host,
+  port: minio_endpoint_uri.port,
+  region: "us-east-1"
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

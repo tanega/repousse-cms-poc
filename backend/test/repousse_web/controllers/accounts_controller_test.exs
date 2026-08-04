@@ -72,4 +72,19 @@ defmodule RepousseWeb.AccountsControllerTest do
       assert json_response(conn, 401)
     end
   end
+
+  describe "PUT /api/v1/me/avatar" do
+    test "400s when no file is sent", %{conn: conn, private_map: pm} do
+      user = insert(:user)
+
+      conn = conn |> authed(user, pm) |> put(~p"/api/v1/me/avatar", %{})
+
+      assert json_response(conn, 400)
+    end
+
+    test "401s when unauthenticated", %{conn: conn} do
+      conn = put(conn, ~p"/api/v1/me/avatar", %{})
+      assert json_response(conn, 401)
+    end
+  end
 end

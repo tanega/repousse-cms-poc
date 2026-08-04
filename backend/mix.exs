@@ -61,6 +61,10 @@ defmodule Repousse.MixProject do
       {:open_api_spex, "~> 3.21"},
       # Background jobs
       {:oban, "~> 2.18"},
+      # Object storage (MinIO / S3-compatible)
+      {:ex_aws, "~> 2.5"},
+      {:ex_aws_s3, "~> 2.5"},
+      {:hackney, "~> 1.20"},
       # Dev & test
       {:ex_machina, "~> 2.8", only: [:test, :dev]},
       {:mox, "~> 1.2", only: :test}
