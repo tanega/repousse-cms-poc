@@ -22,6 +22,7 @@ defmodule RepousseWeb.Router do
     # Current user
     get "/me", AccountsController, :me
     put "/me", AccountsController, :update_me
+    put "/me/avatar", AccountsController, :update_avatar
     get "/me/profiles", AccountsController, :profiles
     put "/me/profiles", AccountsController, :update_profiles
 

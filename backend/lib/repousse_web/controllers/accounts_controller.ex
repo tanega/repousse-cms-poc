@@ -32,6 +32,26 @@ defmodule RepousseWeb.AccountsController do
     end
   end
 
+  operation :update_avatar,
+    summary: "Upload the current user's avatar",
+    request_body:
+      {"Avatar image (multipart)", "multipart/form-data", %OpenApiSpex.Schema{
+         type: :object,
+         properties: %{avatar: %OpenApiSpex.Schema{type: :string, format: :binary}}
+       }},
+    responses: [ok: API.object(User, "Updated user")]
+
+  def update_avatar(conn, %{"avatar" => %Plug.Upload{} = upload}) do
+    user = conn.assigns.current_user
+
+    with {:ok, avatar_url} <- Repousse.Storage.upload_avatar(upload, user.id),
+         {:ok, updated} <- Accounts.update_avatar(user, avatar_url) do
+      json(conn, %{data: Repousse.Repo.preload(updated, :profiles)})
+    end
+  end
+
+  def update_avatar(_conn, _params), do: {:error, "Fichier `avatar` manquant"}
+
   operation :profiles,
     summary: "List the current user's profiles",
     responses: [ok: API.list(UserProfile, "Current user's profiles")]

@@ -68,6 +68,13 @@ defmodule Repousse.Accounts do
     user |> User.self_service_changeset(attrs) |> Repo.update()
   end
 
+  # `avatar_url` is set only via `update_avatar/2`, never accepted as
+  # free-form text in `update_own_profile/2` — the URL always comes from a
+  # file this server just uploaded to MinIO, not from arbitrary user input.
+  def update_avatar(%User{} = user, avatar_url) when is_binary(avatar_url) do
+    user |> User.avatar_changeset(avatar_url) |> Repo.update()
+  end
+
   def delete_user(%User{} = user) do
     if user.hanko_id, do: HankoAdmin.delete_user(user.hanko_id)
     Repo.delete(user)
