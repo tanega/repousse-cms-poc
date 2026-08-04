@@ -35,14 +35,31 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
   return data;
 }
 
-export async function updateCurrentUser(attrs: {
-  first_name?: string;
-  last_name?: string;
-}): Promise<CurrentUser> {
+export async function updateCurrentUser(attrs: { first_name?: string; last_name?: string }): Promise<CurrentUser> {
   const res = await authedFetch("/api/v1/me", {
     method: "PUT",
     body: JSON.stringify({ user: attrs }),
   });
+  const { data } = await res.json();
+  return data;
+}
+
+export async function uploadAvatar(file: File): Promise<CurrentUser> {
+  const token = getHankoToken();
+  const body = new FormData();
+  body.append("avatar", file);
+
+  const res = await fetch(`${API_URL}/api/v1/me/avatar`, {
+    method: "PUT",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body,
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => null);
+    throw new Error(errBody?.error ?? `Échec de l'upload (${res.status})`);
+  }
+
   const { data } = await res.json();
   return data;
 }

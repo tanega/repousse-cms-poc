@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useForm } from "@tanstack/react-form";
-import { Bell, CircleUser, Home, Layers, Settings2, TreePine, Users } from "lucide-react";
+import { Bell, CircleUser, Home, Layers, Settings2, TreePine, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 import * as z from "zod";
 
-import { updateCurrentUser } from "@/lib/api/me";
+import { updateCurrentUser, uploadAvatar } from "@/lib/api/me";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
 import type { EngagementProfileId } from "@/lib/engagement/use-engagement-profiles";
 import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,9 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+
+const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_AVATAR_BYTES = 5_000_000;
 
 const accountFormSchema = z.object({
   first_name: z.string().trim().min(1, "Le prénom est requis"),
@@ -95,6 +99,72 @@ function SectionHeader({ title, description }: { title: string; description: str
   );
 }
 
+function AvatarUpload({ user, disabled }: { user: ReturnType<typeof useCurrentUser>["user"]; disabled: boolean }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const initials = [user?.first_name, user?.last_name]
+    .filter(Boolean)
+    .map((part) => part?.[0])
+    .join("")
+    .toUpperCase();
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!ACCEPTED_AVATAR_TYPES.includes(file.type)) {
+      toast.error("Format d'image non supporté (jpeg, png, webp, gif uniquement).");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      toast.error("Image trop volumineuse (5 Mo maximum).");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const updated = await uploadAvatar(file);
+      useCurrentUserStore.getState().setUser(updated);
+      toast.success("Photo de profil mise à jour.");
+    } catch {
+      toast.error("Échec de l'envoi de la photo.");
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <Field orientation="horizontal">
+      <Avatar size="lg">
+        <AvatarImage src={user?.avatar_url ?? undefined} alt="Photo de profil" />
+        <AvatarFallback>{initials || <CircleUser className="size-5" />}</AvatarFallback>
+      </Avatar>
+      <div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_AVATAR_TYPES.join(",")}
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled || isUploading}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload className="size-4" />
+          {isUploading ? "Envoi…" : "Changer la photo"}
+        </Button>
+        <p className="mt-1 text-muted-foreground text-xs">JPEG, PNG, WebP ou GIF. 5 Mo maximum.</p>
+      </div>
+    </Field>
+  );
+}
+
 function AccountSection() {
   const { user, isLoading } = useCurrentUser();
 
@@ -132,6 +202,7 @@ function AccountSection() {
         }}
       >
         <FieldGroup>
+          <AvatarUpload user={user} disabled={isLoading} />
           <form.Field name="first_name">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;

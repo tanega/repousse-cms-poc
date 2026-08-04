@@ -115,6 +115,36 @@ test.describe("Real authenticated user — profile display and edit", () => {
     await expect(page.getByText("Profil mis à jour.")).toBeVisible();
   });
 
+  test("uploading an avatar persists it through MinIO and reflects on reload", async ({ page }) => {
+    await loginViaPasscode(page, "superadmin@repousse.local");
+    await page.goto("/membres/me/settings");
+
+    // 1x1 red-pixel PNG — smallest valid image the backend's content-type
+    // check will accept, no fixture file needed on disk.
+    const pngBytes = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+      "base64",
+    );
+
+    await page.locator("input[type='file']").setInputFiles({
+      name: "avatar.png",
+      mimeType: "image/png",
+      buffer: pngBytes,
+    });
+
+    await expect(page.getByText("Photo de profil mise à jour.")).toBeVisible({ timeout: 10_000 });
+
+    const avatarImg = page.locator("img[alt='Photo de profil']");
+    await expect(avatarImg).toHaveAttribute("src", /media\.localhost\/avatars\//);
+
+    await page.reload();
+    await expect(page.locator("img[alt='Photo de profil']")).toHaveAttribute(
+      "src",
+      /media\.localhost\/avatars\//,
+      { timeout: 10_000 },
+    );
+  });
+
   test("non-admin member is redirected away from /admin", async ({ page }) => {
     await loginViaPasscode(page, "lecteur@repousse.local");
 
