@@ -1,10 +1,4 @@
-export type Categorie =
-  | "Arbre"
-  | "Arbuste"
-  | "Fruitier"
-  | "Plante grimpante"
-  | "Plante vivace"
-  | "Couvre-sol";
+export type Categorie = "Arbre" | "Arbuste" | "Fruitier" | "Plante grimpante" | "Plante vivace" | "Couvre-sol";
 
 export type NiveauTaxonomique = "Genre" | "Espèce" | "Variété/Cultivar";
 
@@ -41,15 +35,7 @@ export const CATEGORIES: Categorie[] = [
 
 export const NIVEAUX: NiveauTaxonomique[] = ["Genre", "Espèce", "Variété/Cultivar"];
 
-export const SOURCES_LIENS = [
-  "Floriscope",
-  "Wikipedia",
-  "Wikidata",
-  "Encyclopedia of Life",
-  "DoPI",
-  "GloBI",
-  "Autre",
-];
+export const SOURCES_LIENS = ["Floriscope", "Wikipedia", "Wikidata", "Encyclopedia of Life", "DoPI", "GloBI", "Autre"];
 
 export const CATEGORIE_COLORS: Record<Categorie, string> = {
   Arbre: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
@@ -62,7 +48,7 @@ export const CATEGORIE_COLORS: Record<Categorie, string> = {
 
 export const NIVEAU_COLORS: Record<NiveauTaxonomique, string> = {
   Genre: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  "Espèce": "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+  Espèce: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   "Variété/Cultivar": "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300",
 };
 
@@ -77,7 +63,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbre",
     nonTaxonomique: false,
     // Glands de chêne pédonculé — fruit caractéristique du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Quercus_robur_acorn_-_Keila.jpg/500px-Quercus_robur_acorn_-_Keila.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Quercus_robur_acorn_-_Keila.jpg/500px-Quercus_robur_acorn_-_Keila.jpg",
     liens: [{ source: "Floriscope", url: "https://floriscope.io/quercus" }],
     nbDistributions: 0,
     nbProjets: 0,
@@ -118,7 +105,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbre",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Quercus_petraea_06.jpg/500px-Quercus_petraea_06.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Quercus_petraea_06.jpg/500px-Quercus_petraea_06.jpg",
     liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Ch%C3%AAne_sessile" }],
     nbDistributions: 5,
     nbProjets: 2,
@@ -131,7 +119,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbre",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Quercus_pubescens_Tuscany.jpg/500px-Quercus_pubescens_Tuscany.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Quercus_pubescens_Tuscany.jpg/500px-Quercus_pubescens_Tuscany.jpg",
     liens: [],
     nbDistributions: 1,
     nbProjets: 0,
@@ -147,7 +136,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbre",
     nonTaxonomique: false,
     // Faînes (fruits du hêtre) — cupule caractéristique du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Vrucht_van_een_beuk_%28Fagus_sylvatica%29_21-07-2023_%28d.j.b.%29.jpg/500px-Vrucht_van_een_beuk_%28Fagus_sylvatica%29_21-07-2023_%28d.j.b.%29.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Vrucht_van_een_beuk_%28Fagus_sylvatica%29_21-07-2023_%28d.j.b.%29.jpg/500px-Vrucht_van_een_beuk_%28Fagus_sylvatica%29_21-07-2023_%28d.j.b.%29.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -160,7 +150,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbre",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Fagus-sylvatica-cansiglio-forest-italy.jpg/500px-Fagus-sylvatica-cansiglio-forest-italy.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Fagus-sylvatica-cansiglio-forest-italy.jpg/500px-Fagus-sylvatica-cansiglio-forest-italy.jpg",
     liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/H%C3%AAtre_commun" }],
     nbDistributions: 8,
     nbProjets: 3,
@@ -188,7 +179,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbre",
     nonTaxonomique: false,
     // Samares d'érable — disamares ailées caractéristiques du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Acer_rubrum_seed_keys.jpg/500px-Acer_rubrum_seed_keys.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Acer_rubrum_seed_keys.jpg/500px-Acer_rubrum_seed_keys.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -201,7 +193,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbre",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Acer_campestre_in_Appennino2.jpg/500px-Acer_campestre_in_Appennino2.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Acer_campestre_in_Appennino2.jpg/500px-Acer_campestre_in_Appennino2.jpg",
     liens: [{ source: "Floriscope", url: "https://floriscope.io/acer-campestre" }],
     nbDistributions: 7,
     nbProjets: 2,
@@ -241,7 +234,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbre",
     nonTaxonomique: false,
     // Cônes ligneux de l'aulne — strobiles persistants caractéristiques
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Common_Alder_%28Alnus_glutinosa%29_cone_%288256950549%29.jpg/500px-Common_Alder_%28Alnus_glutinosa%29_cone_%288256950549%29.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Common_Alder_%28Alnus_glutinosa%29_cone_%288256950549%29.jpg/500px-Common_Alder_%28Alnus_glutinosa%29_cone_%288256950549%29.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -254,7 +248,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbre",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/20120904Alnus_glutinosa01.jpg/500px-20120904Alnus_glutinosa01.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/20120904Alnus_glutinosa01.jpg/500px-20120904Alnus_glutinosa01.jpg",
     liens: [{ source: "Floriscope", url: "https://floriscope.io/alnus-glutinosa" }],
     nbDistributions: 6,
     nbProjets: 3,
@@ -270,7 +265,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbuste",
     nonTaxonomique: false,
     // Noisettes — noix enveloppées de bractées, trait distinctif du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Hazelnuts_%28Corylus_avellana%29_-_whole_with_kernels.jpg/500px-Hazelnuts_%28Corylus_avellana%29_-_whole_with_kernels.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Hazelnuts_%28Corylus_avellana%29_-_whole_with_kernels.jpg/500px-Hazelnuts_%28Corylus_avellana%29_-_whole_with_kernels.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -283,7 +279,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbuste",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Corylus_avellana.jpg/500px-Corylus_avellana.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Corylus_avellana.jpg/500px-Corylus_avellana.jpg",
     liens: [{ source: "Floriscope", url: "https://floriscope.io/corylus-avellana" }],
     nbDistributions: 15,
     nbProjets: 5,
@@ -311,7 +308,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbuste",
     nonTaxonomique: false,
     // Drupes bicolores du cornouiller sanguin — trait distinctif du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Cornus_sanguinea_berries.jpg/500px-Cornus_sanguinea_berries.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Cornus_sanguinea_berries.jpg/500px-Cornus_sanguinea_berries.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -324,7 +322,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbuste",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Cornus_sanguinea_Sturm39.jpg/500px-Cornus_sanguinea_Sturm39.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Cornus_sanguinea_Sturm39.jpg/500px-Cornus_sanguinea_Sturm39.jpg",
     liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Cornouiller_sanguin" }],
     nbDistributions: 6,
     nbProjets: 2,
@@ -352,7 +351,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbuste",
     nonTaxonomique: false,
     // Baies noires en corymbe — trait distinctif du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Sambucus-berries.jpg/500px-Sambucus-berries.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Sambucus-berries.jpg/500px-Sambucus-berries.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -365,7 +365,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbuste",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Sambucus_nigra_004.jpg/500px-Sambucus_nigra_004.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Sambucus_nigra_004.jpg/500px-Sambucus_nigra_004.jpg",
     liens: [{ source: "Wikipedia", url: "https://fr.wikipedia.org/wiki/Sureau_noir" }],
     nbDistributions: 7,
     nbProjets: 2,
@@ -381,7 +382,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbuste",
     nonTaxonomique: false,
     // Drupes passant du rouge au noir à maturité — caractéristique du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Frangula-alnus-fruits.JPG/500px-Frangula-alnus-fruits.JPG",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Frangula-alnus-fruits.JPG/500px-Frangula-alnus-fruits.JPG",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -394,7 +396,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbuste",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Frangula-alnus-fruits.JPG/500px-Frangula-alnus-fruits.JPG",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Frangula-alnus-fruits.JPG/500px-Frangula-alnus-fruits.JPG",
     liens: [],
     nbDistributions: 4,
     nbProjets: 1,
@@ -410,7 +413,8 @@ export const taxons: Taxon[] = [
     categorie: "Arbuste",
     nonTaxonomique: false,
     // Cynorrhodons (faux-fruits rouges) — trait très distinctif du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Rosa_canina_fruits.jpg/500px-Rosa_canina_fruits.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Rosa_canina_fruits.jpg/500px-Rosa_canina_fruits.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -423,7 +427,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbuste",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Divlja_ruza_cvijet_270508.jpg/500px-Divlja_ruza_cvijet_270508.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Divlja_ruza_cvijet_270508.jpg/500px-Divlja_ruza_cvijet_270508.jpg",
     liens: [],
     nbDistributions: 8,
     nbProjets: 2,
@@ -439,7 +444,8 @@ export const taxons: Taxon[] = [
     categorie: "Fruitier",
     nonTaxonomique: false,
     // Drupes à noyau — cerises, prunes ; trait unificateur du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Prunus_avium_fruit.jpg/500px-Prunus_avium_fruit.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Prunus_avium_fruit.jpg/500px-Prunus_avium_fruit.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -452,7 +458,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Fruitier",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Prunus_avium_fruit.jpg/500px-Prunus_avium_fruit.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Prunus_avium_fruit.jpg/500px-Prunus_avium_fruit.jpg",
     liens: [{ source: "Floriscope", url: "https://floriscope.io/prunus-avium" }],
     nbDistributions: 9,
     nbProjets: 3,
@@ -465,7 +472,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Fruitier",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fruits_Prunus_domestica.jpg/500px-Fruits_Prunus_domestica.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Fruits_Prunus_domestica.jpg/500px-Fruits_Prunus_domestica.jpg",
     liens: [],
     nbDistributions: 11,
     nbProjets: 4,
@@ -490,7 +498,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Arbuste",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Closeup_of_blackthorn_aka_sloe_aka_prunus_spinosa_sweden_20050924.jpg/500px-Closeup_of_blackthorn_aka_sloe_aka_prunus_spinosa_sweden_20050924.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Closeup_of_blackthorn_aka_sloe_aka_prunus_spinosa_sweden_20050924.jpg/500px-Closeup_of_blackthorn_aka_sloe_aka_prunus_spinosa_sweden_20050924.jpg",
     liens: [],
     nbDistributions: 4,
     nbProjets: 1,
@@ -506,7 +515,8 @@ export const taxons: Taxon[] = [
     categorie: "Fruitier",
     nonTaxonomique: false,
     // Pommes (pomes) — fruit charnu à cœur avec loges, caractéristique du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Purple_prince_crabapple_tree.JPG/500px-Purple_prince_crabapple_tree.JPG",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Purple_prince_crabapple_tree.JPG/500px-Purple_prince_crabapple_tree.JPG",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -571,7 +581,8 @@ export const taxons: Taxon[] = [
     categorie: "Plante grimpante",
     nonTaxonomique: false,
     // Baies noires à maturité en ombelles — trait distinctif du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Hedera_algeriensis_kz01.jpg/500px-Hedera_algeriensis_kz01.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Hedera_algeriensis_kz01.jpg/500px-Hedera_algeriensis_kz01.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -584,7 +595,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Plante grimpante",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Hedera_helix_Dover.jpg/500px-Hedera_helix_Dover.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Hedera_helix_Dover.jpg/500px-Hedera_helix_Dover.jpg",
     liens: [{ source: "Floriscope", url: "https://floriscope.io/hedera-helix" }],
     nbDistributions: 5,
     nbProjets: 2,
@@ -612,7 +624,8 @@ export const taxons: Taxon[] = [
     categorie: "Plante grimpante",
     nonTaxonomique: false,
     // Fleurs tubulaires bicolores — signe de reconnaissance immédiate du genre
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Lonicera_caprifolium001.jpg/500px-Lonicera_caprifolium001.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Lonicera_caprifolium001.jpg/500px-Lonicera_caprifolium001.jpg",
     liens: [],
     nbDistributions: 0,
     nbProjets: 0,
@@ -625,7 +638,8 @@ export const taxons: Taxon[] = [
     niveau: "Espèce",
     categorie: "Plante grimpante",
     nonTaxonomique: false,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/European_honeysuckle_800.jpg/500px-European_honeysuckle_800.jpg",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/European_honeysuckle_800.jpg/500px-European_honeysuckle_800.jpg",
     liens: [],
     nbDistributions: 3,
     nbProjets: 1,
