@@ -5,16 +5,19 @@ import { expect, test } from "@playwright/test";
 // get past it — reuse the real admin session saved by e2e/auth.setup.ts.
 test.use({ storageState: "e2e/.auth/admin.json" });
 
-test.describe("Espèces végétales — TanStack DB CRUD demo", () => {
+test.describe("Espèces végétales — TanStack Form + real backend CRUD", () => {
   test("create, edit and delete a taxon end-to-end", async ({ page }) => {
     await page.goto("/admin/especes-vegetales");
     await expect(page.getByText("Catalogue des espèces végétales")).toBeVisible();
 
     // Create
     await page.getByRole("link", { name: "Ajouter" }).click();
-    await page.locator("#nomCommun").fill("Test Saule");
-    await page.locator("#nomScientifique").fill("Salix testus");
+    await page.locator("#common_name").fill("Test Saule");
+    await page.locator("#scientific_name").fill("Salix testus");
+    await page.locator("#category_id").click();
+    await page.getByRole("option", { name: "Arbre" }).click();
     await page.getByRole("button", { name: "Créer le taxon" }).click();
+    await expect(page.getByText("Catalogue des espèces végétales")).toBeVisible();
     await expect(page.getByText("Test Saule")).toBeVisible();
 
     // Edit — open an existing nested taxon, check the form is pre-filled,
@@ -22,10 +25,10 @@ test.describe("Espèces végétales — TanStack DB CRUD demo", () => {
     await page.getByRole("button", { name: "Développer tout" }).click();
     await page.getByRole("link", { name: "Chêne pédonculé" }).click();
     await page.getByRole("link", { name: "Modifier ce taxon" }).click();
-    await expect(page.locator("#nomCommun")).toHaveValue("Chêne pédonculé");
-    await expect(page.locator("#nomScientifique")).toHaveValue("Quercus robur");
+    await expect(page.locator("#common_name")).toHaveValue("Chêne pédonculé");
+    await expect(page.locator("#scientific_name")).toHaveValue("Quercus robur");
 
-    await page.locator("#nomCommun").fill("Chêne pédonculé (modifié)");
+    await page.locator("#common_name").fill("Chêne pédonculé (modifié)");
     await page.getByRole("button", { name: "Enregistrer les modifications" }).click();
     await expect(page.getByText("Catalogue des espèces végétales")).toBeVisible();
     await page.getByRole("button", { name: "Développer tout" }).click();
