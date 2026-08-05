@@ -12,8 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-
-import type { Taxon } from "./data";
+import type { Taxon } from "@/types/taxon";
 
 export interface DeleteTarget {
   taxon: Taxon;
@@ -33,12 +32,17 @@ export function DeleteAlertDialog({ target, onClose, onConfirm }: DeleteAlertDia
   const blocked = (target?.hasChildren || target?.isUsed) ?? false;
 
   return (
-    <AlertDialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Trash2 className="size-5 text-destructive" />
-            Supprimer «&nbsp;{taxon?.nomCommun}&nbsp;» ?
+            Supprimer «&nbsp;{taxon?.common_name}&nbsp;» ?
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3 text-sm">
@@ -51,14 +55,10 @@ export function DeleteAlertDialog({ target, onClose, onConfirm }: DeleteAlertDia
                       {target?.isUsed && (
                         <p className="text-destructive/80">
                           Ce taxon est référencé dans{" "}
-                          {(taxon?.nbDistributions ?? 0) > 0 &&
-                            `${taxon!.nbDistributions} distribution(s)`}
-                          {(taxon?.nbDistributions ?? 0) > 0 &&
-                            (taxon?.nbProjets ?? 0) > 0 &&
-                            " et "}
-                          {(taxon?.nbProjets ?? 0) > 0 &&
-                            `${taxon!.nbProjets} projet(s) de plantation`}
-                          . Retirez-le d'abord de ces ressources.
+                          {(taxon?.nb_distributions ?? 0) > 0 && `${taxon!.nb_distributions} distribution(s)`}
+                          {(taxon?.nb_distributions ?? 0) > 0 && (taxon?.nb_projets ?? 0) > 0 && " et "}
+                          {(taxon?.nb_projets ?? 0) > 0 && `${taxon!.nb_projets} projet(s) de plantation`}. Retirez-le
+                          d'abord de ces ressources.
                         </p>
                       )}
                       {target?.hasChildren && (
@@ -72,11 +72,7 @@ export function DeleteAlertDialog({ target, onClose, onConfirm }: DeleteAlertDia
               ) : (
                 <p className="text-muted-foreground">
                   Cette action est irréversible. Le taxon{" "}
-                  {taxon?.nomScientifique ? (
-                    <em>{taxon.nomScientifique}</em>
-                  ) : (
-                    <strong>{taxon?.nomCommun}</strong>
-                  )}{" "}
+                  {taxon?.scientific_name ? <em>{taxon.scientific_name}</em> : <strong>{taxon?.common_name}</strong>}{" "}
                   sera définitivement supprimé du catalogue.
                 </p>
               )}

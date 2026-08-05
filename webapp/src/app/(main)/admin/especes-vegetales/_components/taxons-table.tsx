@@ -17,8 +17,7 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-import type { TaxonNode } from "./data";
+import type { TaxonNode } from "@/types/taxon";
 
 function preventNav(e: MouseEvent<HTMLAnchorElement>) {
   e.preventDefault();
@@ -45,7 +44,10 @@ export function TaxonsTable({ table }: { table: TableType<TaxonNode> }) {
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id}>
                 {hg.headers.map((h) => (
-                  <TableHead key={h.id} className="py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <TableHead
+                    key={h.id}
+                    className="py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  >
                     {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
                   </TableHead>
                 ))}
@@ -94,13 +96,17 @@ export function TaxonsTable({ table }: { table: TableType<TaxonNode> }) {
               <SelectContent side="top">
                 <SelectGroup>
                   {[10, 20, 30, 50].map((s) => (
-                    <SelectItem key={s} value={`${s}`}>{s}</SelectItem>
+                    <SelectItem key={s} value={`${s}`}>
+                      {s}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </div>
-          <span>Page {currentPage} sur {pageCount}</span>
+          <span>
+            Page {currentPage} sur {pageCount}
+          </span>
         </div>
 
         <Pagination className="mx-0 w-auto justify-end">
@@ -110,32 +116,45 @@ export function TaxonsTable({ table }: { table: TableType<TaxonNode> }) {
                 href="#"
                 text=""
                 className={!table.getCanPreviousPage() ? "pointer-events-none opacity-50" : undefined}
-                onClick={(e) => { preventNav(e); table.previousPage(); }}
+                onClick={(e) => {
+                  preventNav(e);
+                  table.previousPage();
+                }}
               />
             </PaginationItem>
             {pageNumbers[0] > 1 && (
-              <PaginationItem><PaginationEllipsis /></PaginationItem>
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
             )}
             {pageNumbers.map((n) => (
               <PaginationItem key={`page-${n}`}>
                 <PaginationLink
                   href="#"
                   isActive={table.getState().pagination.pageIndex === n - 1}
-                  onClick={(e) => { preventNav(e); table.setPageIndex(n - 1); }}
+                  onClick={(e) => {
+                    preventNav(e);
+                    table.setPageIndex(n - 1);
+                  }}
                 >
                   {n}
                 </PaginationLink>
               </PaginationItem>
             ))}
             {pageNumbers[pageNumbers.length - 1] < pageCount && (
-              <PaginationItem><PaginationEllipsis /></PaginationItem>
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
             )}
             <PaginationItem>
               <PaginationNext
                 href="#"
                 text=""
                 className={!table.getCanNextPage() ? "pointer-events-none opacity-50" : undefined}
-                onClick={(e) => { preventNav(e); table.nextPage(); }}
+                onClick={(e) => {
+                  preventNav(e);
+                  table.nextPage();
+                }}
               />
             </PaginationItem>
           </PaginationContent>

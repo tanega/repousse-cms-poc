@@ -5,6 +5,7 @@ import * as React from "react";
 
 import Link from "next/link";
 
+import { useLiveQuery } from "@tanstack/react-db";
 import {
   type ColumnFiltersState,
   type ExpandedState,
@@ -18,16 +19,15 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { useLiveQuery } from "@tanstack/react-db";
 import { ChevronsDownUp, ChevronsUpDown, Download, Plus, Search, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { buildTaxonTree, collectTaxonWithDescendants, TAXONOMIC_LEVEL_LABELS, TAXONOMIC_LEVELS } from "@/types/taxon";
 
-import { taxonCollection } from "./collection";
-import { buildTree, CATEGORIES, collectWithDescendants, NIVEAUX, type TaxonNode } from "./data";
+import { taxonCategoryCollection, taxonCollection } from "./collection";
 import type { DeleteTarget } from "./delete-alert-dialog";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
 import { getTaxonsColumns } from "./taxons-columns";
@@ -37,7 +37,8 @@ const ALL = "Tous";
 
 export function Taxons() {
   const { data: rows } = useLiveQuery(taxonCollection);
-  const data = React.useMemo(() => buildTree(rows ?? []), [rows]);
+  const { data: categories } = useLiveQuery(taxonCategoryCollection);
+  const data = React.useMemo(() => buildTaxonTree(rows ?? []), [rows]);
   const [deleteTarget, setDeleteTarget] = React.useState<DeleteTarget | null>(null);
 
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "nom", desc: false }]);
@@ -49,10 +50,7 @@ export function Taxons() {
   });
   const [expanded, setExpanded] = React.useState<ExpandedState>({});
 
-  const columns = React.useMemo(
-    () => getTaxonsColumns(setDeleteTarget),
-    [],
-  );
+  const columns = React.useMemo(() => getTaxonsColumns(setDeleteTarget), []);
 
   const table = useReactTable({
     data,
@@ -73,12 +71,9 @@ export function Taxons() {
     getExpandedRowModel: getExpandedRowModel(),
   });
 
-  const searchQuery =
-    (table.getColumn("search")?.getFilterValue() as string) ?? "";
-  const categorieFilter =
-    (table.getColumn("categorie")?.getFilterValue() as string) ?? ALL;
-  const niveauFilter =
-    (table.getColumn("niveau")?.getFilterValue() as string) ?? ALL;
+  const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
+  const categorieFilter = (table.getColumn("categorie")?.getFilterValue() as string) ?? ALL;
+  const niveauFilter = (table.getColumn("taxonomic_level")?.getFilterValue() as string) ?? ALL;
 
   function onSearch(value: string) {
     table.getColumn("search")?.setFilterValue(value || undefined);
@@ -93,13 +88,13 @@ export function Taxons() {
   }
 
   function onNiveauFilter(value: string) {
-    table.getColumn("niveau")?.setFilterValue(value === ALL ? undefined : value);
+    table.getColumn("taxonomic_level")?.setFilterValue(value === ALL ? undefined : value);
     table.setPageIndex(0);
     if (value !== ALL) setExpanded(true);
   }
 
   function handleDelete(id: string) {
-    taxonCollection.delete(collectWithDescendants(id, rows ?? []));
+    taxonCollection.delete(collectTaxonWithDescendants(id, rows ?? []));
   }
 
   const totalTaxons = rows?.length ?? 0;
@@ -153,8 +148,10 @@ export function Taxons() {
                 <SelectContent position="popper" align="start">
                   <SelectGroup>
                     <SelectItem value={ALL}>Toutes</SelectItem>
-                    {CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    {(categories ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -168,8 +165,10 @@ export function Taxons() {
                 <SelectContent position="popper" align="start">
                   <SelectGroup>
                     <SelectItem value={ALL}>Tous</SelectItem>
-                    {NIVEAUX.map((n) => (
-                      <SelectItem key={n} value={n}>{n}</SelectItem>
+                    {TAXONOMIC_LEVELS.map((n) => (
+                      <SelectItem key={n} value={n}>
+                        {TAXONOMIC_LEVEL_LABELS[n]}
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -207,11 +206,7 @@ export function Taxons() {
         </CardContent>
       </Card>
 
-      <DeleteAlertDialog
-        target={deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-      />
+      <DeleteAlertDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
     </>
   );
 }
