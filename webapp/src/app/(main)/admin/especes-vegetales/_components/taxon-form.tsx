@@ -1,150 +1,179 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
+import { useForm } from "@tanstack/react-form";
 import { ArrowLeft, Minus, Plus } from "lucide-react";
+import { toast } from "sonner";
+import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-
-import { taxonCollection } from "./collection";
 import {
-  CATEGORIES,
-  collectWithDescendants,
-  NIVEAUX,
-  SOURCES_LIENS,
-  type Categorie,
-  type LienExterne,
-  type NiveauTaxonomique,
-} from "./data";
+  EXTERNAL_LINK_SOURCES,
+  TAXONOMIC_LEVEL_LABELS,
+  TAXONOMIC_LEVELS,
+  type Taxon,
+  type TaxonExternalLink,
+} from "@/types/taxon";
 
-type FormValues = {
-  nomCommun: string;
-  nomScientifique: string;
-  niveau: NiveauTaxonomique;
-  categorie: Categorie;
-  parentId: string;
-  nonTaxonomique: boolean;
-  imageUrl: string;
-  liens: LienExterne[];
-};
+import { taxonCategoryCollection, taxonCollection } from "./collection";
 
-function LienRow({
-  lien,
-  onChange,
-  onRemove,
-}: {
-  lien: LienExterne;
-  onChange: (l: LienExterne) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <Select value={lien.source} onValueChange={(v) => onChange({ ...lien, source: v })}>
-        <SelectTrigger className="w-44 shrink-0">
-          <SelectValue placeholder="Source" />
-        </SelectTrigger>
-        <SelectContent>
-          {SOURCES_LIENS.map((s) => (
-            <SelectItem key={s} value={s}>{s}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Input
-        placeholder="https://…"
-        value={lien.url}
-        onChange={(e) => onChange({ ...lien, url: e.target.value })}
-        className="flex-1"
-      />
-      <Button type="button" variant="ghost" size="icon-sm" onClick={onRemove}>
-        <Minus className="size-4" />
-      </Button>
-    </div>
-  );
+const URL_RE = /^https?:\/\//;
+
+const externalLinkSchema = z.object({
+  source_name: z.string().min(1, "Source requise"),
+  url: z.string().trim().regex(URL_RE, "URL invalide (http/https)"),
+});
+
+const taxonFormSchema = z
+  .object({
+    common_name: z.string().trim().min(1, "Le nom commun est requis").max(200),
+    scientific_name: z.string().trim(),
+    taxonomic_level: z.enum(["genus", "species", "variety"]),
+    category_id: z.string().min(1, "La catégorie est requise"),
+    parent_id: z.string(),
+    is_non_taxonomic: z.boolean(),
+    image_url: z.string().trim(),
+    external_links: z.array(externalLinkSchema),
+  })
+  .refine((v) => v.is_non_taxonomic || v.scientific_name.length > 0, {
+    message: "Le nom scientifique est requis sauf pour une entrée non-taxonomique",
+    path: ["scientific_name"],
+  })
+  .refine((v) => v.image_url === "" || URL_RE.test(v.image_url), {
+    message: "URL invalide (http/https)",
+    path: ["image_url"],
+  });
+
+type TaxonFormValues = z.infer<typeof taxonFormSchema>;
+
+function emptyValues(defaultParentId?: string): TaxonFormValues {
+  return {
+    common_name: "",
+    scientific_name: "",
+    taxonomic_level: "species",
+    category_id: "",
+    parent_id: defaultParentId ?? "",
+    is_non_taxonomic: false,
+    image_url: "",
+    external_links: [],
+  };
+}
+
+function valuesFromTaxon(taxon: Taxon): TaxonFormValues {
+  return {
+    common_name: taxon.common_name,
+    scientific_name: taxon.scientific_name ?? "",
+    taxonomic_level: taxon.taxonomic_level,
+    category_id: taxon.category_id ?? "",
+    parent_id: taxon.parent_id ?? "",
+    is_non_taxonomic: taxon.is_non_taxonomic,
+    image_url: taxon.image_url ?? "",
+    external_links: taxon.external_links.map((l) => ({ source_name: l.source_name, url: l.url })),
+  };
+}
+
+function optimisticExternalLink(l: { source_name: string; url: string }, taxonId: string): TaxonExternalLink {
+  const now = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    taxon_id: taxonId,
+    source_name: l.source_name,
+    url: l.url,
+    inserted_at: now,
+    updated_at: now,
+  };
 }
 
 export interface TaxonFormProps {
   mode: "create" | "edit";
-  defaultValues?: Partial<FormValues>;
-  especeId?: string;
+  taxon?: Taxon;
+  defaultParentId?: string;
 }
 
-export function TaxonForm({ mode, defaultValues, especeId }: TaxonFormProps) {
+export function TaxonForm({ mode, taxon, defaultParentId }: TaxonFormProps) {
   const isEdit = mode === "edit";
   const router = useRouter();
   const { data: allTaxons } = useLiveQuery(taxonCollection);
+  const { data: categories } = useLiveQuery(taxonCategoryCollection);
 
-  const [values, setValues] = useState<FormValues>({
-    nomCommun: defaultValues?.nomCommun ?? "",
-    nomScientifique: defaultValues?.nomScientifique ?? "",
-    niveau: defaultValues?.niveau ?? "Espèce",
-    categorie: defaultValues?.categorie ?? "Arbre",
-    parentId: defaultValues?.parentId ?? "",
-    nonTaxonomique: defaultValues?.nonTaxonomique ?? false,
-    imageUrl: defaultValues?.imageUrl ?? "",
-    liens: defaultValues?.liens ?? [],
+  const form = useForm({
+    defaultValues: taxon ? valuesFromTaxon(taxon) : emptyValues(defaultParentId),
+    validators: { onChange: taxonFormSchema },
+    onSubmit: async ({ value }) => {
+      const record = {
+        common_name: value.common_name.trim(),
+        scientific_name: value.is_non_taxonomic && !value.scientific_name ? null : value.scientific_name.trim() || null,
+        taxonomic_level: value.taxonomic_level,
+        is_non_taxonomic: value.is_non_taxonomic,
+        image_url: value.image_url || null,
+        parent_id: value.parent_id || null,
+        category_id: value.category_id || null,
+        external_links: value.external_links,
+      };
+
+      try {
+        if (isEdit && taxon) {
+          taxonCollection.update(taxon.id, (draft) => {
+            Object.assign(draft, record);
+            draft.category = categories?.find((c) => c.id === record.category_id) ?? null;
+            draft.external_links = record.external_links.map((l) => optimisticExternalLink(l, taxon.id));
+            draft.updated_at = new Date().toISOString();
+          });
+          toast.success("Taxon mis à jour.");
+        } else {
+          const id = crypto.randomUUID();
+          const now = new Date().toISOString();
+          taxonCollection.insert({
+            id,
+            notes: null,
+            ...record,
+            category: categories?.find((c) => c.id === record.category_id) ?? null,
+            external_links: record.external_links.map((l) => optimisticExternalLink(l, id)),
+            nb_distributions: 0,
+            nb_projets: 0,
+            inserted_at: now,
+            updated_at: now,
+          });
+          toast.success("Taxon créé.");
+        }
+        router.push("/admin/especes-vegetales");
+      } catch {
+        toast.error(isEdit ? "Échec de la mise à jour." : "Échec de la création.");
+      }
+    },
   });
 
-  function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
-    setValues((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function addLien() {
-    set("liens", [...values.liens, { source: "Wikipedia", url: "" }]);
-  }
-
-  function updateLien(i: number, l: LienExterne) {
-    const next = [...values.liens];
-    next[i] = l;
-    set("liens", next);
-  }
-
-  function removeLien(i: number) {
-    set("liens", values.liens.filter((_, idx) => idx !== i));
-  }
-
-  const parentOptions = (allTaxons ?? []).filter(
-    (t) => t.id !== especeId && t.niveau !== "Variété/Cultivar",
-  );
-
-  const canSubmit =
-    values.nomCommun.trim().length > 0 &&
-    (values.nonTaxonomique || values.nomScientifique.trim().length > 0);
-
-  function handleSubmit() {
-    if (!canSubmit) return;
-    const record = {
-      nomCommun: values.nomCommun.trim(),
-      nomScientifique: values.nonTaxonomique && !values.nomScientifique ? null : values.nomScientifique.trim(),
-      niveau: values.niveau,
-      categorie: values.categorie,
-      parentId: values.parentId || null,
-      nonTaxonomique: values.nonTaxonomique,
-      imageUrl: values.imageUrl || undefined,
-      liens: values.liens,
-    };
-    if (isEdit && especeId) {
-      taxonCollection.update(especeId, (draft) => Object.assign(draft, record));
-    } else {
-      taxonCollection.insert({ id: crypto.randomUUID(), nbDistributions: 0, nbProjets: 0, ...record });
-    }
-    router.push("/admin/especes-vegetales");
-  }
+  useEffect(() => {
+    if (taxon) form.reset(valuesFromTaxon(taxon));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taxon, form.reset]);
 
   function handleDelete() {
-    if (!especeId) return;
-    taxonCollection.delete(collectWithDescendants(especeId, allTaxons ?? []));
+    if (!taxon) return;
+    taxonCollection.delete(taxon.id);
     router.push("/admin/especes-vegetales");
   }
+
+  const parentOptions = (allTaxons ?? []).filter((t) => t.id !== taxon?.id && t.taxonomic_level !== "variety");
 
   return (
     <div className="space-y-6">
@@ -155,9 +184,7 @@ export function TaxonForm({ mode, defaultValues, especeId }: TaxonFormProps) {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold">
-            {isEdit ? "Modifier le taxon" : "Ajouter un taxon"}
-          </h1>
+          <h1 className="text-2xl font-semibold">{isEdit ? "Modifier le taxon" : "Ajouter un taxon"}</h1>
           <p className="text-muted-foreground text-sm">
             {isEdit
               ? "Modifiez les informations de ce taxon végétal."
@@ -166,258 +193,375 @@ export function TaxonForm({ mode, defaultValues, especeId }: TaxonFormProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left 2/3 */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Image */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Image de référence</CardTitle>
-              <CardDescription className="text-xs">
-                URL d'une photo représentative (Wikimedia Commons, etc.). Champ optionnel.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-3">
-                {values.imageUrl && (
-                  <img
-                    src={values.imageUrl}
-                    alt="Aperçu"
-                    className="size-20 shrink-0 rounded-md border object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                )}
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="imageUrl">
-                    URL de l'image
-                    <span className="ml-1.5 text-muted-foreground text-xs font-normal">(facultatif)</span>
-                  </Label>
-                  <Input
-                    id="imageUrl"
-                    placeholder="https://upload.wikimedia.org/…"
-                    value={values.imageUrl}
-                    onChange={(e) => set("imageUrl", e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Identification */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Identification botanique</CardTitle>
-              <CardDescription className="text-xs">
-                Noms de référence du taxon dans le catalogue.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3 rounded-md border bg-muted/30 px-3 py-2.5">
-                <Checkbox
-                  id="nonTaxonomique"
-                  checked={values.nonTaxonomique}
-                  onCheckedChange={(v) => set("nonTaxonomique", !!v)}
-                  className="mt-0.5"
-                />
-                <div>
-                  <Label htmlFor="nonTaxonomique" className="cursor-pointer font-medium text-sm">
-                    Entrée non-taxonomique
-                  </Label>
-                  <p className="mt-0.5 text-muted-foreground text-xs">
-                    Cochez si le taxon n'a pas de nom latin (ex : "Plante grimpante non identifiée").
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="nomCommun">
-                  Nom commun de référence
-                  <span className="ml-1 text-destructive">*</span>
-                </Label>
-                <Input
-                  id="nomCommun"
-                  placeholder="ex : Chêne pédonculé"
-                  value={values.nomCommun}
-                  onChange={(e) => set("nomCommun", e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="nomScientifique">
-                  Nom scientifique (latin)
-                  {!values.nonTaxonomique && (
-                    <span className="ml-1 text-destructive">*</span>
-                  )}
-                  {values.nonTaxonomique && (
-                    <span className="ml-1.5 text-muted-foreground text-xs font-normal">(facultatif)</span>
-                  )}
-                </Label>
-                <Input
-                  id="nomScientifique"
-                  placeholder="ex : Quercus robur"
-                  className="italic"
-                  value={values.nomScientifique}
-                  onChange={(e) => set("nomScientifique", e.target.value)}
-                  disabled={values.nonTaxonomique && !values.nomScientifique}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Classification */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Classification</CardTitle>
-              <CardDescription className="text-xs">
-                Position dans la hiérarchie taxonomique et catégorie fonctionnelle.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="niveau">Niveau taxonomique</Label>
-                  <Select
-                    value={values.niveau}
-                    onValueChange={(v) => set("niveau", v as NiveauTaxonomique)}
-                  >
-                    <SelectTrigger id="niveau">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {NIVEAUX.map((n) => (
-                        <SelectItem key={n} value={n}>{n}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="categorie">Catégorie</Label>
-                  <Select
-                    value={values.categorie}
-                    onValueChange={(v) => set("categorie", v as Categorie)}
-                  >
-                    <SelectTrigger id="categorie">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="parentId">
-                  Taxon parent
-                  <span className="ml-1.5 text-muted-foreground text-xs font-normal">(facultatif)</span>
-                </Label>
-                <Select
-                  value={values.parentId || "none"}
-                  onValueChange={(v) => set("parentId", v === "none" ? "" : v)}
-                >
-                  <SelectTrigger id="parentId">
-                    <SelectValue placeholder="Aucun (taxon racine)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— Aucun (taxon racine) —</SelectItem>
-                    {parentOptions.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.nomCommun}
-                        {t.nomScientifique ? ` · ${t.nomScientifique}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-muted-foreground text-xs">
-                  Hiérarchie maximale de 3 niveaux : Genre → Espèce → Variété/Cultivar
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Liens externes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Liens vers bases de connaissance</CardTitle>
-              <CardDescription className="text-xs">
-                Floriscope, Wikipedia, Encyclopedia of Life, DoPI, etc.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {values.liens.map((lien, i) => (
-                <LienRow
-                  key={i}
-                  lien={lien}
-                  onChange={(l) => updateLien(i, l)}
-                  onRemove={() => removeLien(i)}
-                />
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={addLien}
-              >
-                <Plus className="size-4" />
-                Ajouter un lien
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right 1/3 */}
-        <div className="space-y-6">
-          {isEdit && (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left 2/3 */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Image */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Informations</CardTitle>
+                <CardTitle className="text-base">Image de référence</CardTitle>
+                <CardDescription className="text-xs">
+                  URL d'une photo représentative (Wikimedia Commons, etc.). Champ optionnel.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Identifiant</span>
-                  <code className="font-mono text-xs text-foreground">{especeId}</code>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Distributions</span>
-                  <span className="font-medium text-foreground tabular-nums">—</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Projets</span>
-                  <span className="font-medium text-foreground tabular-nums">—</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Dernière modification</span>
-                  <span className="font-medium text-foreground">—</span>
-                </div>
+              <CardContent>
+                <form.Field name="image_url">
+                  {(field) => {
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                    return (
+                      <div className="flex gap-3">
+                        {field.state.value && (
+                          <img
+                            src={field.state.value}
+                            alt="Aperçu"
+                            className="size-20 shrink-0 rounded-md border object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        )}
+                        <Field data-invalid={isInvalid} className="flex-1">
+                          <FieldLabel htmlFor={field.name}>
+                            URL de l'image
+                            <span className="ml-1.5 text-muted-foreground text-xs font-normal">(facultatif)</span>
+                          </FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            placeholder="https://upload.wikimedia.org/…"
+                            value={field.state.value}
+                            aria-invalid={isInvalid}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                          />
+                          {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                        </Field>
+                      </div>
+                    );
+                  }}
+                </form.Field>
               </CardContent>
             </Card>
-          )}
 
-          <div className="flex flex-col gap-2">
-            <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
-              {isEdit ? "Enregistrer les modifications" : "Créer le taxon"}
-            </Button>
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="/admin/especes-vegetales">Annuler</Link>
-            </Button>
-            {isEdit && (
-              <>
-                <Separator />
-                <Button variant="destructive" className="w-full" onClick={handleDelete}>
-                  Supprimer ce taxon
-                </Button>
-              </>
+            {/* Identification */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Identification botanique</CardTitle>
+                <CardDescription className="text-xs">Noms de référence du taxon dans le catalogue.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup>
+                  <form.Field name="is_non_taxonomic">
+                    {(field) => (
+                      <FieldLabel
+                        htmlFor={field.name}
+                        className="flex-row items-start rounded-md border bg-muted/30 px-3 py-2.5"
+                      >
+                        <Checkbox
+                          id={field.name}
+                          checked={field.state.value}
+                          onCheckedChange={(v) => field.handleChange(!!v)}
+                          className="mt-0.5"
+                        />
+                        <FieldContent>
+                          <FieldTitle>Entrée non-taxonomique</FieldTitle>
+                          <FieldDescription>
+                            Cochez si le taxon n'a pas de nom latin (ex : "Plante grimpante non identifiée").
+                          </FieldDescription>
+                        </FieldContent>
+                      </FieldLabel>
+                    )}
+                  </form.Field>
+
+                  <form.Field name="common_name">
+                    {(field) => {
+                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>
+                            Nom commun de référence
+                            <span className="ml-1 text-destructive">*</span>
+                          </FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            placeholder="ex : Chêne pédonculé"
+                            value={field.state.value}
+                            aria-invalid={isInvalid}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                          />
+                          {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                        </Field>
+                      );
+                    }}
+                  </form.Field>
+
+                  <form.Subscribe selector={(state) => state.values.is_non_taxonomic}>
+                    {(isNonTaxonomic) => (
+                      <form.Field name="scientific_name">
+                        {(field) => {
+                          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                Nom scientifique (latin)
+                                {!isNonTaxonomic && <span className="ml-1 text-destructive">*</span>}
+                                {isNonTaxonomic && (
+                                  <span className="ml-1.5 text-muted-foreground text-xs font-normal">(facultatif)</span>
+                                )}
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                name={field.name}
+                                placeholder="ex : Quercus robur"
+                                className="italic"
+                                value={field.state.value}
+                                aria-invalid={isInvalid}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                              />
+                              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+                    )}
+                  </form.Subscribe>
+                </FieldGroup>
+              </CardContent>
+            </Card>
+
+            {/* Classification */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Classification</CardTitle>
+                <CardDescription className="text-xs">
+                  Position dans la hiérarchie taxonomique et catégorie fonctionnelle.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup>
+                  <div className="grid grid-cols-2 gap-4">
+                    <form.Field name="taxonomic_level">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel htmlFor={field.name}>Niveau taxonomique</FieldLabel>
+                          <Select
+                            value={field.state.value}
+                            onValueChange={(v) => field.handleChange(v as typeof field.state.value)}
+                          >
+                            <SelectTrigger id={field.name}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TAXONOMIC_LEVELS.map((n) => (
+                                <SelectItem key={n} value={n}>
+                                  {TAXONOMIC_LEVEL_LABELS[n]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    <form.Field name="category_id">
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Catégorie</FieldLabel>
+                            <Select value={field.state.value} onValueChange={field.handleChange}>
+                              <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                                <SelectValue placeholder="Choisir…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(categories ?? []).map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                  </div>
+
+                  <form.Field name="parent_id">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>
+                          Taxon parent
+                          <span className="ml-1.5 text-muted-foreground text-xs font-normal">(facultatif)</span>
+                        </FieldLabel>
+                        <Select
+                          value={field.state.value || "none"}
+                          onValueChange={(v) => field.handleChange(v === "none" ? "" : v)}
+                        >
+                          <SelectTrigger id={field.name}>
+                            <SelectValue placeholder="Aucun (taxon racine)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">— Aucun (taxon racine) —</SelectItem>
+                            {parentOptions.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.common_name}
+                                {t.scientific_name ? ` · ${t.scientific_name}` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FieldDescription>
+                          Hiérarchie maximale de 3 niveaux : Genre → Espèce → Variété/Cultivar
+                        </FieldDescription>
+                      </Field>
+                    )}
+                  </form.Field>
+                </FieldGroup>
+              </CardContent>
+            </Card>
+
+            {/* Liens externes */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Liens vers bases de connaissance</CardTitle>
+                <CardDescription className="text-xs">
+                  Floriscope, Wikipedia, Encyclopedia of Life, DoPI, etc.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <form.Field name="external_links" mode="array">
+                  {(linksField) => (
+                    <>
+                      {linksField.state.value.map((_, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <form.Field name={`external_links[${i}].source_name`}>
+                            {(field) => (
+                              <Select value={field.state.value} onValueChange={field.handleChange}>
+                                <SelectTrigger className="w-44 shrink-0">
+                                  <SelectValue placeholder="Source" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {EXTERNAL_LINK_SOURCES.map((s) => (
+                                    <SelectItem key={s} value={s}>
+                                      {s}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </form.Field>
+                          <form.Field name={`external_links[${i}].url`}>
+                            {(field) => {
+                              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                              return (
+                                <Field data-invalid={isInvalid} className="flex-1">
+                                  <Input
+                                    placeholder="https://…"
+                                    value={field.state.value}
+                                    aria-invalid={isInvalid}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                  />
+                                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                </Field>
+                              );
+                            }}
+                          </form.Field>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="mt-0.5"
+                            onClick={() => linksField.removeValue(i)}
+                          >
+                            <Minus className="size-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => linksField.pushValue({ source_name: "Wikipedia", url: "" })}
+                      >
+                        <Plus className="size-4" />
+                        Ajouter un lien
+                      </Button>
+                    </>
+                  )}
+                </form.Field>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right 1/3 */}
+          <div className="space-y-6">
+            {isEdit && taxon && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Informations</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Identifiant</span>
+                    <code className="font-mono text-xs text-foreground">{taxon.id}</code>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Distributions</span>
+                    <span className="font-medium text-foreground tabular-nums">{taxon.nb_distributions}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Projets</span>
+                    <span className="font-medium text-foreground tabular-nums">{taxon.nb_projets}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Dernière modification</span>
+                    <span className="font-medium text-foreground">
+                      {new Date(taxon.updated_at).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
             )}
+
+            <div className="flex flex-col gap-2">
+              <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
+                {([canSubmit, isSubmitting]) => (
+                  <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
+                    {isSubmitting ? "Enregistrement…" : isEdit ? "Enregistrer les modifications" : "Créer le taxon"}
+                  </Button>
+                )}
+              </form.Subscribe>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/admin/especes-vegetales">Annuler</Link>
+              </Button>
+              {isEdit && (
+                <>
+                  <Separator />
+                  <Button type="button" variant="destructive" className="w-full" onClick={handleDelete}>
+                    Supprimer ce taxon
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
