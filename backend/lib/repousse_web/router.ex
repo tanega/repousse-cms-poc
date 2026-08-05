@@ -72,15 +72,17 @@ defmodule RepousseWeb.Router do
     delete "/projects/:project_id/journal/:entry_id", ProjectController, :delete_journal_entry
 
     # Taxa
+    # /taxa/categories must be declared before the /taxa/:id wildcard below,
+    # or Phoenix matches it as TaxonController.show with id="categories".
     get "/taxa", TaxonController, :index
-    get "/taxa/:id", TaxonController, :show
     get "/taxa/categories", TaxonCategoryController, :index
+    get "/taxa/:id", TaxonController, :show
 
     scope "/admin", Admin, as: :admin do
       pipe_through :admin
 
-      resources "/taxa", TaxonController, except: [:new, :edit]
       resources "/taxa/categories", TaxonCategoryController, except: [:new, :edit, :show]
+      resources "/taxa", TaxonController, except: [:new, :edit]
       get "/taxa/:id/versions", TaxonController, :versions
       post "/taxa/:id/restore/:version_id", TaxonController, :restore
     end
