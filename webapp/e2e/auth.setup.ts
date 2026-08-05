@@ -30,12 +30,21 @@ setup("authenticate as admin", async ({ page }) => {
     .first()
     .click();
 
-  const codeMethod = hankoAuth.getByText("Code d'accès", { exact: true });
-  if ((await codeMethod.count()) > 0) {
-    await codeMethod.click();
+  // The method-selection step ("Code d'accès" / "Mot de passe" / "Clé
+  // d'identification") only renders when the account has more than one
+  // login method, and can transition to the passcode step on its own —
+  // poll and re-query fresh each iteration rather than awaiting a single
+  // .click() on a locator that may detach mid-wait.
+  const firstDigit = hankoAuth.getByRole("textbox", { name: "passcode-digit-1" });
+  for (let i = 0; i < 20; i++) {
+    if (await firstDigit.isVisible().catch(() => false)) break;
+    const codeMethod = hankoAuth.getByText("Code d'accès", { exact: true });
+    if (await codeMethod.isVisible().catch(() => false)) {
+      await codeMethod.click().catch(() => {});
+    }
+    await page.waitForTimeout(500);
   }
 
-  const firstDigit = hankoAuth.getByRole("textbox", { name: "passcode-digit-1" });
   await firstDigit.waitFor({ state: "visible", timeout: 10_000 });
 
   let code: string | null = null;
