@@ -99,7 +99,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navUser = {
     name: user ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email : "",
     email: user?.email ?? "",
-    avatar: "",
+    avatar: user?.avatar_url ?? "",
   };
 
   return (

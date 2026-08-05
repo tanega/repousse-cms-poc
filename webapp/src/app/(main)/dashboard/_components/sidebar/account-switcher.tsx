@@ -6,7 +6,7 @@ import { BadgeCheck, Bell, LogOut, User } from "lucide-react";
 
 import { hankoLogout } from "@/lib/hanko.client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +32,7 @@ export function AccountSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="size-8 rounded-lg">
+          <AvatarImage src={user.avatar_url ?? undefined} alt={name} />
           <AvatarFallback>{getInitials(name)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -39,6 +40,7 @@ export function AccountSwitcher() {
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex w-full items-center gap-2 px-1 py-1.5">
             <Avatar className="size-9 rounded-lg">
+              <AvatarImage src={user.avatar_url ?? undefined} alt={name} />
               <AvatarFallback>{getInitials(name)}</AvatarFallback>
             </Avatar>
             <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
