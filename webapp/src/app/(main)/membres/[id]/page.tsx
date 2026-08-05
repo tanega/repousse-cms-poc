@@ -162,7 +162,7 @@ export default function MemberProfilePage() {
   const displayEmail = isOwnProfile && user ? user.email : mockProfile.contacts.email;
   const ownStatusLabel = user?.status === "active" ? "Actif" : "Suspendu";
   const displayStatus = isOwnProfile && user ? ownStatusLabel : mockProfile.about.status;
-  const displayAvatar = isOwnProfile ? undefined : mockProfile.avatar;
+  const displayAvatar = isOwnProfile ? (user?.avatar_url ?? undefined) : mockProfile.avatar;
 
   return (
     <div className="space-y-4">
