@@ -168,15 +168,27 @@ export default function MemberProfilePage() {
     <div className="space-y-4">
       {/* Header card */}
       <Card className="overflow-hidden p-0">
-        {/* Banner */}
-        <div
-          className="h-40 bg-muted"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, var(--color-border) 1px, transparent 1px), linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
+        {/* Banner — avatar shown blurred/grayscale as a placeholder background until banner image upload exists */}
+        <div className="relative h-40 overflow-hidden bg-muted">
+          {displayAvatar ? (
+            // biome-ignore lint/performance/noImgElement: avatar_url is an external MinIO URL, not configured in next/image remotePatterns
+            <img
+              src={displayAvatar}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 size-full scale-110 object-cover object-center blur-xs grayscale"
+            />
+          ) : (
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(to right, var(--color-border) 1px, transparent 1px), linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)",
+                backgroundSize: "28px 28px",
+              }}
+            />
+          )}
+        </div>
         {/* Avatar + info row */}
         <div className="relative flex items-end justify-between px-6 pb-5">
           <div className="flex items-end gap-4">
