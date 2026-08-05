@@ -21,7 +21,7 @@ defmodule Repousse.Taxa.TaxonExternalLink do
   def changeset(link, attrs) do
     link
     |> cast(attrs, [:source_name, :url, :taxon_id])
-    |> validate_required([:source_name, :url, :taxon_id])
+    |> validate_required([:source_name, :url])
     |> validate_length(:source_name, max: 100)
     |> validate_format(:url, ~r/^https?:\/\//)
   end

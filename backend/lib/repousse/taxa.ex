@@ -22,12 +22,19 @@ defmodule Repousse.Taxa do
     |> maybe_filter_category(opts[:category_id])
     |> maybe_filter_level(opts[:level])
     |> maybe_search(opts[:search])
-    |> preload([:category, :parent])
+    |> preload([:category, :parent, :external_links])
     |> Repo.all()
+    |> Enum.map(&put_counts/1)
   end
 
-  def get_taxon(id), do: Repo.get(Taxon, id)
-  def get_taxon!(id), do: Repo.get!(Taxon, id)
+  def get_taxon(id) do
+    case Repo.get(Taxon, id) do
+      nil -> nil
+      taxon -> enrich(taxon)
+    end
+  end
+
+  def get_taxon!(id), do: Repo.get!(Taxon, id) |> enrich()
 
   def get_taxon_with_tree(id) do
     Repo.get!(Taxon, id)
@@ -41,7 +48,7 @@ defmodule Repousse.Taxa do
     |> Ecto.Multi.insert(:taxon, Taxon.changeset(%Taxon{}, attrs))
     |> Repo.transaction()
     |> case do
-      {:ok, %{taxon: taxon}} -> {:ok, taxon}
+      {:ok, %{taxon: taxon}} -> {:ok, enrich(taxon)}
       {:error, :taxon, changeset, _} -> {:error, changeset}
     end
   end
@@ -57,7 +64,7 @@ defmodule Repousse.Taxa do
     |> Ecto.Multi.update(:taxon, Taxon.changeset(taxon, attrs))
     |> Repo.transaction()
     |> case do
-      {:ok, %{taxon: updated}} -> {:ok, updated}
+      {:ok, %{taxon: updated}} -> {:ok, enrich(updated)}
       {:error, :taxon, changeset, _} -> {:error, changeset}
     end
   end
@@ -112,5 +119,24 @@ defmodule Repousse.Taxa do
     children_count = from(t in Taxon, where: t.parent_id == ^id, select: count(t.id)) |> Repo.one()
     stock_count = from(s in Repousse.Distributions.Stock, where: s.taxon_id == ^id, select: count(s.id)) |> Repo.one()
     children_count + stock_count > 0
+  end
+
+  # Preloads the associations the API response needs and fills in the
+  # computed usage counts. Not folded into a single query (N+1 on counts) —
+  # fine at catalogue size; revisit if list_taxa needs to scale up.
+  defp enrich(%Taxon{} = taxon) do
+    taxon
+    |> Repo.preload([:category, :external_links])
+    |> put_counts()
+  end
+
+  defp put_counts(%Taxon{id: id} = taxon) do
+    nb_distributions =
+      from(s in Repousse.Distributions.Stock, where: s.taxon_id == ^id, select: count(s.id)) |> Repo.one()
+
+    nb_projets =
+      from(p in Repousse.Projects.PreferredSpecies, where: p.taxon_id == ^id, select: count(p.id)) |> Repo.one()
+
+    %{taxon | nb_distributions: nb_distributions, nb_projets: nb_projets}
   end
 end
