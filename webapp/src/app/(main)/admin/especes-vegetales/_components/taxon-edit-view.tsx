@@ -4,8 +4,9 @@ import { notFound } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
 
+import { findTaxonById } from "@/types/taxon";
+
 import { taxonCollection } from "./collection";
-import { findTaxonById } from "./data";
 import { TaxonForm } from "./taxon-form";
 
 export function TaxonEditView({ id }: { id: string }) {
@@ -16,20 +17,5 @@ export function TaxonEditView({ id }: { id: string }) {
   const taxon = findTaxonById(id, rows ?? []);
   if (!taxon) notFound();
 
-  return (
-    <TaxonForm
-      mode="edit"
-      especeId={id}
-      defaultValues={{
-        nomCommun: taxon.nomCommun,
-        nomScientifique: taxon.nomScientifique ?? "",
-        niveau: taxon.niveau,
-        categorie: taxon.categorie,
-        parentId: taxon.parentId ?? "",
-        nonTaxonomique: taxon.nonTaxonomique,
-        imageUrl: taxon.imageUrl ?? "",
-        liens: taxon.liens,
-      }}
-    />
-  );
+  return <TaxonForm mode="edit" taxon={taxon} />;
 }
