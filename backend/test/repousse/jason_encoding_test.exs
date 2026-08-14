@@ -19,7 +19,7 @@ defmodule Repousse.JasonEncodingTest do
   end
 
   test "Project encodes" do
-    assert %{"name" => _} = insert(:project) |> encode()
+    assert %{"name" => _} = insert(:project) |> Repousse.Repo.preload(:preferred_species) |> encode()
   end
 
   test "ProjectMember encodes" do
