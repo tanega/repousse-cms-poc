@@ -6,53 +6,51 @@ import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
-import { ArrowLeft, Layers, MapPin, Pencil, Ruler, Sprout, User, Users } from "lucide-react";
+import { ArrowLeft, Layers, MapPin, Pencil, Ruler, Sprout } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { cn } from "@/lib/utils";
+import {
+  findProjectById,
+  MANAGEMENT_TYPE_LABELS,
+  PUBLICATION_STATUS_COLORS,
+  PUBLICATION_STATUS_LABELS,
+  PUBLICATION_STATUS_TRANSITIONS,
+  type PublicationStatus,
+} from "@/types/project";
 
-import { taxons } from "../../especes-vegetales/_components/data";
+import { taxonCollection } from "../../especes-vegetales/_components/collection";
 import { CarteMini } from "./carte-mini";
-import { projetPlantationCollection } from "./collection";
-import { CURRENT_USER } from "./current-user";
-import { findProjetById, STATUT_COLORS, STATUT_TRANSITIONS, type StatutPublication } from "./data";
 import type { DeleteTarget } from "./delete-alert-dialog";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
-import { JournalCard } from "./journal-card";
-import { MediasCard } from "./medias-card";
-import { MembresCard } from "./membres-card";
-import { ModerationCard } from "./moderation-card";
-import { PlantsAssociesCard } from "./plants-associes-card";
-
-function taxonName(taxonId: string) {
-  const taxon = taxons.find((t) => t.id === taxonId);
-  return taxon?.nomCommun ?? taxonId;
-}
+import { projectCollection } from "./project-collection";
 
 export function ProjetDetailView({ id }: { id: string }) {
   const router = useRouter();
-  const { data: projets } = useLiveQuery(projetPlantationCollection);
-  const projet = findProjetById(id, projets ?? []);
+  const { data: projets } = useLiveQuery(projectCollection);
+  const { data: taxons } = useLiveQuery(taxonCollection);
+  const { user } = useCurrentUser();
+  const projet = findProjectById(id, projets ?? []);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   if (!projet) notFound();
 
-  const transitions = STATUT_TRANSITIONS[projet.statut];
+  const isOwner = !!user && user.id === projet.owner_id;
+  const transitions = isOwner ? PUBLICATION_STATUS_TRANSITIONS[projet.publication_status] : [];
 
-  function handleStatutChange(statut: StatutPublication) {
-    projetPlantationCollection.update(projet!.id, (draft) => {
-      draft.statut = statut;
-      if (statut === "Public" && !draft.publishedAt) {
-        draft.publishedAt = new Date().toISOString().slice(0, 10);
-      }
+  function handleStatutChange(statut: PublicationStatus) {
+    if (!projet) return;
+    projectCollection.update(projet.id, (draft) => {
+      draft.publication_status = statut;
     });
   }
 
   function handleDelete(deleteId: string) {
-    projetPlantationCollection.delete([deleteId]);
+    projectCollection.delete([deleteId]);
     router.push("/admin/projets-plantation");
   }
 
@@ -67,38 +65,43 @@ export function ProjetDetailView({ id }: { id: string }) {
           </Button>
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold">{projet.nom}</h1>
+              <h1 className="text-2xl font-semibold">{projet.name}</h1>
               <Badge
                 variant="outline"
-                className={cn("border-0 px-2 py-0.5 text-xs font-normal", STATUT_COLORS[projet.statut])}
+                className={cn(
+                  "border-0 px-2 py-0.5 text-xs font-normal",
+                  PUBLICATION_STATUS_COLORS[projet.publication_status],
+                )}
               >
-                {projet.statut}
+                {PUBLICATION_STATUS_LABELS[projet.publication_status]}
               </Badge>
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-muted-foreground text-xs">
               <MapPin className="size-3" />
-              {projet.adresse || "Adresse non renseignée"}
+              {projet.address ?? "Adresse non renseignée"}
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/admin/projets-plantation/${projet.id}/modifier`}>
-                <Pencil className="size-4" />
-                Modifier
-              </Link>
-            </Button>
-            {transitions.map((statut) => (
-              <Button
-                key={statut}
-                variant={statut === "Public" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleStatutChange(statut)}
-              >
-                {statut === "Public" && "Publier"}
-                {statut === "Privé" && "Repasser en privé"}
+          {isOwner && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/admin/projets-plantation/${projet.id}/modifier`}>
+                  <Pencil className="size-4" />
+                  Modifier
+                </Link>
               </Button>
-            ))}
-          </div>
+              {transitions.map((statut) => (
+                <Button
+                  key={statut}
+                  variant={statut === "public" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleStatutChange(statut)}
+                >
+                  {statut === "public" && "Publier"}
+                  {statut === "private" && "Repasser en privé"}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -110,7 +113,7 @@ export function ProjetDetailView({ id }: { id: string }) {
               </CardHeader>
               <CardContent>
                 <p className="whitespace-pre-wrap text-muted-foreground text-sm">
-                  {projet.description || "Aucune description."}
+                  {projet.description ?? "Aucune description."}
                 </p>
               </CardContent>
             </Card>
@@ -121,7 +124,7 @@ export function ProjetDetailView({ id }: { id: string }) {
                   <CardTitle className="text-base">Localisation</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CarteMini lat={projet.lat} lng={projet.lng} label={projet.nom} />
+                  <CarteMini lat={projet.lat} lng={projet.lng} label={projet.name} />
                 </CardContent>
               </Card>
             )}
@@ -135,19 +138,19 @@ export function ProjetDetailView({ id }: { id: string }) {
                   <Layers className="size-3.5" />
                   Gestion
                 </div>
-                <div className="text-right font-medium">{projet.natureGestion}</div>
+                <div className="text-right font-medium">{MANAGEMENT_TYPE_LABELS[projet.management_type]}</div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Ruler className="size-3.5" />
                   Surface
                 </div>
                 <div className="text-right font-medium">
-                  {projet.surfaceM2 !== null ? `${projet.surfaceM2} m²` : "Non renseignée"}
+                  {projet.surface_m2 !== null ? `${projet.surface_m2} m²` : "Non renseignée"}
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Sprout className="size-3.5" />
                   Nature du sol
                 </div>
-                <div className="text-right font-medium">{projet.natureSol || "Non renseignée"}</div>
+                <div className="text-right font-medium">{projet.soil_type ?? "Non renseignée"}</div>
               </CardContent>
             </Card>
 
@@ -156,25 +159,22 @@ export function ProjetDetailView({ id }: { id: string }) {
                 <CardTitle className="text-base">Espèces préférentielles</CardTitle>
               </CardHeader>
               <CardContent>
-                {projet.especeIds.length === 0 ? (
+                {projet.preferred_species.length === 0 ? (
                   <p className="text-muted-foreground text-sm">Aucune espèce associée.</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {projet.especeIds.map((id) => (
-                      <Badge key={id} variant="secondary" className="font-normal">
-                        {taxonName(id)}
-                      </Badge>
-                    ))}
+                    {projet.preferred_species.map((s) => {
+                      const taxon = taxons?.find((t) => t.id === s.taxon_id);
+                      return (
+                        <Badge key={s.id} variant="secondary" className="font-normal">
+                          {taxon?.common_name ?? s.taxon_id}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            <PlantsAssociesCard projetId={projet.id} />
-
-            <MediasCard projet={projet} canEdit />
-
-            <JournalCard projet={projet} currentUserNom={CURRENT_USER.nom} canPost isProjectAdmin />
           </div>
 
           {/* Right 1/3 */}
@@ -184,22 +184,6 @@ export function ProjetDetailView({ id }: { id: string }) {
                 <CardTitle className="text-base">Informations</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <User className="size-3.5" />
-                    Créateur
-                  </span>
-                  <span className="font-medium text-foreground">{projet.createurNom}</span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <Users className="size-3.5" />
-                    Membres
-                  </span>
-                  <span className="font-medium text-foreground tabular-nums">{projet.membres.length}</span>
-                </div>
-                <Separator />
                 <div className="flex justify-between text-muted-foreground">
                   <span>Identifiant</span>
                   <code className="font-mono text-xs text-foreground">{projet.id}</code>
@@ -207,27 +191,29 @@ export function ProjetDetailView({ id }: { id: string }) {
                 <Separator />
                 <div className="flex justify-between text-muted-foreground">
                   <span>Créé le</span>
-                  <span className="font-medium text-foreground">{projet.createdAt}</span>
+                  <span className="font-medium text-foreground">
+                    {new Date(projet.inserted_at).toLocaleDateString("fr-FR")}
+                  </span>
                 </div>
-                {projet.publishedAt && (
+                {projet.published_at && (
                   <>
                     <Separator />
                     <div className="flex justify-between text-muted-foreground">
                       <span>Publié le</span>
-                      <span className="font-medium text-foreground">{projet.publishedAt}</span>
+                      <span className="font-medium text-foreground">
+                        {new Date(projet.published_at).toLocaleDateString("fr-FR")}
+                      </span>
                     </div>
                   </>
                 )}
               </CardContent>
             </Card>
 
-            <MembresCard projet={projet} canManage />
-
-            <ModerationCard projet={projet} />
-
-            <Button variant="destructive" className="w-full" onClick={() => setDeleteTarget({ projet })}>
-              Supprimer ce projet
-            </Button>
+            {isOwner && (
+              <Button variant="destructive" className="w-full" onClick={() => setDeleteTarget({ projet })}>
+                Supprimer ce projet
+              </Button>
+            )}
           </div>
         </div>
       </div>

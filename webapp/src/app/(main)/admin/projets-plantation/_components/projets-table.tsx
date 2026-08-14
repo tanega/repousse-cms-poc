@@ -17,8 +17,7 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-import type { ProjetPlantation } from "./data";
+import type { Project } from "@/types/project";
 
 function preventNav(e: MouseEvent<HTMLAnchorElement>) {
   e.preventDefault();
@@ -31,7 +30,7 @@ function getPageNumbers(current: number, total: number) {
   return [current - 1, current, current + 1];
 }
 
-export function ProjetsTable({ table }: { table: TableType<ProjetPlantation> }) {
+export function ProjetsTable({ table }: { table: TableType<Project> }) {
   const pageCount = Math.max(table.getPageCount(), 1);
   const currentPage = Math.min(table.getState().pagination.pageIndex + 1, pageCount);
   const pageNumbers = getPageNumbers(currentPage, pageCount);

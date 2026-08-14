@@ -4,29 +4,18 @@ import { notFound } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
 
-import { projetPlantationCollection } from "./collection";
-import { findProjetById } from "./data";
+import { findProjectById } from "@/types/project";
+
+import { projectCollection } from "./project-collection";
 import { ProjetForm } from "./projet-form";
 
 export function ProjetEditView({ id }: { id: string }) {
-  const { data: projets } = useLiveQuery(projetPlantationCollection);
-  const projet = findProjetById(id, projets ?? []);
+  const { data: projets, isLoading } = useLiveQuery(projectCollection);
+
+  if (isLoading) return null;
+
+  const projet = findProjectById(id, projets ?? []);
   if (!projet) notFound();
 
-  return (
-    <ProjetForm
-      mode="edit"
-      projetId={projet.id}
-      statut={projet.statut}
-      defaultValues={{
-        nom: projet.nom,
-        description: projet.description,
-        natureGestion: projet.natureGestion,
-        adresse: projet.adresse,
-        surfaceM2: projet.surfaceM2 === null ? "" : String(projet.surfaceM2),
-        natureSol: projet.natureSol,
-        especeIds: projet.especeIds,
-      }}
-    />
-  );
+  return <ProjetForm mode="edit" projet={projet} />;
 }

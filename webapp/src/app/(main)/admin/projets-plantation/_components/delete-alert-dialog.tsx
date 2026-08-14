@@ -12,11 +12,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-
-import type { ProjetPlantation } from "./data";
+import type { Project } from "@/types/project";
 
 export interface DeleteTarget {
-  projet: ProjetPlantation;
+  projet: Project;
 }
 
 interface DeleteAlertDialogProps {
@@ -40,12 +39,12 @@ export function DeleteAlertDialog({ target, onClose, onConfirm }: DeleteAlertDia
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Trash2 className="size-5 text-destructive" />
-            Supprimer «&nbsp;{projet?.nom}&nbsp;» ?
+            Supprimer «&nbsp;{projet?.name}&nbsp;» ?
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-1.5 text-sm">
               <p className="text-muted-foreground">
-                Cette action est irréversible. Le projet <strong>{projet?.nom}</strong>, sa description et ses médias
+                Cette action est irréversible. Le projet <strong>{projet?.name}</strong>, sa description et ses médias
                 seront définitivement supprimés.
               </p>
               <p className="text-muted-foreground text-xs">
