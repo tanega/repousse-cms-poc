@@ -30,12 +30,13 @@ config :repousse, :hanko,
   admin_url: System.get_env("HANKO_ADMIN_URL", "http://localhost:8001"),
   jwks_url: hanko_api_url <> "/.well-known/jwks.json"
 
-# CORS_ORIGIN is already passed to the backend container in docker-compose
-# but was never actually read anywhere — comma-separate multiple origins
-# (e.g. the webapp reached via Traefik's www.localhost alongside its native
-# `npm run dev` port and its docker-compose direct-access port).
+# Comma-separated allowed origins (e.g. the webapp reached via Traefik's
+# www.localhost alongside its native `npm run dev` port and its
+# docker-compose direct-access port). Read by RepousseWeb.CorsOrigins.list/0
+# at request time — see config.exs for why `:cors_plug, origin` itself has
+# to be a captured function rather than this list directly.
 if cors_origin = System.get_env("CORS_ORIGIN") do
-  config :cors_plug, origin: String.split(cors_origin, ",", trim: true)
+  config :repousse, cors_allowed_origins: String.split(cors_origin, ",", trim: true)
 end
 
 # Gated on MAILPIT_SMTP_HOST rather than `config_env() == :dev`: the
