@@ -146,7 +146,7 @@ export function getTaxonsColumns(onDelete: (target: DeleteTarget) => void): Colu
       id: "liens",
       header: "Liens",
       cell: ({ row }) => {
-        const count = row.original.external_links.length;
+        const count = row.original.external_links?.length ?? 0;
         if (count === 0) return <span className="text-muted-foreground text-xs">—</span>;
         return (
           <div className="flex items-center gap-1 text-xs text-muted-foreground">

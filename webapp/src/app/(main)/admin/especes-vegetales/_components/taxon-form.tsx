@@ -87,7 +87,7 @@ function valuesFromTaxon(taxon: Taxon): TaxonFormValues {
     parent_id: taxon.parent_id ?? "",
     is_non_taxonomic: taxon.is_non_taxonomic,
     image_url: taxon.image_url ?? "",
-    external_links: taxon.external_links.map((l) => ({ source_name: l.source_name, url: l.url })),
+    external_links: (taxon.external_links ?? []).map((l) => ({ source_name: l.source_name, url: l.url })),
   };
 }
 
