@@ -40,6 +40,7 @@ defmodule RepousseWeb.Router do
       pipe_through :admin
 
       resources "/distributions", DistributionController, except: [:new, :edit]
+      patch "/distributions/:id/cover_image", DistributionController, :update_cover_image
       post "/distributions/:id/publish", DistributionController, :publish
       post "/distributions/:id/close", DistributionController, :close
       resources "/distributions/:distribution_id/slots", SlotController, except: [:new, :edit]

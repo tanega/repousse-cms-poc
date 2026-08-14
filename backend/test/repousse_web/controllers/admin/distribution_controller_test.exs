@@ -82,6 +82,45 @@ defmodule RepousseWeb.Admin.DistributionControllerTest do
     end
   end
 
+  describe "PATCH /admin/distributions/:id/cover_image" do
+    test "admin uploads a cover image", %{conn: conn, private_map: pm} do
+      admin = insert(:admin_user)
+      event = insert(:distribution_event)
+
+      path = Path.join(System.tmp_dir!(), "distribution-cover-test.jpg")
+      File.write!(path, :binary.copy(<<0>>, 100))
+      on_exit(fn -> File.rm(path) end)
+
+      upload = %Plug.Upload{path: path, content_type: "image/jpeg", filename: "cover.jpg"}
+
+      conn =
+        conn
+        |> authed(admin, pm)
+        |> patch(~p"/api/v1/admin/distributions/#{event.id}/cover_image", %{"cover_image" => upload})
+
+      assert %{"data" => %{"image_url" => image_url}} = json_response(conn, 200)
+      assert image_url =~ event.id
+    end
+
+    test "a non-admin gets forbidden", %{conn: conn, private_map: pm} do
+      user = insert(:user)
+      event = insert(:distribution_event)
+
+      path = Path.join(System.tmp_dir!(), "distribution-cover-test-forbidden.jpg")
+      File.write!(path, :binary.copy(<<0>>, 100))
+      on_exit(fn -> File.rm(path) end)
+
+      upload = %Plug.Upload{path: path, content_type: "image/jpeg", filename: "cover.jpg"}
+
+      conn =
+        conn
+        |> authed(user, pm)
+        |> patch(~p"/api/v1/admin/distributions/#{event.id}/cover_image", %{"cover_image" => upload})
+
+      assert json_response(conn, 403)
+    end
+  end
+
   describe "DELETE /admin/distributions/:id" do
     test "admin deletes a distribution event", %{conn: conn, private_map: pm} do
       admin = insert(:admin_user)

@@ -4,6 +4,7 @@ defmodule RepousseWeb.Admin.DistributionController do
   action_fallback RepousseWeb.FallbackController
 
   alias Repousse.Distributions
+  alias Repousse.Distributions.Policy
   alias RepousseWeb.OpenApiHelpers, as: API
   alias RepousseWeb.Schemas.{Event, Reservation}
 
@@ -54,6 +55,29 @@ defmodule RepousseWeb.Admin.DistributionController do
     event = Distributions.get_event!(id)
     with {:ok, _} <- Repousse.Repo.delete(event), do: send_resp(conn, :no_content, "")
   end
+
+  operation :update_cover_image,
+    summary: "Upload a distribution event's cover image",
+    parameters: [id: [in: :path, type: :string, description: "Event ID"]],
+    request_body:
+      {"Cover image (multipart)", "multipart/form-data", %OpenApiSpex.Schema{
+         type: :object,
+         properties: %{cover_image: %OpenApiSpex.Schema{type: :string, format: :binary}}
+       }},
+    responses: [ok: API.object(Event, "Updated event")]
+
+  def update_cover_image(conn, %{"id" => id, "cover_image" => %Plug.Upload{} = upload}) do
+    event = Distributions.get_event!(id)
+    user = conn.assigns.current_user
+
+    with :ok <- Bodyguard.permit(Policy, :manage_event, user, %{event: event}),
+         {:ok, url} <- Repousse.Storage.upload_distribution_event_image(upload, id),
+         {:ok, updated} <- Distributions.update_event(event, %{"image_url" => url}) do
+      json(conn, %{data: updated})
+    end
+  end
+
+  def update_cover_image(_conn, _params), do: {:error, "Fichier `cover_image` manquant"}
 
   operation :publish,
     summary: "Publish a distribution event (admin)",

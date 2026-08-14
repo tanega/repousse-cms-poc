@@ -21,6 +21,9 @@ defmodule Repousse.Storage do
   def upload_project_cover(%Plug.Upload{} = upload, project_id),
     do: do_upload(upload, "projects/#{project_id}/cover/#{Ecto.UUID.generate()}")
 
+  def upload_distribution_event_image(%Plug.Upload{} = upload, event_id),
+    do: do_upload(upload, "distributions/#{event_id}/cover/#{Ecto.UUID.generate()}")
+
   defp do_upload(%Plug.Upload{} = upload, key_prefix) do
     with {:ok, ext} <- validate_content_type(upload.content_type),
          {:ok, size} <- file_size(upload.path),
