@@ -10,8 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 
-import { distributionEventCollection } from "../../admin/distributions/_components/collection";
-import { STATUT_COLORS } from "../../admin/distributions/_components/data";
+import { distributionEventCollection } from "./mock-collection";
+import { STATUT_COLORS } from "./mock-events";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
 

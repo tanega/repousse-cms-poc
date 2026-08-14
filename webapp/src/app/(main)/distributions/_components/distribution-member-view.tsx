@@ -21,11 +21,11 @@ import { Separator } from "@/components/ui/separator";
 import { useHankoSession } from "@/lib/auth/use-hanko-session";
 import { cn } from "@/lib/utils";
 
-import { distributionEventCollection } from "../../admin/distributions/_components/collection";
-import { STATUT_COLORS } from "../../admin/distributions/_components/data";
 import { taxons } from "../../admin/especes-vegetales/_components/data";
 import { projetPlantationCollection } from "../../admin/projets-plantation/_components/collection";
 import { currentMember } from "./current-member";
+import { distributionEventCollection } from "./mock-collection";
+import { STATUT_COLORS } from "./mock-events";
 import { ProjetSelectOrCreate } from "./projet-select-or-create";
 import { reservationsCollection } from "./reservations-collection";
 import { canCancel, findActiveReservation, type Reservation } from "./reservations-data";
