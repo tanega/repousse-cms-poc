@@ -15,6 +15,7 @@ defmodule Repousse.Distributions.Event do
              :slug,
              :status,
              :published_at,
+             :reservations_count,
              :inserted_at,
              :updated_at
            ]}
@@ -27,6 +28,7 @@ defmodule Repousse.Distributions.Event do
     field :slug, :string
     field :status, Ecto.Enum, values: [:draft, :published, :closed], default: :draft
     field :published_at, :utc_datetime
+    field :reservations_count, :integer, virtual: true, default: 0
 
     has_many :slots, Repousse.Distributions.Slot
     has_many :stocks, Repousse.Distributions.Stock
