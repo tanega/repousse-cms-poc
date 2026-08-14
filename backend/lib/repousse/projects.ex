@@ -11,6 +11,7 @@ defmodule Repousse.Projects do
 
     query =
       from p in Project,
+        where: is_nil(p.archived_at),
         order_by: [desc: p.inserted_at]
 
     query =
@@ -29,12 +30,14 @@ defmodule Repousse.Projects do
         query
       end
 
-    Repo.all(query)
+    query |> Repo.all() |> Repo.preload(:preferred_species)
   end
 
-  def get_project!(id), do: Repo.get!(Project, id)
+  def get_project!(id), do: Repo.get!(Project, id) |> enrich()
 
   def create_project(attrs, owner_id) do
+    attrs = Map.merge(attrs, %{"owner_id" => owner_id})
+
     Ecto.Multi.new()
     |> Ecto.Multi.insert(:project, Project.changeset(%Project{}, attrs))
     |> Ecto.Multi.insert(:member, fn %{project: project} ->
@@ -46,18 +49,23 @@ defmodule Repousse.Projects do
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{project: project}} -> {:ok, project}
+      {:ok, %{project: project}} -> {:ok, enrich(project)}
       {:error, :project, changeset, _} -> {:error, changeset}
     end
   end
 
   def update_project(%Project{} = project, attrs) do
-    project |> Project.changeset(attrs) |> Repo.update()
+    case project |> Repo.preload(:preferred_species) |> Project.changeset(attrs) |> Repo.update() do
+      {:ok, updated} -> {:ok, enrich(updated)}
+      error -> error
+    end
   end
 
   def archive_project(%Project{} = project) do
     project |> Project.archive_changeset() |> Repo.update()
   end
+
+  defp enrich(%Project{} = project), do: Repo.preload(project, :preferred_species)
 
   # --- Members ---
 

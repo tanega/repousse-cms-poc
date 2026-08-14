@@ -17,7 +17,7 @@ defmodule Repousse.Projects.PreferredSpecies do
   def changeset(ps, attrs) do
     ps
     |> cast(attrs, [:project_id, :taxon_id])
-    |> validate_required([:project_id, :taxon_id])
+    |> validate_required([:taxon_id])
     |> unique_constraint([:project_id, :taxon_id])
   end
 end
