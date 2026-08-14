@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 // value is a valid JWT — so a dummy value is enough to get past the redirect
 // to /auth/v2/login for these local e2e runs.
 test.beforeEach(async ({ context }) => {
-  await context.addCookies([{ name: "hanko", value: "e2e-test-token", url: "http://localhost:3000" }]);
+  await context.addCookies([{ name: "hanko", value: "e2e-test-token", url: "http://localhost:3010" }]);
 });
 
 test.describe("Member distributions — browse, reserve, cancel, waitlist", () => {

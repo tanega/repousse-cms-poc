@@ -24,11 +24,19 @@ setup("authenticate as admin", async ({ page }) => {
   const hankoAuth = page.locator("hanko-auth");
 
   await hankoAuth.locator("input[type='email']").first().fill(EMAIL);
-  await hankoAuth
+
+  const continueButton = hankoAuth
     .locator("button[type='submit'], button")
     .filter({ hasText: /continuer|continue/i })
-    .first()
-    .click();
+    .first();
+  await continueButton.waitFor({ state: "visible" });
+  // hanko-elements races its own `register_client_capabilities` call against
+  // whatever the next click triggers — clicking immediately (as Playwright
+  // does, much faster than a human) can win that race and land the widget in
+  // a broken transient error state that never recovers on its own. A short
+  // settle delay avoids it.
+  await page.waitForTimeout(500);
+  await continueButton.click();
 
   // The method-selection step ("Code d'accès" / "Mot de passe" / "Clé
   // d'identification") only renders when the account has more than one
@@ -58,9 +66,11 @@ setup("authenticate as admin", async ({ page }) => {
   await firstDigit.click();
   await page.keyboard.type(code!, { delay: 50 });
 
-  const continueButton = hankoAuth.locator("button[type='submit'], button").filter({ hasText: /continuer|continue/i });
-  if ((await continueButton.count()) > 0 && (await continueButton.first().isVisible())) {
-    await continueButton.first().click().catch(() => {});
+  const submitOtpButton = hankoAuth
+    .locator("button[type='submit'], button")
+    .filter({ hasText: /continuer|continue/i });
+  if ((await submitOtpButton.count()) > 0 && (await submitOtpButton.first().isVisible())) {
+    await submitOtpButton.first().click().catch(() => {});
   }
 
   for (let i = 0; i < 10; i++) {
