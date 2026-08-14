@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
@@ -13,10 +13,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import {
+  EVENT_STATUS_COLORS,
+  EVENT_STATUS_LABELS,
+  EVENT_STATUS_TRANSITIONS,
+  type EventStatus,
+  findEventById,
+} from "@/types/distribution";
 
-import { taxons } from "../../especes-vegetales/_components/data";
-import { distributionEventCollection } from "./collection";
-import { findEventById, STATUT_COLORS, STATUT_TRANSITIONS, type StatutEvenement } from "./data";
+import { taxonCollection } from "../../especes-vegetales/_components/collection";
+import { createSlotCollection, createStockCollection, distributionEventCollection } from "./collection";
 import type { DeleteTarget } from "./delete-alert-dialog";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
 
@@ -27,30 +33,39 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
   year: "numeric",
 });
 
-function taxonName(taxonId: string) {
-  const taxon = taxons.find((t) => t.id === taxonId);
-  return taxon?.nomCommun ?? taxonId;
-}
+const createdAtFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 export function DistributionDetailView({ id }: { id: string }) {
   const router = useRouter();
-  const { data: events } = useLiveQuery(distributionEventCollection);
+  const { data: events, isLoading: eventsLoading } = useLiveQuery(distributionEventCollection);
   const event = findEventById(id, events ?? []);
+
+  const slotCollection = useMemo(() => createSlotCollection(id), [id]);
+  const stockCollection = useMemo(() => createStockCollection(id), [id]);
+  const { data: slots } = useLiveQuery(slotCollection);
+  const { data: stocks } = useLiveQuery(stockCollection);
+  const { data: taxa } = useLiveQuery(taxonCollection);
+
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
+  if (eventsLoading) return null;
   if (!event) notFound();
 
-  const transitions = STATUT_TRANSITIONS[event.statut];
+  const transitions = EVENT_STATUS_TRANSITIONS[event.status];
 
-  function handleStatutChange(statut: StatutEvenement) {
+  function handleStatusChange(status: EventStatus) {
     distributionEventCollection.update(event!.id, (draft) => {
-      draft.statut = statut;
+      draft.status = status;
     });
   }
 
   function handleDelete(deleteId: string) {
     distributionEventCollection.delete([deleteId]);
     router.push("/admin/distributions");
+  }
+
+  function taxonName(taxonId: string) {
+    return taxa?.find((t) => t.id === taxonId)?.common_name ?? taxonId;
   }
 
   return (
@@ -64,17 +79,17 @@ export function DistributionDetailView({ id }: { id: string }) {
           </Button>
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold">{event.intitule}</h1>
+              <h1 className="text-2xl font-semibold">{event.title}</h1>
               <Badge
                 variant="outline"
-                className={cn("border-0 px-2 py-0.5 text-xs font-normal", STATUT_COLORS[event.statut])}
+                className={cn("border-0 px-2 py-0.5 text-xs font-normal", EVENT_STATUS_COLORS[event.status])}
               >
-                {event.statut}
+                {EVENT_STATUS_LABELS[event.status]}
               </Badge>
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-muted-foreground text-xs">
               <Link2 className="size-3" />
-              <code>/distributions/{event.lienPermanent}</code>
+              <code>/distributions/{event.slug}</code>
             </div>
           </div>
           <div className="flex gap-2">
@@ -84,16 +99,15 @@ export function DistributionDetailView({ id }: { id: string }) {
                 Modifier
               </Link>
             </Button>
-            {transitions.map((statut) => (
+            {transitions.map((status) => (
               <Button
-                key={statut}
-                variant={statut === "Publié" ? "default" : "outline"}
+                key={status}
+                variant={status === "published" ? "default" : "outline"}
                 size="sm"
-                onClick={() => handleStatutChange(statut)}
+                onClick={() => handleStatusChange(status)}
               >
-                {statut === "Publié" && "Publier"}
-                {statut === "Brouillon" && "Repasser en brouillon"}
-                {statut === "Clôturé" && "Clôturer"}
+                {status === "published" && "Publier"}
+                {status === "closed" && "Clôturer"}
               </Button>
             ))}
           </div>
@@ -102,8 +116,9 @@ export function DistributionDetailView({ id }: { id: string }) {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left 2/3 */}
           <div className="space-y-6 lg:col-span-2">
-            {event.imageUrl && (
-              <img src={event.imageUrl} alt={event.intitule} className="h-48 w-full rounded-md border object-cover" />
+            {event.image_url && (
+              // biome-ignore lint/performance/noImgElement: MinIO-hosted cover image
+              <img src={event.image_url} alt={event.title} className="h-48 w-full rounded-md border object-cover" />
             )}
 
             <Card>
@@ -112,12 +127,12 @@ export function DistributionDetailView({ id }: { id: string }) {
               </CardHeader>
               <CardContent>
                 <p className="whitespace-pre-wrap text-muted-foreground text-sm">
-                  {event.description || "Aucune description."}
+                  {event.description ? event.description : "Aucune description."}
                 </p>
-                {event.contactGeneral && (
+                {event.general_contact && (
                   <div className="mt-3 flex items-center gap-1.5 text-muted-foreground text-sm">
                     <Mail className="size-3.5" />
-                    {event.contactGeneral}
+                    {event.general_contact}
                   </div>
                 )}
               </CardContent>
@@ -128,24 +143,24 @@ export function DistributionDetailView({ id }: { id: string }) {
                 <CardTitle className="text-base">Créneaux</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {event.creneaux.length === 0 ? (
+                {!slots || slots.length === 0 ? (
                   <p className="text-muted-foreground text-sm">Aucun créneau défini.</p>
                 ) : (
-                  event.creneaux.map((c) => (
-                    <div key={c.id} className="flex items-start gap-3 rounded-md border p-3 text-sm">
+                  slots.map((s) => (
+                    <div key={s.id} className="flex items-start gap-3 rounded-md border p-3 text-sm">
                       <CalendarDays className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
                         <div className="font-medium capitalize">
-                          {c.date ? dateFormatter.format(new Date(c.date)) : "Date à définir"}
+                          {s.date ? dateFormatter.format(new Date(s.date)) : "Date à définir"}
                         </div>
                         <div className="text-muted-foreground text-xs">
-                          {c.heureDebut} – {c.heureFin}
+                          {s.start_time} – {s.end_time}
                         </div>
                         <div className="mt-1 flex items-center gap-1 text-muted-foreground text-xs">
                           <MapPin className="size-3" />
-                          {c.lieu}
+                          {s.location_name}
                         </div>
-                        {c.contact && <div className="text-muted-foreground text-xs">{c.contact}</div>}
+                        {s.contact && <div className="text-muted-foreground text-xs">{s.contact}</div>}
                       </div>
                     </div>
                   ))
@@ -158,14 +173,16 @@ export function DistributionDetailView({ id }: { id: string }) {
                 <CardTitle className="text-base">Stock d'espèces</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {event.stock.length === 0 ? (
+                {!stocks || stocks.length === 0 ? (
                   <p className="text-muted-foreground text-sm">Aucune espèce associée.</p>
                 ) : (
-                  event.stock.map((s) => (
-                    <div key={s.taxonId} className="flex items-center justify-between text-sm">
-                      <span>{taxonName(s.taxonId)}</span>
+                  stocks.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between text-sm">
+                      <span>{taxonName(s.taxon_id)}</span>
                       <span className="font-medium tabular-nums text-muted-foreground">
-                        {s.quantite === null ? "Quantité inconnue" : `${s.quantite} restants`}
+                        {s.quantity_unknown
+                          ? "Quantité inconnue"
+                          : `${(s.quantity ?? 0) - s.reserved_quantity} restants`}
                       </span>
                     </div>
                   ))
@@ -186,7 +203,7 @@ export function DistributionDetailView({ id }: { id: string }) {
                     <Users className="size-3.5" />
                     Inscrits
                   </span>
-                  <span className="font-medium text-foreground tabular-nums">{event.nbInscrits}</span>
+                  <span className="font-medium text-foreground tabular-nums">{event.reservations_count}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-muted-foreground">
@@ -196,7 +213,9 @@ export function DistributionDetailView({ id }: { id: string }) {
                 <Separator />
                 <div className="flex justify-between text-muted-foreground">
                   <span>Créé le</span>
-                  <span className="font-medium text-foreground">{event.createdAt}</span>
+                  <span className="font-medium text-foreground">
+                    {createdAtFormatter.format(new Date(event.inserted_at))}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -204,7 +223,7 @@ export function DistributionDetailView({ id }: { id: string }) {
             <Button
               variant="destructive"
               className="w-full"
-              disabled={event.nbInscrits > 0}
+              disabled={event.reservations_count > 0}
               onClick={() => setDeleteTarget({ event })}
             >
               Supprimer cet événement

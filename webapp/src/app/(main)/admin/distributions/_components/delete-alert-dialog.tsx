@@ -12,8 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-
-import type { DistributionEvent } from "./data";
+import type { DistributionEvent } from "@/types/distribution";
 
 export interface DeleteTarget {
   event: DistributionEvent;
@@ -28,7 +27,7 @@ interface DeleteAlertDialogProps {
 export function DeleteAlertDialog({ target, onClose, onConfirm }: DeleteAlertDialogProps) {
   const open = !!target;
   const event = target?.event;
-  const blocked = (event?.nbInscrits ?? 0) > 0;
+  const blocked = (event?.reservations_count ?? 0) > 0;
 
   return (
     <AlertDialog
@@ -41,7 +40,7 @@ export function DeleteAlertDialog({ target, onClose, onConfirm }: DeleteAlertDia
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Trash2 className="size-5 text-destructive" />
-            Supprimer «&nbsp;{event?.intitule}&nbsp;» ?
+            Supprimer «&nbsp;{event?.title}&nbsp;» ?
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3 text-sm">
@@ -52,15 +51,15 @@ export function DeleteAlertDialog({ target, onClose, onConfirm }: DeleteAlertDia
                     <div className="space-y-1.5">
                       <p className="font-medium">Suppression bloquée</p>
                       <p className="text-destructive/80">
-                        Cet événement compte {event?.nbInscrits} inscription(s) active(s). Clôturez-le plutôt que de le
-                        supprimer.
+                        Cet événement compte {event?.reservations_count} inscription(s) active(s). Clôturez-le plutôt
+                        que de le supprimer.
                       </p>
                     </div>
                   </div>
                 </div>
               ) : (
                 <p className="text-muted-foreground">
-                  Cette action est irréversible. L'événement <strong>{event?.intitule}</strong> et ses créneaux seront
+                  Cette action est irréversible. L'événement <strong>{event?.title}</strong> et ses créneaux seront
                   définitivement supprimés.
                 </p>
               )}

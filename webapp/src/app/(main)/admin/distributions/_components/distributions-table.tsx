@@ -17,8 +17,7 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-import type { DistributionEvent } from "./data";
+import type { DistributionEvent } from "@/types/distribution";
 
 function preventNav(e: MouseEvent<HTMLAnchorElement>) {
   e.preventDefault();
