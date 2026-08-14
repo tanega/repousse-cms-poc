@@ -20,6 +20,7 @@ defmodule Repousse.Projects.Project do
              :published_at,
              :archived_at,
              :owner_id,
+             :preferred_species,
              :inserted_at,
              :updated_at
            ]}
@@ -42,7 +43,7 @@ defmodule Repousse.Projects.Project do
     has_many :invitations, Repousse.Projects.ProjectInvitation
     has_many :media, Repousse.Projects.ProjectMedia
     has_many :journal_entries, Repousse.Projects.JournalEntry
-    has_many :preferred_species, Repousse.Projects.PreferredSpecies
+    has_many :preferred_species, Repousse.Projects.PreferredSpecies, on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end
@@ -55,6 +56,7 @@ defmodule Repousse.Projects.Project do
     ])
     |> validate_required([:name, :owner_id])
     |> validate_length(:name, min: 2, max: 200)
+    |> cast_assoc(:preferred_species, with: &Repousse.Projects.PreferredSpecies.changeset/2)
   end
 
   def publish_changeset(project) do
