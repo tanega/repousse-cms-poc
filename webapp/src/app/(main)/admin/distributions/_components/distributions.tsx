@@ -23,9 +23,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EVENT_STATUS_LABELS, EVENT_STATUSES } from "@/types/distribution";
 
 import { distributionEventCollection } from "./collection";
-import { STATUTS } from "./data";
 import type { DeleteTarget } from "./delete-alert-dialog";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
 import { getDistributionsColumns } from "./distributions-columns";
@@ -38,7 +38,7 @@ export function Distributions() {
   const data = React.useMemo(() => rows ?? [], [rows]);
   const [deleteTarget, setDeleteTarget] = React.useState<DeleteTarget | null>(null);
 
-  const [sorting, setSorting] = React.useState<SortingState>([{ id: "intitule", desc: false }]);
+  const [sorting, setSorting] = React.useState<SortingState>([{ id: "title", desc: false }]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility] = React.useState<VisibilityState>({ search: false });
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -50,15 +50,15 @@ export function Distributions() {
     distributionEventCollection.delete([id]);
   }
 
-  const handleStatutChange = React.useCallback((id: string, statut: (typeof STATUTS)[number]) => {
+  const handleStatusChange = React.useCallback((id: string, status: (typeof EVENT_STATUSES)[number]) => {
     distributionEventCollection.update(id, (draft) => {
-      draft.statut = statut;
+      draft.status = status;
     });
   }, []);
 
   const columns = React.useMemo(
-    () => getDistributionsColumns(setDeleteTarget, handleStatutChange),
-    [handleStatutChange],
+    () => getDistributionsColumns(setDeleteTarget, handleStatusChange),
+    [handleStatusChange],
   );
 
   const table = useReactTable({
@@ -76,15 +76,15 @@ export function Distributions() {
   });
 
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
-  const statutFilter = (table.getColumn("statut")?.getFilterValue() as string) ?? ALL;
+  const statusFilter = (table.getColumn("status")?.getFilterValue() as string) ?? ALL;
 
   function onSearch(value: string) {
     table.getColumn("search")?.setFilterValue(value || undefined);
     table.setPageIndex(0);
   }
 
-  function onStatutFilter(value: string) {
-    table.getColumn("statut")?.setFilterValue(value === ALL ? undefined : value);
+  function onStatusFilter(value: string) {
+    table.getColumn("status")?.setFilterValue(value === ALL ? undefined : value);
     table.setPageIndex(0);
   }
 
@@ -122,7 +122,7 @@ export function Distributions() {
 
         <CardContent className="flex flex-col gap-4 px-0">
           <div className="flex flex-wrap items-center justify-between gap-3 px-4">
-            <Select value={statutFilter} onValueChange={onStatutFilter}>
+            <Select value={statusFilter} onValueChange={onStatusFilter}>
               <SelectTrigger size="sm">
                 <span className="text-muted-foreground">Statut :</span>
                 <SelectValue />
@@ -130,16 +130,16 @@ export function Distributions() {
               <SelectContent position="popper" align="start">
                 <SelectGroup>
                   <SelectItem value={ALL}>Tous</SelectItem>
-                  {STATUTS.map((s) => (
+                  {EVENT_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {s}
+                      {EVENT_STATUS_LABELS[s]}
                     </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
 
-            {(searchQuery || statutFilter !== ALL) && (
+            {(searchQuery || statusFilter !== ALL) && (
               <span className="text-muted-foreground text-xs tabular-nums">
                 {filteredCount} résultat{filteredCount > 1 ? "s" : ""}
               </span>
