@@ -7,14 +7,14 @@ import { useRouter } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
 import { useForm } from "@tanstack/react-form";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import * as z from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +30,8 @@ import {
 } from "@/types/project";
 
 import { taxonCollection } from "../../especes-vegetales/_components/collection";
+import { AdresseSearchBox } from "./adresse-search-box";
+import { CarteMini } from "./carte-mini";
 import { projectCollection } from "./project-collection";
 
 const projetFormSchema = z.object({
@@ -37,6 +39,8 @@ const projetFormSchema = z.object({
   description: z.string().trim(),
   management_type: z.enum(["individual", "collective"]),
   address: z.string().trim(),
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
   surface_m2: z.string().trim(),
   soil_type: z.string().trim(),
   preferred_species: z.array(z.string()),
@@ -50,6 +54,8 @@ function emptyValues(): ProjetFormValues {
     description: "",
     management_type: "individual",
     address: "",
+    lat: null,
+    lng: null,
     surface_m2: "",
     soil_type: "",
     preferred_species: [],
@@ -62,6 +68,8 @@ function valuesFromProjet(projet: Project): ProjetFormValues {
     description: projet.description ?? "",
     management_type: projet.management_type,
     address: projet.address ?? "",
+    lat: projet.lat,
+    lng: projet.lng,
     surface_m2: projet.surface_m2 === null ? "" : String(projet.surface_m2),
     soil_type: projet.soil_type ?? "",
     preferred_species: projet.preferred_species.map((s) => s.taxon_id),
@@ -87,6 +95,8 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
         description: value.description.trim() || null,
         management_type: value.management_type,
         address: value.address.trim() || null,
+        lat: value.lat,
+        lng: value.lng,
         surface_m2: value.surface_m2 === "" ? null : Number(value.surface_m2),
         soil_type: value.soil_type.trim() || null,
         preferred_species: value.preferred_species.map((taxon_id) => ({
@@ -111,8 +121,6 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
           const now = new Date().toISOString();
           projectCollection.insert({
             id,
-            lat: null,
-            lng: null,
             publication_status: "private",
             published_at: null,
             archived_at: null,
@@ -259,17 +267,59 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
                     {(field) => (
                       <Field>
                         <FieldLabel htmlFor={field.name}>Adresse</FieldLabel>
-                        <Input
+                        <AdresseSearchBox
                           id={field.name}
-                          name={field.name}
-                          placeholder="ex : 12 chemin des Coteaux, 69008 Lyon"
                           value={field.state.value}
+                          placeholder="ex : 12 chemin des Coteaux, 69008 Lyon"
                           onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
+                          onInputChange={(v) => {
+                            field.handleChange(v);
+                            if (form.state.values.lat !== null || form.state.values.lng !== null) {
+                              form.setFieldValue("lat", null);
+                              form.setFieldValue("lng", null);
+                            }
+                          }}
+                          onSelect={(result) => {
+                            field.handleChange(result.label);
+                            form.setFieldValue("lat", result.lat);
+                            form.setFieldValue("lng", result.lng);
+                          }}
                         />
+                        <FieldDescription>
+                          Recherche via la Base Adresse Nationale — sélectionnez une suggestion pour géolocaliser le
+                          projet.
+                        </FieldDescription>
                       </Field>
                     )}
                   </form.Field>
+
+                  <form.Subscribe selector={(state) => [state.values.lat, state.values.lng] as const}>
+                    {([lat, lng]) =>
+                      lat !== null && lng !== null ? (
+                        <Field>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                              <MapPin className="size-3.5" />
+                              {lat.toFixed(5)}, {lng.toFixed(5)}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto py-0.5 text-muted-foreground text-xs"
+                              onClick={() => {
+                                form.setFieldValue("lat", null);
+                                form.setFieldValue("lng", null);
+                              }}
+                            >
+                              Effacer les coordonnées
+                            </Button>
+                          </div>
+                          <CarteMini lat={lat} lng={lng} label={form.state.values.name || "Projet"} />
+                        </Field>
+                      ) : null
+                    }
+                  </form.Subscribe>
 
                   <div className="grid grid-cols-2 gap-4">
                     <form.Field name="surface_m2">
