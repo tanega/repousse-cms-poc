@@ -20,4 +20,11 @@ defmodule Repousse.StorageTest do
     assert {:error, msg} = Storage.upload_avatar(upload, Ecto.UUID.generate())
     assert msg =~ "5 Mo"
   end
+
+  test "rejects unsupported content types for distribution event images" do
+    upload = %Plug.Upload{path: "/dev/null", content_type: "application/pdf", filename: "x.pdf"}
+
+    assert {:error, msg} = Storage.upload_distribution_event_image(upload, Ecto.UUID.generate())
+    assert msg =~ "non supporté"
+  end
 end
