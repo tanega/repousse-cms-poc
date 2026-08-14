@@ -25,11 +25,20 @@ config :repousse, Oban,
 # (`Application.get_all_env(:cors_plug)` inside `CORSPlug.init/1`) — nesting
 # it under a `CORSPlug` key (as `config :cors_plug, CORSPlug, ...` would)
 # silently no-ops and falls back to the library default (`origin: "*"`).
+#
+# `origin` is a captured function (see RepousseWeb.CorsOrigins), not a
+# literal list — CORSPlug.init/1 runs at router *compile* time, so a literal
+# list here could never be overridden by config/runtime.exs's CORS_ORIGIN
+# (which only runs at boot). The function defers the actual origin lookup
+# to request time.
 config :cors_plug,
-  origin: ["http://www.localhost", "http://localhost:3000", "http://localhost:3002"],
+  origin: &RepousseWeb.CorsOrigins.list/0,
   max_age: 86400,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   headers: ["Authorization", "Content-Type", "Accept"]
+
+config :repousse,
+  cors_allowed_origins: ["http://www.localhost", "http://localhost:3000", "http://localhost:3002"]
 
 # Configure the endpoint
 config :repousse, RepousseWeb.Endpoint,
