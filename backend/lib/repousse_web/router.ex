@@ -59,6 +59,7 @@ defmodule RepousseWeb.Router do
     get "/projects/:id", ProjectController, :show
     post "/projects", ProjectController, :create
     put "/projects/:id", ProjectController, :update
+    patch "/projects/:id/cover_image", ProjectController, :update_cover_image
     delete "/projects/:id", ProjectController, :archive
     get "/projects/:id/members", ProjectController, :members
     post "/projects/:id/invitations", ProjectController, :invite

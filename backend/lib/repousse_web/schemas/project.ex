@@ -21,6 +21,7 @@ defmodule RepousseWeb.Schemas.Project do
         published_at: %Schema{type: :string, format: "date-time", nullable: true},
         archived_at: %Schema{type: :string, format: "date-time", nullable: true},
         owner_id: %Schema{type: :string, format: :uuid, nullable: true},
+        cover_image_url: %Schema{type: :string, nullable: true},
         inserted_at: %Schema{type: :string, format: "date-time"},
         updated_at: %Schema{type: :string, format: "date-time"}
       },
@@ -39,6 +40,7 @@ defmodule RepousseWeb.Schemas.Project do
         "published_at" => nil,
         "archived_at" => nil,
         "owner_id" => "a1b2c3d4-0000-4000-8000-000000000000",
+        "cover_image_url" => nil,
         "inserted_at" => "2026-01-15T10:00:00Z",
         "updated_at" => "2026-01-15T10:00:00Z"
       }
