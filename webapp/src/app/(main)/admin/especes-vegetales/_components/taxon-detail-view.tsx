@@ -201,13 +201,13 @@ export function TaxonDetailView({ id }: { id: string }) {
           )}
 
           {/* Liens */}
-          {taxon.external_links.length > 0 && (
+          {(taxon.external_links?.length ?? 0) > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Bases de connaissance</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
-                {taxon.external_links.map((lien) => (
+                {taxon.external_links?.map((lien) => (
                   <a
                     key={lien.id}
                     href={lien.url}
@@ -226,7 +226,7 @@ export function TaxonDetailView({ id }: { id: string }) {
             </Card>
           )}
 
-          {taxon.external_links.length === 0 && children.length === 0 && (
+          {(taxon.external_links?.length ?? 0) === 0 && children.length === 0 && (
             <p className="text-muted-foreground text-sm">Aucun taxon enfant ni lien externe pour ce taxon.</p>
           )}
         </div>
