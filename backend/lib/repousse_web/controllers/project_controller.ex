@@ -62,6 +62,29 @@ defmodule RepousseWeb.ProjectController do
     end
   end
 
+  operation :update_cover_image,
+    summary: "Upload a project's cover image",
+    parameters: [id: [in: :path, type: :string, description: "Project ID"]],
+    request_body:
+      {"Cover image (multipart)", "multipart/form-data", %OpenApiSpex.Schema{
+         type: :object,
+         properties: %{cover_image: %OpenApiSpex.Schema{type: :string, format: :binary}}
+       }},
+    responses: [ok: API.object(Project, "Updated project")]
+
+  def update_cover_image(conn, %{"id" => id, "cover_image" => %Plug.Upload{} = upload}) do
+    project = Projects.get_project!(id)
+    user = conn.assigns.current_user
+
+    with :ok <- Bodyguard.permit(Policy, :edit_project, user, %{project: project}),
+         {:ok, url} <- Repousse.Storage.upload_project_cover(upload, id),
+         {:ok, updated} <- Projects.update_project(project, %{"cover_image_url" => url}) do
+      json(conn, %{data: updated})
+    end
+  end
+
+  def update_cover_image(_conn, _params), do: {:error, "Fichier `cover_image` manquant"}
+
   operation :archive,
     summary: "Archive a planting project",
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],

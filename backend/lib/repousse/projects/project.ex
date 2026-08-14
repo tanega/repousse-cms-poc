@@ -20,6 +20,7 @@ defmodule Repousse.Projects.Project do
              :published_at,
              :archived_at,
              :owner_id,
+             :cover_image_url,
              :preferred_species,
              :inserted_at,
              :updated_at
@@ -37,6 +38,7 @@ defmodule Repousse.Projects.Project do
     field :publication_status, Ecto.Enum, values: [:private, :public, :unpublished], default: :private
     field :published_at, :utc_datetime
     field :archived_at, :utc_datetime
+    field :cover_image_url, :string
 
     belongs_to :owner, Repousse.Accounts.User
     has_many :members, Repousse.Projects.ProjectMember
@@ -52,7 +54,7 @@ defmodule Repousse.Projects.Project do
     project
     |> cast(attrs, [
       :name, :description, :management_type, :address, :lat, :lng,
-      :surface_m2, :soil_type, :publication_status, :owner_id
+      :surface_m2, :soil_type, :publication_status, :owner_id, :cover_image_url
     ])
     |> validate_required([:name, :owner_id])
     |> validate_length(:name, min: 2, max: 200)

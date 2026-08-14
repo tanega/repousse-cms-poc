@@ -1,9 +1,10 @@
 defmodule Repousse.Storage do
   @moduledoc """
-  Uploads to the MinIO (S3-compatible) object store — currently just
-  avatars. Bucket is created and made publicly readable by the
-  `minio-init` job in docker-compose, so URLs returned here need no
-  signing to be fetched by the browser.
+  Uploads to the MinIO (S3-compatible) object store — avatars and project
+  cover images share the same public bucket, under different key prefixes.
+  Bucket is created and made publicly readable by the `minio-init` job in
+  docker-compose, so URLs returned here need no signing to be fetched by
+  the browser.
   """
 
   @max_bytes 5_000_000
@@ -14,12 +15,18 @@ defmodule Repousse.Storage do
     "image/gif" => "gif"
   }
 
-  def upload_avatar(%Plug.Upload{} = upload, user_id) do
+  def upload_avatar(%Plug.Upload{} = upload, user_id),
+    do: do_upload(upload, "#{user_id}/#{Ecto.UUID.generate()}")
+
+  def upload_project_cover(%Plug.Upload{} = upload, project_id),
+    do: do_upload(upload, "projects/#{project_id}/cover/#{Ecto.UUID.generate()}")
+
+  defp do_upload(%Plug.Upload{} = upload, key_prefix) do
     with {:ok, ext} <- validate_content_type(upload.content_type),
          {:ok, size} <- file_size(upload.path),
          :ok <- validate_size(size),
          {:ok, binary} <- File.read(upload.path) do
-      key = "#{user_id}/#{Ecto.UUID.generate()}.#{ext}"
+      key = "#{key_prefix}.#{ext}"
 
       case do_put_object(key, binary, upload.content_type) do
         {:ok, _} -> {:ok, public_url(key)}
