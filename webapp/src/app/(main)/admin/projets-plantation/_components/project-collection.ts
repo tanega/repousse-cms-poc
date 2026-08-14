@@ -19,6 +19,7 @@ function toAttrs(p: Partial<Project>): ProjectAttrs {
     surface_m2: p.surface_m2,
     soil_type: p.soil_type,
     publication_status: p.publication_status,
+    cover_image_url: p.cover_image_url,
     preferred_species: p.preferred_species?.map((s) => ({ taxon_id: s.taxon_id })),
   };
 }

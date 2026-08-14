@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,12 +14,14 @@ import * as z from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dropzone, DropzoneEmptyState, DropzoneRejectionError, DropzoneZone } from "@/components/ui/dropzone";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadProjectCoverImage } from "@/lib/api/projects";
 import { cn } from "@/lib/utils";
 import {
   MANAGEMENT_TYPE_LABELS,
@@ -33,6 +35,14 @@ import { taxonCollection } from "../../especes-vegetales/_components/collection"
 import { AdresseSearchBox } from "./adresse-search-box";
 import { CarteMini } from "./carte-mini";
 import { projectCollection } from "./project-collection";
+
+const COVER_IMAGE_MAX_BYTES = 5_000_000;
+const COVER_IMAGE_ACCEPT = {
+  "image/jpeg": [],
+  "image/png": [],
+  "image/webp": [],
+  "image/gif": [],
+};
 
 const projetFormSchema = z.object({
   name: z.string().trim().min(1, "Le nom du projet est requis").max(200),
@@ -86,6 +96,9 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
   const router = useRouter();
   const { data: taxons } = useLiveQuery(taxonCollection);
 
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+
   const form = useForm({
     defaultValues: projet ? valuesFromProjet(projet) : emptyValues(),
     validators: { onChange: projetFormSchema },
@@ -109,29 +122,40 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
       };
 
       try {
+        let id: string;
         if (isEdit && projet) {
-          projectCollection.update(projet.id, (draft) => {
+          id = projet.id;
+          const tx = projectCollection.update(id, (draft) => {
             Object.assign(draft, record);
             draft.updated_at = new Date().toISOString();
           });
-          toast.success("Projet mis à jour.");
-          router.push(`/admin/projets-plantation/${projet.id}`);
+          await tx.isPersisted.promise;
         } else {
-          const id = crypto.randomUUID();
+          id = crypto.randomUUID();
           const now = new Date().toISOString();
-          projectCollection.insert({
+          const tx = projectCollection.insert({
             id,
             publication_status: "private",
             published_at: null,
             archived_at: null,
             owner_id: null,
+            cover_image_url: null,
             ...record,
             inserted_at: now,
             updated_at: now,
           });
-          toast.success("Projet créé.");
-          router.push("/admin/projets-plantation");
+          await tx.isPersisted.promise;
         }
+
+        if (coverFile) {
+          const updated = await uploadProjectCoverImage(id, coverFile);
+          projectCollection.update(id, (draft) => {
+            draft.cover_image_url = updated.cover_image_url;
+          });
+        }
+
+        toast.success(isEdit ? "Projet mis à jour." : "Projet créé.");
+        router.push(isEdit ? `/admin/projets-plantation/${id}` : "/admin/projets-plantation");
       } catch {
         toast.error(isEdit ? "Échec de la mise à jour." : "Échec de la création.");
       }
@@ -140,8 +164,33 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
 
   useEffect(() => {
     if (projet) form.reset(valuesFromProjet(projet));
+    setCoverFile(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projet, form.reset]);
+
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(coverFile);
+    setCoverPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
+
+  const displayedCoverUrl = coverPreviewUrl ?? projet?.cover_image_url ?? null;
+
+  function removeCoverImage() {
+    if (coverFile) {
+      setCoverFile(null);
+      return;
+    }
+    if (isEdit && projet?.cover_image_url) {
+      projectCollection.update(projet.id, (draft) => {
+        draft.cover_image_url = null;
+      });
+    }
+  }
 
   function addEspece(taxonId: string, current: string[], onChange: (v: string[]) => void) {
     if (!taxonId || current.includes(taxonId)) return;
@@ -179,6 +228,54 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left 2/3 */}
           <div className="space-y-6 lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Image de couverture</CardTitle>
+                <CardDescription className="text-xs">
+                  Photo mise en avant sur la fiche et les listes du projet. JPEG, PNG, WebP ou GIF, 5 Mo maximum.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {displayedCoverUrl ? (
+                  <div className="group relative overflow-hidden rounded-md border">
+                    <img
+                      src={displayedCoverUrl}
+                      alt="Aperçu de l'image de couverture"
+                      className="h-40 w-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon-sm"
+                      className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={removeCoverImage}
+                      aria-label="Retirer l'image de couverture"
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Dropzone
+                      accept={COVER_IMAGE_ACCEPT}
+                      maxFiles={1}
+                      maxSize={COVER_IMAGE_MAX_BYTES}
+                      multiple={false}
+                      onDropAccepted={([file]) => setCoverFile(file)}
+                    >
+                      <DropzoneZone>
+                        <DropzoneEmptyState
+                          title="Glissez une image ici"
+                          description="ou cliquez pour parcourir · JPEG, PNG, WebP, GIF · 5 Mo max"
+                        />
+                      </DropzoneZone>
+                      <DropzoneRejectionError />
+                    </Dropzone>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Informations générales</CardTitle>

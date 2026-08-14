@@ -24,6 +24,7 @@ export interface Project {
   published_at: string | null;
   archived_at: string | null;
   owner_id: string | null;
+  cover_image_url: string | null;
   preferred_species: ProjectPreferredSpecies[];
   inserted_at: string;
   updated_at: string;

@@ -45,6 +45,7 @@ export interface ProjectAttrs {
   surface_m2?: number | null;
   soil_type?: string | null;
   publication_status?: PublicationStatus;
+  cover_image_url?: string | null;
   /** Full replace: sent on every create/update, mirrors the form's editable array. */
   preferred_species?: { taxon_id: string }[];
 }
@@ -69,4 +70,24 @@ export async function updateProject(id: string, attrs: ProjectAttrs): Promise<Pr
 
 export async function archiveProject(id: string): Promise<void> {
   await authedFetch(`/api/v1/projects/${id}`, { method: "DELETE" });
+}
+
+export async function uploadProjectCoverImage(id: string, file: File): Promise<Project> {
+  const token = getHankoToken();
+  const formData = new FormData();
+  formData.append("cover_image", file);
+
+  const res = await fetch(`${API_URL}/api/v1/projects/${id}/cover_image`, {
+    method: "PATCH",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? `Échec de l'upload (${res.status})`);
+  }
+
+  const { data } = await res.json();
+  return data;
 }
