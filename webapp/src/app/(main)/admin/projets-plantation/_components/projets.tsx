@@ -23,22 +23,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PUBLICATION_STATUS_LABELS, PUBLICATION_STATUSES } from "@/types/project";
 
-import { projetPlantationCollection } from "./collection";
-import { STATUTS } from "./data";
 import type { DeleteTarget } from "./delete-alert-dialog";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
+import { projectCollection } from "./project-collection";
 import { getProjetsColumns } from "./projets-columns";
 import { ProjetsTable } from "./projets-table";
 
 const ALL = "Tous";
 
 export function Projets() {
-  const { data: rows } = useLiveQuery(projetPlantationCollection);
+  const { data: rows } = useLiveQuery(projectCollection);
   const data = React.useMemo(() => rows ?? [], [rows]);
   const [deleteTarget, setDeleteTarget] = React.useState<DeleteTarget | null>(null);
 
-  const [sorting, setSorting] = React.useState<SortingState>([{ id: "nom", desc: false }]);
+  const [sorting, setSorting] = React.useState<SortingState>([{ id: "name", desc: false }]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility] = React.useState<VisibilityState>({ search: false });
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -47,15 +47,12 @@ export function Projets() {
   });
 
   function handleDelete(id: string) {
-    projetPlantationCollection.delete([id]);
+    projectCollection.delete([id]);
   }
 
-  const handleStatutChange = React.useCallback((id: string, statut: (typeof STATUTS)[number]) => {
-    projetPlantationCollection.update(id, (draft) => {
-      draft.statut = statut;
-      if (statut === "Public" && !draft.publishedAt) {
-        draft.publishedAt = new Date().toISOString().slice(0, 10);
-      }
+  const handleStatutChange = React.useCallback((id: string, statut: (typeof PUBLICATION_STATUSES)[number]) => {
+    projectCollection.update(id, (draft) => {
+      draft.publication_status = statut;
     });
   }, []);
 
@@ -76,7 +73,7 @@ export function Projets() {
   });
 
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
-  const statutFilter = (table.getColumn("statut")?.getFilterValue() as string) ?? ALL;
+  const statutFilter = (table.getColumn("publication_status")?.getFilterValue() as string) ?? ALL;
 
   function onSearch(value: string) {
     table.getColumn("search")?.setFilterValue(value || undefined);
@@ -84,7 +81,7 @@ export function Projets() {
   }
 
   function onStatutFilter(value: string) {
-    table.getColumn("statut")?.setFilterValue(value === ALL ? undefined : value);
+    table.getColumn("publication_status")?.setFilterValue(value === ALL ? undefined : value);
     table.setPageIndex(0);
   }
 
@@ -130,9 +127,9 @@ export function Projets() {
               <SelectContent position="popper" align="start">
                 <SelectGroup>
                   <SelectItem value={ALL}>Tous</SelectItem>
-                  {STATUTS.map((s) => (
+                  {PUBLICATION_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {s}
+                      {PUBLICATION_STATUS_LABELS[s]}
                     </SelectItem>
                   ))}
                 </SelectGroup>

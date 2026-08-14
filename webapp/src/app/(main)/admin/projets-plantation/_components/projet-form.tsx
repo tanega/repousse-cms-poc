@@ -1,114 +1,148 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { useLiveQuery } from "@tanstack/react-db";
+import { useForm } from "@tanstack/react-form";
 import { ArrowLeft, X } from "lucide-react";
+import { toast } from "sonner";
+import * as z from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  MANAGEMENT_TYPE_LABELS,
+  MANAGEMENT_TYPES,
+  type Project,
+  PUBLICATION_STATUS_COLORS,
+  PUBLICATION_STATUS_LABELS,
+} from "@/types/project";
 
-import { taxons } from "../../especes-vegetales/_components/data";
-import { projetPlantationCollection } from "./collection";
-import { CURRENT_USER } from "./current-user";
-import { NATURES_GESTION, type NatureGestion, STATUT_COLORS, type StatutPublication, slugify } from "./data";
+import { taxonCollection } from "../../especes-vegetales/_components/collection";
+import { projectCollection } from "./project-collection";
 
-type FormValues = {
-  nom: string;
-  description: string;
-  natureGestion: NatureGestion;
-  adresse: string;
-  surfaceM2: string;
-  natureSol: string;
-  especeIds: string[];
-};
+const projetFormSchema = z.object({
+  name: z.string().trim().min(1, "Le nom du projet est requis").max(200),
+  description: z.string().trim(),
+  management_type: z.enum(["individual", "collective"]),
+  address: z.string().trim(),
+  surface_m2: z.string().trim(),
+  soil_type: z.string().trim(),
+  preferred_species: z.array(z.string()),
+});
+
+type ProjetFormValues = z.infer<typeof projetFormSchema>;
+
+function emptyValues(): ProjetFormValues {
+  return {
+    name: "",
+    description: "",
+    management_type: "individual",
+    address: "",
+    surface_m2: "",
+    soil_type: "",
+    preferred_species: [],
+  };
+}
+
+function valuesFromProjet(projet: Project): ProjetFormValues {
+  return {
+    name: projet.name,
+    description: projet.description ?? "",
+    management_type: projet.management_type,
+    address: projet.address ?? "",
+    surface_m2: projet.surface_m2 === null ? "" : String(projet.surface_m2),
+    soil_type: projet.soil_type ?? "",
+    preferred_species: projet.preferred_species.map((s) => s.taxon_id),
+  };
+}
 
 export interface ProjetFormProps {
   mode: "create" | "edit";
-  defaultValues?: Partial<FormValues>;
-  projetId?: string;
-  statut?: StatutPublication;
+  projet?: Project;
 }
 
-export function ProjetForm({ mode, defaultValues, projetId, statut }: ProjetFormProps) {
+export function ProjetForm({ mode, projet }: ProjetFormProps) {
   const isEdit = mode === "edit";
   const router = useRouter();
+  const { data: taxons } = useLiveQuery(taxonCollection);
 
-  const [values, setValues] = useState<FormValues>({
-    nom: defaultValues?.nom ?? "",
-    description: defaultValues?.description ?? "",
-    natureGestion: defaultValues?.natureGestion ?? "Individuelle",
-    adresse: defaultValues?.adresse ?? "",
-    surfaceM2: defaultValues?.surfaceM2 ?? "",
-    natureSol: defaultValues?.natureSol ?? "",
-    especeIds: defaultValues?.especeIds ?? [],
+  const form = useForm({
+    defaultValues: projet ? valuesFromProjet(projet) : emptyValues(),
+    validators: { onChange: projetFormSchema },
+    onSubmit: async ({ value }) => {
+      const record = {
+        name: value.name.trim(),
+        description: value.description.trim() || null,
+        management_type: value.management_type,
+        address: value.address.trim() || null,
+        surface_m2: value.surface_m2 === "" ? null : Number(value.surface_m2),
+        soil_type: value.soil_type.trim() || null,
+        preferred_species: value.preferred_species.map((taxon_id) => ({
+          id: crypto.randomUUID(),
+          project_id: projet?.id ?? "",
+          taxon_id,
+          inserted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })),
+      };
+
+      try {
+        if (isEdit && projet) {
+          projectCollection.update(projet.id, (draft) => {
+            Object.assign(draft, record);
+            draft.updated_at = new Date().toISOString();
+          });
+          toast.success("Projet mis à jour.");
+          router.push(`/admin/projets-plantation/${projet.id}`);
+        } else {
+          const id = crypto.randomUUID();
+          const now = new Date().toISOString();
+          projectCollection.insert({
+            id,
+            lat: null,
+            lng: null,
+            publication_status: "private",
+            published_at: null,
+            archived_at: null,
+            owner_id: null,
+            ...record,
+            inserted_at: now,
+            updated_at: now,
+          });
+          toast.success("Projet créé.");
+          router.push("/admin/projets-plantation");
+        }
+      } catch {
+        toast.error(isEdit ? "Échec de la mise à jour." : "Échec de la création.");
+      }
+    },
   });
 
-  function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
-    setValues((prev) => ({ ...prev, [key]: value }));
+  useEffect(() => {
+    if (projet) form.reset(valuesFromProjet(projet));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projet, form.reset]);
+
+  function addEspece(taxonId: string, current: string[], onChange: (v: string[]) => void) {
+    if (!taxonId || current.includes(taxonId)) return;
+    onChange([...current, taxonId]);
   }
 
-  function addEspece(taxonId: string) {
-    if (!taxonId || values.especeIds.includes(taxonId)) return;
-    set("especeIds", [...values.especeIds, taxonId]);
+  function removeEspece(taxonId: string, current: string[], onChange: (v: string[]) => void) {
+    onChange(current.filter((id) => id !== taxonId));
   }
-
-  function removeEspece(taxonId: string) {
-    set(
-      "especeIds",
-      values.especeIds.filter((id) => id !== taxonId),
-    );
-  }
-
-  const canSubmit = values.nom.trim().length > 0;
-
-  function handleSubmit() {
-    if (!canSubmit) return;
-    const record = {
-      nom: values.nom.trim(),
-      description: values.description.trim(),
-      natureGestion: values.natureGestion,
-      adresse: values.adresse.trim(),
-      surfaceM2: values.surfaceM2 === "" ? null : Number(values.surfaceM2),
-      natureSol: values.natureSol.trim(),
-      especeIds: values.especeIds,
-    };
-    if (isEdit && projetId) {
-      projetPlantationCollection.update(projetId, (draft) => Object.assign(draft, record));
-      router.push(`/admin/projets-plantation/${projetId}`);
-    } else {
-      const id = slugify(record.nom) || crypto.randomUUID();
-      projetPlantationCollection.insert({
-        id,
-        lat: null,
-        lng: null,
-        statut: "Privé",
-        createurNom: CURRENT_USER.nom,
-        membres: [
-          { id: crypto.randomUUID(), nom: CURRENT_USER.nom, email: CURRENT_USER.email, role: "Administrateur" },
-        ],
-        invitations: [],
-        medias: [],
-        journal: [],
-        createdAt: new Date().toISOString().slice(0, 10),
-        publishedAt: null,
-        ...record,
-      });
-      router.push(`/admin/projets-plantation/${id}`);
-    }
-  }
-
-  const availableTaxons = taxons.filter((t) => t.niveau !== "Genre" && !values.especeIds.includes(t.id));
 
   return (
     <div className="space-y-6">
@@ -128,190 +162,264 @@ export function ProjetForm({ mode, defaultValues, projetId, statut }: ProjetForm
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left 2/3 */}
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Informations générales</CardTitle>
-              <CardDescription className="text-xs">Nom, description et nature de la gestion du projet.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="nom">
-                  Nom du projet
-                  <span className="ml-1 text-destructive">*</span>
-                </Label>
-                <Input
-                  id="nom"
-                  placeholder="ex : Verger partagé des Coteaux"
-                  value={values.nom}
-                  onChange={(e) => set("nom", e.target.value)}
-                />
-              </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left 2/3 */}
+          <div className="space-y-6 lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Informations générales</CardTitle>
+                <CardDescription className="text-xs">
+                  Nom, description et nature de la gestion du projet.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup>
+                  <form.Field name="name">
+                    {(field) => {
+                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>
+                            Nom du projet
+                            <span className="ml-1 text-destructive">*</span>
+                          </FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            placeholder="ex : Verger partagé des Coteaux"
+                            value={field.state.value}
+                            aria-invalid={isInvalid}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                          />
+                          {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                        </Field>
+                      );
+                    }}
+                  </form.Field>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Présentation du projet, objectifs, contexte…"
-                  rows={4}
-                  value={values.description}
-                  onChange={(e) => set("description", e.target.value)}
-                />
-              </div>
+                  <form.Field name="description">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                        <Textarea
+                          id={field.name}
+                          name={field.name}
+                          placeholder="Présentation du projet, objectifs, contexte…"
+                          rows={4}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
 
-              <div className="space-y-2">
-                <Label>Nature de la gestion</Label>
-                <RadioGroup
-                  value={values.natureGestion}
-                  onValueChange={(v) => set("natureGestion", v as NatureGestion)}
-                  className="flex gap-4"
-                >
-                  {NATURES_GESTION.map((n) => (
-                    <Label
-                      key={n}
-                      htmlFor={`nature-${n}`}
-                      className="flex cursor-pointer items-center gap-1.5 font-normal text-sm"
-                    >
-                      <RadioGroupItem id={`nature-${n}`} value={n} />
-                      {n}
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Localisation & terrain</CardTitle>
-              <CardDescription className="text-xs">Adresse, surface et nature du sol du projet.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="adresse">Adresse</Label>
-                <Input
-                  id="adresse"
-                  placeholder="ex : 12 chemin des Coteaux, 69008 Lyon"
-                  value={values.adresse}
-                  onChange={(e) => set("adresse", e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="surfaceM2">Surface approximative (m²)</Label>
-                  <Input
-                    id="surfaceM2"
-                    type="number"
-                    min={0}
-                    placeholder="ex : 850"
-                    value={values.surfaceM2}
-                    onChange={(e) => set("surfaceM2", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="natureSol">Nature du sol</Label>
-                  <Input
-                    id="natureSol"
-                    placeholder="ex : Argilo-calcaire"
-                    value={values.natureSol}
-                    onChange={(e) => set("natureSol", e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Espèces préférentielles</CardTitle>
-              <CardDescription className="text-xs">
-                Sélection multiple depuis la liste administrable des taxons.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {values.especeIds.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {values.especeIds.map((id) => {
-                    const taxon = taxons.find((t) => t.id === id);
-                    return (
-                      <Badge key={id} variant="secondary" className="gap-1 py-1 pr-1 pl-2.5 font-normal">
-                        {taxon?.nomCommun ?? id}
-                        <button
-                          type="button"
-                          onClick={() => removeEspece(id)}
-                          className="rounded-full p-0.5 hover:bg-muted-foreground/20"
-                          aria-label={`Retirer ${taxon?.nomCommun ?? id}`}
+                  <form.Field name="management_type">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel>Nature de la gestion</FieldLabel>
+                        <RadioGroup
+                          value={field.state.value}
+                          onValueChange={(v) => field.handleChange(v as typeof field.state.value)}
+                          className="flex gap-4"
                         >
-                          <X className="size-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
-              <Select value="" onValueChange={addEspece} disabled={availableTaxons.length === 0}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Ajouter une espèce…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTaxons.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.nomCommun}
-                      {t.nomScientifique ? ` · ${t.nomScientifique}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-        </div>
+                          {MANAGEMENT_TYPES.map((t) => (
+                            <FieldLabel
+                              key={t}
+                              htmlFor={`management-${t}`}
+                              className="flex-row items-center gap-1.5 font-normal text-sm"
+                            >
+                              <RadioGroupItem id={`management-${t}`} value={t} />
+                              {MANAGEMENT_TYPE_LABELS[t]}
+                            </FieldLabel>
+                          ))}
+                        </RadioGroup>
+                      </Field>
+                    )}
+                  </form.Field>
+                </FieldGroup>
+              </CardContent>
+            </Card>
 
-        {/* Right 1/3 */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Statut</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Statut actuel</span>
-                <Badge
-                  variant="outline"
-                  className={cn("border-0 px-2 py-0.5 text-xs font-normal", STATUT_COLORS[statut ?? "Privé"])}
-                >
-                  {statut ?? "Privé"}
-                </Badge>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {isEdit
-                  ? "Changez le statut depuis la fiche du projet une fois les modifications enregistrées."
-                  : "Le projet est créé en Privé. Publiez-le depuis sa fiche pour le rendre visible aux membres connectés."}
-              </p>
-              {isEdit && projetId && (
-                <>
-                  <Separator />
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Identifiant</span>
-                    <code className="font-mono text-xs text-foreground">{projetId}</code>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Localisation & terrain</CardTitle>
+                <CardDescription className="text-xs">Adresse, surface et nature du sol du projet.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup>
+                  <form.Field name="address">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Adresse</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          placeholder="ex : 12 chemin des Coteaux, 69008 Lyon"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <form.Field name="surface_m2">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel htmlFor={field.name}>Surface approximative (m²)</FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            type="number"
+                            min={0}
+                            placeholder="ex : 850"
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
+                    <form.Field name="soil_type">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel htmlFor={field.name}>Nature du sol</FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            placeholder="ex : Argilo-calcaire"
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
                   </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                </FieldGroup>
+              </CardContent>
+            </Card>
 
-          <div className="flex flex-col gap-2">
-            <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
-              {isEdit ? "Enregistrer les modifications" : "Créer le projet"}
-            </Button>
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="/admin/projets-plantation">Annuler</Link>
-            </Button>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Espèces préférentielles</CardTitle>
+                <CardDescription className="text-xs">
+                  Sélection multiple depuis la liste administrable des taxons.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <form.Field name="preferred_species">
+                  {(field) => {
+                    const available = (taxons ?? []).filter(
+                      (t) => t.taxonomic_level !== "genus" && !field.state.value.includes(t.id),
+                    );
+                    return (
+                      <>
+                        {field.state.value.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {field.state.value.map((id) => {
+                              const taxon = taxons?.find((t) => t.id === id);
+                              return (
+                                <Badge key={id} variant="secondary" className="gap-1 py-1 pr-1 pl-2.5 font-normal">
+                                  {taxon?.common_name ?? id}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeEspece(id, field.state.value, field.handleChange)}
+                                    className="rounded-full p-0.5 hover:bg-muted-foreground/20"
+                                    aria-label={`Retirer ${taxon?.common_name ?? id}`}
+                                  >
+                                    <X className="size-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <Select
+                          value=""
+                          onValueChange={(v) => addEspece(v, field.state.value, field.handleChange)}
+                          disabled={available.length === 0}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Ajouter une espèce…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {available.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.common_name}
+                                {t.scientific_name ? ` · ${t.scientific_name}` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    );
+                  }}
+                </form.Field>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right 1/3 */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Statut</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Statut actuel</span>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "border-0 px-2 py-0.5 text-xs font-normal",
+                      PUBLICATION_STATUS_COLORS[projet?.publication_status ?? "private"],
+                    )}
+                  >
+                    {PUBLICATION_STATUS_LABELS[projet?.publication_status ?? "private"]}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  {isEdit
+                    ? "Changez le statut depuis la fiche du projet une fois les modifications enregistrées."
+                    : "Le projet est créé en Privé. Publiez-le depuis sa fiche pour le rendre visible aux membres connectés."}
+                </p>
+                {isEdit && projet && (
+                  <>
+                    <Separator />
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Identifiant</span>
+                      <code className="font-mono text-xs text-foreground">{projet.id}</code>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="flex flex-col gap-2">
+              <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
+                {([canSubmit, isSubmitting]) => (
+                  <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
+                    {isSubmitting ? "Enregistrement…" : isEdit ? "Enregistrer les modifications" : "Créer le projet"}
+                  </Button>
+                )}
+              </form.Subscribe>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/admin/projets-plantation">Annuler</Link>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

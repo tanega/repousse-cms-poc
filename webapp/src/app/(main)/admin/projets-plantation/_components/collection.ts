@@ -5,11 +5,11 @@ import { type ProjetPlantation, projetsPlantation } from "./data";
 
 /**
  * Dev-mode: local-only collection seeded with the static mock catalogue.
- * Its loopback sync makes insert/update/delete permanent in memory (no
- * external source of truth to revert to), so the demo CRUD survives
- * navigation. Swap for `queryCollectionOptions` + real fetch/onInsert/
- * onUpdate/onDelete once the backend endpoint exists — useLiveQuery and
- * collection.insert/update/delete calls in consumers don't change.
+ * The admin create/edit/list/detail pages now use the real backend via
+ * `./project-collection` instead — this mock collection remains for the
+ * other consumers not yet migrated (public projets-plantation browse pages,
+ * the distributions feature's project picker, and the members/media/
+ * journal/moderation detail cards).
  */
 export const projetPlantationCollection = createCollection(
   localOnlyCollectionOptions<ProjetPlantation>({

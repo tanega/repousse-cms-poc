@@ -4,7 +4,7 @@
 import Link from "next/link";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MapPin, MoreHorizontal, Users } from "lucide-react";
+import { ArrowUpDown, MapPin, MoreHorizontal } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,24 +16,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import {
+  MANAGEMENT_TYPE_LABELS,
+  type Project,
+  PUBLICATION_STATUS_COLORS,
+  PUBLICATION_STATUS_LABELS,
+  PUBLICATION_STATUS_TRANSITIONS,
+} from "@/types/project";
 
-import { type ProjetPlantation, STATUT_COLORS, STATUT_TRANSITIONS } from "./data";
 import type { DeleteTarget } from "./delete-alert-dialog";
 
 export function getProjetsColumns(
   onDelete: (target: DeleteTarget) => void,
-  onStatutChange: (id: string, statut: ProjetPlantation["statut"]) => void,
-): ColumnDef<ProjetPlantation>[] {
+  onStatutChange: (id: string, statut: Project["publication_status"]) => void,
+): ColumnDef<Project>[] {
   return [
     {
       id: "search",
-      accessorFn: (row) => row.nom.toLowerCase(),
+      accessorFn: (row) => row.name.toLowerCase(),
       filterFn: "includesString",
       enableHiding: true,
     },
     {
-      id: "nom",
-      accessorKey: "nom",
+      id: "name",
+      accessorKey: "name",
       header: ({ column }) => (
         <button
           type="button"
@@ -52,42 +58,37 @@ export function getProjetsColumns(
               href={`/admin/projets-plantation/${encodeURIComponent(projet.id)}`}
               className="truncate font-medium text-foreground text-sm hover:underline"
             >
-              {projet.nom}
+              {projet.name}
             </Link>
             <div className="flex items-center gap-1 text-muted-foreground text-xs">
               <MapPin className="size-3" />
-              {projet.adresse}
+              {projet.address}
             </div>
           </div>
         );
       },
     },
     {
-      accessorKey: "natureGestion",
+      accessorKey: "management_type",
       header: "Gestion",
-      cell: ({ row }) => <span className="text-muted-foreground text-xs">{row.original.natureGestion}</span>,
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-xs">{MANAGEMENT_TYPE_LABELS[row.original.management_type]}</span>
+      ),
     },
     {
-      accessorKey: "statut",
+      accessorKey: "publication_status",
       header: "Statut",
       filterFn: "equalsString",
       cell: ({ row }) => (
         <Badge
           variant="outline"
-          className={cn("border-0 px-2 py-0.5 text-xs font-normal", STATUT_COLORS[row.original.statut])}
+          className={cn(
+            "border-0 px-2 py-0.5 text-xs font-normal",
+            PUBLICATION_STATUS_COLORS[row.original.publication_status],
+          )}
         >
-          {row.original.statut}
+          {PUBLICATION_STATUS_LABELS[row.original.publication_status]}
         </Badge>
-      ),
-    },
-    {
-      id: "membres",
-      header: "Membres",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Users className="size-3" />
-          {row.original.membres.length}
-        </div>
       ),
     },
     {
@@ -97,13 +98,13 @@ export function getProjetsColumns(
       enableSorting: false,
       cell: ({ row }) => {
         const projet = row.original;
-        const transitions = STATUT_TRANSITIONS[projet.statut];
+        const transitions = PUBLICATION_STATUS_TRANSITIONS[projet.publication_status];
         return (
           <div className="text-right">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  aria-label={`Actions pour ${projet.nom}`}
+                  aria-label={`Actions pour ${projet.name}`}
                   className="size-8 rounded-md text-muted-foreground hover:bg-muted/50"
                   size="icon-sm"
                   variant="ghost"
@@ -121,8 +122,8 @@ export function getProjetsColumns(
                 {transitions.length > 0 && <DropdownMenuSeparator />}
                 {transitions.map((statut) => (
                   <DropdownMenuItem key={statut} onClick={() => onStatutChange(projet.id, statut)}>
-                    {statut === "Public" && "Publier"}
-                    {statut === "Privé" && "Repasser en privé"}
+                    {statut === "public" && "Publier"}
+                    {statut === "private" && "Repasser en privé"}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
