@@ -10,10 +10,17 @@ defmodule Repousse.Distributions do
     |> maybe_filter_status(opts[:status])
     |> order_by([e], desc: e.published_at)
     |> Repo.all()
+    |> Enum.map(&put_reservations_count/1)
   end
 
-  def get_event(id), do: Repo.get(Event, id)
-  def get_event!(id), do: Repo.get!(Event, id)
+  def get_event(id) do
+    case Repo.get(Event, id) do
+      nil -> nil
+      event -> put_reservations_count(event)
+    end
+  end
+
+  def get_event!(id), do: Repo.get!(Event, id) |> put_reservations_count()
 
   def get_event_by_slug(slug) do
     Repo.get_by(Event, slug: slug)
@@ -155,6 +162,11 @@ defmodule Repousse.Distributions do
 
   defp maybe_filter_status(query, nil), do: query
   defp maybe_filter_status(query, status), do: where(query, [e], e.status == ^status)
+
+  defp put_reservations_count(%Event{} = event) do
+    event = Repo.preload(event, :reservations)
+    %{event | reservations_count: Enum.count(event.reservations, &(&1.status == :confirmed))}
+  end
 
   defp check_stock_available(%Stock{quantity_unknown: true}, _qty), do: :ok
 
