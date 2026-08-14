@@ -12,7 +12,7 @@ test.describe("Admin distributions — create, publish, edit, delete", () => {
 
     // Create — a créneau is required for canSubmit, species stock is optional.
     await page.getByRole("link", { name: "Créer un événement" }).click();
-    await page.locator("#intitule").fill("Test distribution e2e");
+    await page.locator("#title").fill("Test distribution e2e");
     await page.locator("#description").fill("Créée par le test e2e.");
     await page.getByRole("button", { name: "Ajouter un créneau" }).click();
     await page.locator('input[placeholder="ex : Jardin partagé du Fort"]').fill("Lieu de test e2e");
@@ -32,7 +32,7 @@ test.describe("Admin distributions — create, publish, edit, delete", () => {
 
     // Edit — change the title, confirm it's reflected back on detail.
     await page.getByRole("link", { name: "Modifier" }).click();
-    await page.locator("#intitule").fill("Test distribution e2e (modifiée)");
+    await page.locator("#title").fill("Test distribution e2e (modifiée)");
     await page.getByRole("button", { name: "Enregistrer les modifications" }).click();
     await expect(page.getByRole("heading", { name: "Test distribution e2e (modifiée)" })).toBeVisible();
 
