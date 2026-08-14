@@ -20,6 +20,69 @@ defmodule RepousseWeb.ProjectControllerTest do
     Plug.Conn.put_req_header(conn, "authorization", "Bearer #{AuthHelper.sign(user, private_map)}")
   end
 
+  describe "POST /projects" do
+    test "creates a project with preferred species", %{conn: conn, private_map: pm} do
+      user = insert(:user)
+      taxon = insert(:taxon)
+
+      conn =
+        conn
+        |> authed(user, pm)
+        |> post(~p"/api/v1/projects", %{
+          "project" => %{
+            "name" => "Verger du parc",
+            "preferred_species" => [%{"taxon_id" => taxon.id}]
+          }
+        })
+
+      assert %{"data" => %{"name" => "Verger du parc", "preferred_species" => [species]}} =
+               json_response(conn, 201)
+
+      assert species["taxon_id"] == taxon.id
+    end
+  end
+
+  describe "PUT /projects/:id" do
+    test "replaces preferred species on update", %{conn: conn, private_map: pm} do
+      user = insert(:user)
+      taxon_a = insert(:taxon)
+      taxon_b = insert(:taxon)
+      authed_conn = authed(conn, user, pm)
+
+      create_conn =
+        post(authed_conn, ~p"/api/v1/projects", %{
+          "project" => %{"name" => "Verger", "preferred_species" => [%{"taxon_id" => taxon_a.id}]}
+        })
+
+      assert %{"data" => %{"id" => project_id}} = json_response(create_conn, 201)
+
+      update_conn =
+        put(authed_conn, ~p"/api/v1/projects/#{project_id}", %{
+          "project" => %{"preferred_species" => [%{"taxon_id" => taxon_b.id}]}
+        })
+
+      assert %{"data" => %{"preferred_species" => [species]}} = json_response(update_conn, 200)
+      assert species["taxon_id"] == taxon_b.id
+    end
+  end
+
+  describe "GET /projects" do
+    test "excludes archived projects", %{conn: conn, private_map: pm} do
+      user = insert(:user)
+      active = insert(:project)
+      archived = insert(:project)
+      insert(:project_member, project: active, user: user, role: :admin)
+      insert(:project_member, project: archived, user: user, role: :admin)
+      {:ok, _} = Projects.archive_project(archived)
+
+      conn = conn |> authed(user, pm) |> get(~p"/api/v1/projects")
+
+      assert %{"data" => projects} = json_response(conn, 200)
+      assert [%{"id" => id}] = projects
+      assert id == active.id
+    end
+  end
+
   describe "DELETE /projects/:id (archive)" do
     test "archives the project", %{conn: conn, private_map: pm} do
       user = insert(:user)
