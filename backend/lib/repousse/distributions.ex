@@ -83,7 +83,10 @@ defmodule Repousse.Distributions do
   def get_reservation!(id), do: Repo.get!(Reservation, id)
 
   def get_user_reservation(user_id, event_id) do
-    Repo.get_by(Reservation, user_id: user_id, event_id: event_id)
+    case Repo.get_by(Reservation, user_id: user_id, event_id: event_id) do
+      nil -> nil
+      reservation -> Repo.preload(reservation, :items)
+    end
   end
 
   def list_slot_reservations(slot_id) do
@@ -116,6 +119,13 @@ defmodule Repousse.Distributions do
       end)
     end)
     |> Repo.transaction()
+    |> case do
+      {:ok, %{reservation: reservation} = result} ->
+        {:ok, %{result | reservation: Repo.preload(reservation, :items)}}
+
+      error ->
+        error
+    end
   end
 
   def cancel_reservation(%Reservation{} = reservation) do
@@ -126,10 +136,29 @@ defmodule Repousse.Distributions do
       {:ok, :restored}
     end)
     |> Repo.transaction()
+    |> case do
+      {:ok, %{reservation: cancelled} = result} ->
+        {:ok, %{result | reservation: Repo.preload(cancelled, :items)}}
+
+      error ->
+        error
+    end
   end
 
   def validate_reservation(%Reservation{} = reservation, attrs \\ %{}) do
-    reservation |> Reservation.validate_changeset(attrs) |> Repo.update()
+    case reservation |> Reservation.validate_changeset(attrs) |> Repo.update() do
+      {:ok, validated} -> {:ok, Repo.preload(validated, :items)}
+      error -> error
+    end
+  end
+
+  def list_reservations_for_project(project_id) do
+    from(r in Reservation,
+      where: r.project_id == ^project_id and r.status in [:confirmed, :validated],
+      order_by: [desc: r.inserted_at],
+      preload: [items: [:taxon]]
+    )
+    |> Repo.all()
   end
 
   def list_reservations_for_event(event_id) do

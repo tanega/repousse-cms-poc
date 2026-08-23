@@ -55,7 +55,7 @@ defmodule Repousse.JasonEncodingTest do
   end
 
   test "Reservation encodes" do
-    assert %{"status" => "confirmed"} = insert(:reservation) |> encode()
+    assert %{"status" => "confirmed"} = insert(:reservation) |> Repousse.Repo.preload(:items) |> encode()
   end
 
   test "ReservationItem encodes" do
