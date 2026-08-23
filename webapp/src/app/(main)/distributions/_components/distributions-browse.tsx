@@ -3,21 +3,19 @@
 import Link from "next/link";
 
 import { useLiveQuery } from "@tanstack/react-db";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
+import { EVENT_STATUS_COLORS, EVENT_STATUS_LABELS } from "@/types/distribution";
 
-import { distributionEventCollection } from "./mock-collection";
-import { STATUT_COLORS } from "./mock-events";
-
-const dateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
+import { distributionEventCollection } from "./collection";
 
 export function DistributionsBrowse() {
   const { data: events } = useLiveQuery(distributionEventCollection);
-  const published = (events ?? []).filter((e) => e.statut === "Publié" || e.statut === "Clôturé");
+  const published = (events ?? []).filter((e) => e.status === "published" || e.status === "closed");
 
   if (published.length === 0) {
     return (
@@ -33,41 +31,30 @@ export function DistributionsBrowse() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {published.map((event) => {
-        const dates = event.creneaux.map((c) => dateFormatter.format(new Date(c.date))).sort();
-        return (
-          <Link key={event.id} href={`/distributions/${encodeURIComponent(event.lienPermanent)}`}>
-            <Card className="h-full transition-colors hover:border-primary/50">
-              <CardHeader>
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="text-base">{event.intitule}</CardTitle>
-                  <Badge
-                    variant="outline"
-                    className={cn("shrink-0 border-0 px-2 py-0.5 font-normal text-xs", STATUT_COLORS[event.statut])}
-                  >
-                    {event.statut}
-                  </Badge>
-                </div>
+      {published.map((event) => (
+        <Link key={event.id} href={`/distributions/${encodeURIComponent(event.slug)}`}>
+          <Card className="h-full transition-colors hover:border-primary/50">
+            {event.image_url && (
+              // biome-ignore lint/performance/noImgElement: external/MinIO cover image, not a Next-optimizable static asset
+              <img src={event.image_url} alt={event.title} className="h-32 w-full rounded-t-xl border-b object-cover" />
+            )}
+            <CardHeader>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-base">{event.title}</CardTitle>
+                <Badge
+                  variant="outline"
+                  className={cn("shrink-0 border-0 px-2 py-0.5 font-normal text-xs", EVENT_STATUS_COLORS[event.status])}
+                >
+                  {EVENT_STATUS_LABELS[event.status]}
+                </Badge>
+              </div>
+              {event.description && (
                 <CardDescription className="line-clamp-2 text-xs">{event.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-1 text-muted-foreground text-xs">
-                {dates.length > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <CalendarDays className="size-3.5" />
-                    {dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]} → ${dates[dates.length - 1]}`}
-                  </div>
-                )}
-                {event.creneaux[0] && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="size-3.5" />
-                    {event.creneaux[0].lieu}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
-        );
-      })}
+              )}
+            </CardHeader>
+          </Card>
+        </Link>
+      ))}
     </div>
   );
 }

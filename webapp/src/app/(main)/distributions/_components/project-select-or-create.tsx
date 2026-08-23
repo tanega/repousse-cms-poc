@@ -11,40 +11,32 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { createProject } from "@/lib/api/projects";
+import { MANAGEMENT_TYPE_LABELS, MANAGEMENT_TYPES, type ManagementType } from "@/types/project";
 
-import { projetPlantationCollection } from "../../admin/projets-plantation/_components/collection";
-import { NATURES_GESTION, type NatureGestion, slugify } from "../../admin/projets-plantation/_components/data";
+import { projectCollection } from "../../admin/projets-plantation/_components/project-collection";
 
-const NEW_PROJET_VALUE = "__new__";
+const NEW_PROJECT_VALUE = "__new__";
 
 /**
  * Shared "pick one of my projects or create one on the fly" field for the
- * distribution reservation form. "Own projects" is derived live from
- * `projetPlantationCollection` by matching the visitor's e-mail against
- * `membres` — works the same whether the visitor is a signed-in member or a
- * guest who just registered (see distribution-member-view.tsx).
+ * distribution reservation form. `GET /api/v1/projects` is already scoped
+ * server-side to the current user's own memberships, so no client-side
+ * filtering is needed here — unlike the old mock, which matched a visitor's
+ * e-mail against a flat `membres` array by hand.
  */
-export function ProjetSelectOrCreate({
-  email,
-  nom,
-  value,
-  onChange,
-}: {
-  email: string;
-  nom: string;
-  value: string;
-  onChange: (projetId: string) => void;
-}) {
-  const { data: projets } = useLiveQuery(projetPlantationCollection);
-  const ownProjets = (projets ?? []).filter((p) => p.membres.some((m) => m.email === email));
+export function ProjectSelectOrCreate({ value, onChange }: { value: string; onChange: (projectId: string) => void }) {
+  const { data: projects } = useLiveQuery(projectCollection);
 
   const [creating, setCreating] = useState(false);
-  const [newNom, setNewNom] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newNature, setNewNature] = useState<NatureGestion>("Individuelle");
+  const [newManagementType, setNewManagementType] = useState<ManagementType>("individual");
+  const [error, setError] = useState<string | null>(null);
 
   function handleSelectChange(v: string) {
-    if (v === NEW_PROJET_VALUE) {
+    if (v === NEW_PROJECT_VALUE) {
       setCreating(true);
       return;
     }
@@ -52,48 +44,44 @@ export function ProjetSelectOrCreate({
     onChange(v);
   }
 
-  function handleCreate() {
-    if (!newNom.trim()) return;
-    const id = slugify(newNom) || crypto.randomUUID();
-    projetPlantationCollection.insert({
-      id,
-      nom: newNom.trim(),
-      description: newDescription.trim(),
-      natureGestion: newNature,
-      adresse: "",
-      lat: null,
-      lng: null,
-      surfaceM2: null,
-      natureSol: "",
-      especeIds: [],
-      statut: "Privé",
-      createurNom: nom,
-      membres: [{ id: crypto.randomUUID(), nom, email, role: "Administrateur" }],
-      invitations: [],
-      medias: [],
-      journal: [],
-      createdAt: new Date().toISOString().slice(0, 10),
-      publishedAt: null,
-    });
-    setCreating(false);
-    setNewNom("");
-    setNewDescription("");
-    onChange(id);
+  async function handleCreate() {
+    if (!newName.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const created = await createProject({
+        name: newName.trim(),
+        description: newDescription.trim() || null,
+        management_type: newManagementType,
+      });
+      // Same reasoning as the admin distribution form: the id is
+      // server-generated, so seed the collection's cache directly instead
+      // of an optimistic insert with a throwaway client id.
+      projectCollection.utils.writeInsert(created);
+      setCreating(false);
+      setNewName("");
+      setNewDescription("");
+      onChange(created.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Échec de la création du projet.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <div className="space-y-3">
-      <Select value={creating ? NEW_PROJET_VALUE : value} onValueChange={handleSelectChange}>
+      <Select value={creating ? NEW_PROJECT_VALUE : value} onValueChange={handleSelectChange}>
         <SelectTrigger id="projet" className="w-full">
           <SelectValue placeholder="Sélectionnez ou créez un projet" />
         </SelectTrigger>
         <SelectContent>
-          {ownProjets.map((p) => (
+          {(projects ?? []).map((p) => (
             <SelectItem key={p.id} value={p.id}>
-              {p.nom}
+              {p.name}
             </SelectItem>
           ))}
-          <SelectItem value={NEW_PROJET_VALUE}>+ Créer un nouveau projet</SelectItem>
+          <SelectItem value={NEW_PROJECT_VALUE}>+ Créer un nouveau projet</SelectItem>
         </SelectContent>
       </Select>
 
@@ -108,8 +96,8 @@ export function ProjetSelectOrCreate({
               <Input
                 id="new-projet-nom"
                 placeholder="ex : Verger partagé des Coteaux"
-                value={newNom}
-                onChange={(e) => setNewNom(e.target.value)}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -124,18 +112,18 @@ export function ProjetSelectOrCreate({
             <div className="space-y-2">
               <Label>Nature de la gestion</Label>
               <RadioGroup
-                value={newNature}
-                onValueChange={(v) => setNewNature(v as NatureGestion)}
+                value={newManagementType}
+                onValueChange={(v) => setNewManagementType(v as ManagementType)}
                 className="flex gap-4"
               >
-                {NATURES_GESTION.map((n) => (
+                {MANAGEMENT_TYPES.map((n) => (
                   <Label
                     key={n}
                     htmlFor={`new-nature-${n}`}
                     className="flex cursor-pointer items-center gap-1.5 font-normal text-sm"
                   >
                     <RadioGroupItem id={`new-nature-${n}`} value={n} />
-                    {n}
+                    {MANAGEMENT_TYPE_LABELS[n]}
                   </Label>
                 ))}
               </RadioGroup>
@@ -144,8 +132,9 @@ export function ProjetSelectOrCreate({
               Le projet est créé en statut Privé. Vous pourrez compléter son adresse, sa surface et ses espèces depuis
               sa page une fois créé.
             </p>
-            <Button type="button" size="sm" disabled={!newNom.trim()} onClick={handleCreate}>
-              Créer le projet
+            {error && <p className="text-destructive text-xs">{error}</p>}
+            <Button type="button" size="sm" disabled={!newName.trim() || submitting} onClick={handleCreate}>
+              {submitting ? "Création…" : "Créer le projet"}
             </Button>
           </CardContent>
         </Card>
