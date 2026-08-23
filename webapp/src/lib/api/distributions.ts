@@ -172,3 +172,32 @@ export async function updateStock(eventId: string, id: string, attrs: StockAttrs
 export async function deleteStock(eventId: string, id: string): Promise<void> {
   await authedFetch(`/api/v1/admin/distributions/${eventId}/stocks/${id}`, { method: "DELETE" });
 }
+
+// ── Public (member-facing, non-admin) ───────────────────────────────────────
+// Same JSON shapes as the admin endpoints above, but scoped to the plain
+// `:authenticated` pipeline instead of `:admin` — any signed-in member can
+// read them, not just admins.
+
+export async function fetchPublicEvents(): Promise<DistributionEvent[]> {
+  const res = await authedFetch("/api/v1/distributions");
+  const { data } = await res.json();
+  return data;
+}
+
+export async function fetchPublicEvent(id: string): Promise<DistributionEvent> {
+  const res = await authedFetch(`/api/v1/distributions/${id}`);
+  const { data } = await res.json();
+  return data;
+}
+
+export async function fetchPublicSlots(eventId: string): Promise<DistributionSlot[]> {
+  const res = await authedFetch(`/api/v1/distributions/${eventId}/slots`);
+  const { data } = await res.json();
+  return data;
+}
+
+export async function fetchPublicStocks(eventId: string): Promise<DistributionStock[]> {
+  const res = await authedFetch(`/api/v1/distributions/${eventId}/stocks`);
+  const { data } = await res.json();
+  return data;
+}
