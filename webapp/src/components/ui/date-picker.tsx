@@ -16,6 +16,8 @@ type DatePickerProps = {
   onChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
+  startMonth?: Date;
+  endMonth?: Date;
 };
 
 export function DatePicker({
@@ -23,6 +25,8 @@ export function DatePicker({
   onChange,
   placeholder = "Sélectionner une date",
   className,
+  startMonth = new Date(2010, 0),
+  endMonth = new Date(),
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   // noon avoids date shifting in negative-UTC timezones
@@ -49,8 +53,8 @@ export function DatePicker({
           }}
           captionLayout="dropdown"
           locale={fr}
-          startMonth={new Date(2010, 0)}
-          endMonth={new Date()}
+          startMonth={startMonth}
+          endMonth={endMonth}
         />
       </PopoverContent>
     </Popover>

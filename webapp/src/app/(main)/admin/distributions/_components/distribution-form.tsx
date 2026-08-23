@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dropzone, DropzoneEmptyState, DropzoneRejectionError, DropzoneZone } from "@/components/ui/dropzone";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,11 @@ const COVER_IMAGE_ACCEPT = {
   "image/webp": [],
   "image/gif": [],
 };
+
+// Distribution slots are always future/current events, unlike the shared
+// DatePicker's birthdate-oriented default range (2010 → today).
+const SLOT_DATE_START_MONTH = new Date();
+const SLOT_DATE_END_MONTH = new Date(new Date().getFullYear() + 3, 11);
 
 /** Client-only row for the in-progress form; `isNew` decides create vs. update on submit. */
 type DraftSlot = Pick<
@@ -117,7 +123,12 @@ function SlotRow({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Date</Label>
-            <Input type="date" value={slot.date} onChange={(e) => onChange({ ...slot, date: e.target.value })} />
+            <DatePicker
+              value={slot.date}
+              onChange={(v) => onChange({ ...slot, date: v })}
+              startMonth={SLOT_DATE_START_MONTH}
+              endMonth={SLOT_DATE_END_MONTH}
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Contact du créneau</Label>
@@ -303,6 +314,7 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
                   contact: s.contact || null,
                 }),
               ),
+            // biome-ignore lint/suspicious/noUnnecessaryConditions: defaultValues is optional on the component props; only edit-mode callers pass it, but the type doesn't encode that.
             ...(defaultValues?.slots ?? [])
               .filter((original) => !value.slots.some((s) => s.id === original.id))
               .map((original) => deleteSlot(eventId, original.id)),
@@ -324,6 +336,7 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
                   quantity_unknown: s.quantity_unknown,
                 }),
               ),
+            // biome-ignore lint/suspicious/noUnnecessaryConditions: defaultValues is optional on the component props; only edit-mode callers pass it, but the type doesn't encode that.
             ...(defaultValues?.stocks ?? [])
               .filter((original) => !value.stocks.some((s) => s.id === original.id))
               .map((original) => deleteStock(eventId, original.id)),
