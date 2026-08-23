@@ -26,6 +26,16 @@ defmodule RepousseWeb.WaitlistController do
     end
   end
 
+  operation :mine,
+    summary: "List the current user's waitlist entries for a distribution event",
+    parameters: [id: [in: :path, type: :string, description: "Event ID"]],
+    responses: [ok: API.list(WaitlistEntry, "Waitlist entries")]
+
+  def mine(conn, %{"id" => event_id}) do
+    user_id = conn.assigns.current_user.id
+    json(conn, %{data: Distributions.list_user_waitlist_entries(user_id, event_id)})
+  end
+
   operation :leave,
     summary: "Leave the waitlist for a taxon at a distribution event",
     parameters: [

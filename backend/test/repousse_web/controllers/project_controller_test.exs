@@ -275,6 +275,20 @@ defmodule RepousseWeb.ProjectControllerTest do
     end
   end
 
+  describe "GET /projects/:id/distribution_reservations" do
+    test "a member can list confirmed distribution reservations for the project", %{conn: conn, private_map: pm} do
+      member = insert(:user)
+      project = insert(:project)
+      insert(:project_member, project: project, user: member, role: :reader)
+      insert(:reservation, project: project, status: :confirmed)
+      insert(:reservation, project: project, status: :cancelled)
+
+      conn = conn |> authed(member, pm) |> get(~p"/api/v1/projects/#{project.id}/distribution_reservations")
+
+      assert %{"data" => [%{"status" => "confirmed"}]} = json_response(conn, 200)
+    end
+  end
+
   describe "GET /projects/:id/journal" do
     test "a member can list journal entries", %{conn: conn, private_map: pm} do
       member = insert(:user)

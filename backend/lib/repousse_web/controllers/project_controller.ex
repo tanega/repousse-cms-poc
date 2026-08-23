@@ -203,6 +203,20 @@ defmodule RepousseWeb.ProjectController do
     end
   end
 
+  operation :distribution_reservations,
+    summary: "List a project's confirmed plant reservations from distribution events",
+    parameters: [id: [in: :path, type: :string, description: "Project ID"]],
+    responses: [ok: API.list(RepousseWeb.Schemas.Reservation, "Reservations")]
+
+  def distribution_reservations(conn, %{"id" => id}) do
+    project = Projects.get_project!(id)
+    user = conn.assigns.current_user
+
+    with :ok <- Bodyguard.permit(Policy, :read_project, user, %{project: project}) do
+      json(conn, %{data: Repousse.Distributions.list_reservations_for_project(id)})
+    end
+  end
+
   operation :journal,
     summary: "List a project's journal entries",
     parameters: [id: [in: :path, type: :string, description: "Project ID"]],
