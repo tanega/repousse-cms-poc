@@ -1,9 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 // /admin/* routes now check the real authenticated user's role
 // (admin/layout.tsx), so the dummy-cookie convention used elsewhere doesn't
 // get past it — reuse the real admin session saved by e2e/auth.setup.ts.
 test.use({ storageState: "e2e/.auth/admin.json" });
+
+/** Slot date is a shadcn/react-day-picker popover, not a native input[type=date]. */
+async function pickSlotDate(page: Page, isoDate: string) {
+  const [year, month, day] = isoDate.split("-");
+  await page.getByRole("button", { name: "Sélectionner une date" }).click();
+  // Year first — the month dropdown's enabled/disabled options are computed
+  // against whichever year is currently selected, so picking month before
+  // year can target a now-past month that's disabled and never selectable.
+  await page.locator('select[aria-label="Choose the Year"]').selectOption(year);
+  await page.locator('select[aria-label="Choose the Month"]').selectOption(String(Number(month) - 1));
+  await page.locator(`button[data-day="${day}/${month}/${year}"]`).click();
+}
 
 test.describe("Admin distributions — create, publish, edit, delete", () => {
   test("create an event, publish it, edit it, then delete it", async ({ page }) => {
@@ -16,7 +28,7 @@ test.describe("Admin distributions — create, publish, edit, delete", () => {
     await page.locator("#description").fill("Créée par le test e2e.");
     await page.getByRole("button", { name: "Ajouter un créneau" }).click();
     await page.locator('input[placeholder="ex : Jardin partagé du Fort"]').fill("Lieu de test e2e");
-    await page.locator('input[type="date"]').fill("2027-05-01");
+    await pickSlotDate(page, "2027-05-01");
     const timeInputs = page.locator('input[type="time"]');
     await timeInputs.nth(0).fill("09:00");
     await timeInputs.nth(1).fill("11:00");
