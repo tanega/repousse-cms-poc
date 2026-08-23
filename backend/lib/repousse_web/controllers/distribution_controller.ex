@@ -5,7 +5,7 @@ defmodule RepousseWeb.DistributionController do
 
   alias Repousse.Distributions
   alias RepousseWeb.OpenApiHelpers, as: API
-  alias RepousseWeb.Schemas.Event
+  alias RepousseWeb.Schemas.{Event, Slot, Stock}
 
   tags ["Distributions"]
   security [%{"bearerAuth" => []}]
@@ -27,6 +27,24 @@ defmodule RepousseWeb.DistributionController do
   def show(conn, %{"id" => id}) do
     event = Distributions.get_event!(id)
     json(conn, %{data: event})
+  end
+
+  operation :slots,
+    summary: "List slots for a distribution event",
+    parameters: [id: [in: :path, type: :string, description: "Event ID"]],
+    responses: [ok: API.list(Slot, "Slots")]
+
+  def slots(conn, %{"id" => event_id}) do
+    json(conn, %{data: Distributions.list_slots(event_id)})
+  end
+
+  operation :stocks,
+    summary: "List species stock for a distribution event",
+    parameters: [id: [in: :path, type: :string, description: "Event ID"]],
+    responses: [ok: API.list(Stock, "Stocks")]
+
+  def stocks(conn, %{"id" => event_id}) do
+    json(conn, %{data: Distributions.list_stocks(event_id)})
   end
 
   operation :create,

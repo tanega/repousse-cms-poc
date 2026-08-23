@@ -29,10 +29,13 @@ defmodule RepousseWeb.Router do
     # Distributions (read + reserve)
     get "/distributions", DistributionController, :index
     get "/distributions/:id", DistributionController, :show
+    get "/distributions/:id/slots", DistributionController, :slots
+    get "/distributions/:id/stocks", DistributionController, :stocks
     post "/distributions/:id/reservations", ReservationController, :create
     get "/distributions/:id/reservations/mine", ReservationController, :mine
     delete "/distributions/:distribution_id/reservations/:id", ReservationController, :cancel
     post "/distributions/:id/waitlist", WaitlistController, :join
+    get "/distributions/:id/waitlist/mine", WaitlistController, :mine
     delete "/distributions/:id/waitlist", WaitlistController, :leave
 
     # Admin — distribution management
@@ -68,6 +71,7 @@ defmodule RepousseWeb.Router do
     delete "/projects/:id/members/:user_id", ProjectController, :remove_member
     post "/projects/:id/media", ProjectController, :upload_media
     delete "/projects/:id/media/:media_id", ProjectController, :delete_media
+    get "/projects/:id/distribution_reservations", ProjectController, :distribution_reservations
     get "/projects/:id/journal", ProjectController, :journal
     post "/projects/:id/journal", ProjectController, :add_journal_entry
     put "/projects/:project_id/journal/:entry_id", ProjectController, :update_journal_entry

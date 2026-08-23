@@ -180,6 +180,11 @@ defmodule Repousse.Distributions do
     |> Repo.insert()
   end
 
+  def list_user_waitlist_entries(user_id, event_id) do
+    from(w in WaitlistEntry, where: w.user_id == ^user_id and w.event_id == ^event_id)
+    |> Repo.all()
+  end
+
   def leave_waitlist(user_id, event_id, taxon_id) do
     case Repo.get_by(WaitlistEntry, user_id: user_id, event_id: event_id, taxon_id: taxon_id) do
       nil -> {:error, :not_found}

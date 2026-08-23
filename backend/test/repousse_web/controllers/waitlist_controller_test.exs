@@ -35,6 +35,23 @@ defmodule RepousseWeb.WaitlistControllerTest do
     end
   end
 
+  describe "GET /distributions/:id/waitlist/mine" do
+    test "lists the current user's waitlist entries for the event", %{conn: conn, private_map: pm} do
+      user = insert(:user)
+      event = insert(:distribution_event)
+      taxon = insert(:taxon)
+      insert(:waitlist_entry, user: user, event: event, taxon: taxon)
+
+      conn =
+        conn
+        |> authed(user, pm)
+        |> get(~p"/api/v1/distributions/#{event.id}/waitlist/mine")
+
+      assert %{"data" => [%{"taxon_id" => taxon_id}]} = json_response(conn, 200)
+      assert taxon_id == taxon.id
+    end
+  end
+
   describe "DELETE /distributions/:id/waitlist" do
     test "leaves the waitlist for a taxon", %{conn: conn, private_map: pm} do
       user = insert(:user)
