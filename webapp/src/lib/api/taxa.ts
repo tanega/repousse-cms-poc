@@ -35,6 +35,13 @@ export async function fetchTaxa(): Promise<Taxon[]> {
   return data;
 }
 
+/** Public, non-admin taxa listing — for member-facing pages (e.g. distribution reservations) that just need names. */
+export async function fetchPublicTaxa(): Promise<Taxon[]> {
+  const res = await authedFetch("/api/v1/taxa");
+  const { data } = await res.json();
+  return data;
+}
+
 export async function fetchTaxonCategories(): Promise<TaxonCategory[]> {
   const res = await authedFetch("/api/v1/taxa/categories");
   const { data } = await res.json();
