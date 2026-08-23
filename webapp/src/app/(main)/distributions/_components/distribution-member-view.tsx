@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
 import { CalendarDays, CheckCircle2, Clock, Mail, MapPin, Sprout, UserRound } from "lucide-react";
+import { toast } from "sonner";
 
 import { type GuestIdentity, GuestIdentityStep } from "@/components/guest-account/guest-identity-step";
 import { StepperHeader, type StepperStep } from "@/components/guest-account/stepper-header";
@@ -18,19 +19,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import {
+  cancelReservation,
+  createReservation,
+  fetchMyReservation,
+  fetchMyWaitlistEntries,
+  joinWaitlist,
+} from "@/lib/api/reservations";
+import { fetchPublicTaxa } from "@/lib/api/taxa";
 import { useHankoSession } from "@/lib/auth/use-hanko-session";
 import { cn } from "@/lib/utils";
+import { EVENT_STATUS_COLORS, EVENT_STATUS_LABELS } from "@/types/distribution";
+import type { Reservation } from "@/types/reservation";
+import type { Taxon } from "@/types/taxon";
 
-import { taxons } from "../../admin/especes-vegetales/_components/data";
-import { projetPlantationCollection } from "../../admin/projets-plantation/_components/collection";
-import { currentMember } from "./current-member";
-import { distributionEventCollection } from "./mock-collection";
-import { STATUT_COLORS } from "./mock-events";
-import { ProjetSelectOrCreate } from "./projet-select-or-create";
-import { reservationsCollection } from "./reservations-collection";
-import { canCancel, findActiveReservation, type Reservation } from "./reservations-data";
+import { projectCollection } from "../../admin/projets-plantation/_components/project-collection";
+import {
+  createPublicSlotCollection,
+  createPublicStockCollection,
+  distributionEventCollection,
+  queryClient,
+} from "./collection";
+import { ProjectSelectOrCreate } from "./project-select-or-create";
 
-type GuestStep = "identite" | "projet" | "reservation";
+type GuestStep = "identite" | "confirmation" | "projet" | "reservation";
 
 const STEPPER_STEPS: StepperStep[] = [
   { id: "identite", label: "Coordonnées", description: "E-mail et compte", icon: <UserRound className="size-4" /> },
@@ -50,138 +62,174 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
   year: "numeric",
 });
 
-function taxonName(taxonId: string) {
-  return taxons.find((t) => t.id === taxonId)?.nomCommun ?? taxonId;
+const CANCEL_DEADLINE_HOURS = 48;
+
+function canCancelSlot(date: string, startTime: string, now: Date = new Date()): boolean {
+  const slotStart = new Date(`${date}T${startTime}`);
+  const deadline = new Date(slotStart.getTime() - CANCEL_DEADLINE_HOURS * 60 * 60 * 1000);
+  return now < deadline;
 }
 
 export function DistributionMemberView({ slug }: { slug: string }) {
-  const { data: events } = useLiveQuery(distributionEventCollection);
-  const { data: allReservations } = useLiveQuery(reservationsCollection);
-  const { data: projets } = useLiveQuery(projetPlantationCollection);
+  const { data: events, isLoading: eventsLoading } = useLiveQuery(distributionEventCollection);
+  const [taxa, setTaxa] = useState<Taxon[]>([]);
+  useEffect(() => {
+    void fetchPublicTaxa().then(setTaxa);
+  }, []);
+  const { data: projects } = useLiveQuery(projectCollection);
 
-  const event = (events ?? []).find((e) => e.lienPermanent === slug && e.statut !== "Brouillon");
-  if (!event) notFound();
-  const eventId = event.id;
+  const event = (events ?? []).find((e) => e.slug === slug && e.status !== "draft");
 
-  const myReservations = (allReservations ?? []).filter(
-    (r) => r.eventId === eventId && r.adoptantId === currentMember.id && r.statut !== "Annulée",
-  );
-  const activeReservation = findActiveReservation(eventId, currentMember.id, allReservations ?? []);
-  const myWaitlistTaxonIds = new Set(
-    myReservations.filter((r) => r.statut === "ListeAttente").flatMap((r) => r.lignes.map((l) => l.taxonId)),
-  );
+  const eventId = event?.id ?? "";
+  const slotCollection = useMemo(() => createPublicSlotCollection(eventId), [eventId]);
+  const stockCollection = useMemo(() => createPublicStockCollection(eventId), [eventId]);
+  const { data: slots } = useLiveQuery(slotCollection);
+  const { data: stocks } = useLiveQuery(stockCollection);
 
-  const isClosed = event.statut === "Clôturé";
   const { isAuthenticated } = useHankoSession();
+  const [justAuthenticated, setJustAuthenticated] = useState(false);
+  const authed = isAuthenticated === true || justAuthenticated;
   // Guests go through a 3-step wizard (identité → projet → réservation);
   // signed-in members (and the not-yet-resolved null state) keep the
   // single-page form with the project field inline, per the e2e contract.
-  const showWizard = isAuthenticated === false;
+  const showWizard = isAuthenticated === false && !justAuthenticated;
 
   const [step, setStep] = useState<GuestStep>("reservation");
   const [guestIdentity, setGuestIdentity] = useState<GuestIdentity | null>(null);
-  const [creneauId, setCreneauId] = useState("");
-  const [projetId, setProjetId] = useState("");
-  const [quantites, setQuantites] = useState<Record<string, number>>({});
+  const [slotId, setSlotId] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const [reservation, setReservation] = useState<Reservation | null | undefined>(undefined);
+  const [waitlistTaxonIds, setWaitlistTaxonIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isAuthenticated === false) setStep("identite");
   }, [isAuthenticated]);
 
-  const activeIdentity = guestIdentity ?? currentMember;
+  useEffect(() => {
+    if (!authed || !eventId) return;
+    void fetchMyReservation(eventId).then(setReservation);
+    void fetchMyWaitlistEntries(eventId).then((entries) =>
+      setWaitlistTaxonIds(new Set(entries.map((e) => e.taxon_id))),
+    );
+  }, [authed, eventId]);
 
   function handleIdentityReady(identity: GuestIdentity) {
     setGuestIdentity(identity);
-    setProjetId("");
-    setStep("projet");
-  }
-
-  function setQuantite(taxonId: string, value: number, max: number | null) {
-    const clamped = max === null ? Math.max(0, value) : Math.min(Math.max(0, value), max);
-    setQuantites((prev) => ({ ...prev, [taxonId]: clamped }));
-  }
-
-  const selectedLines = Object.entries(quantites).filter(([, qty]) => qty > 0);
-  const canReserve = !isClosed && !!creneauId && !!projetId && selectedLines.length > 0;
-
-  function handleReserve(identity: { nom: string } = currentMember) {
-    if (!canReserve) return;
-    reservationsCollection.insert({
-      id: crypto.randomUUID(),
-      eventId,
-      creneauId,
-      adoptantId: currentMember.id,
-      adoptantNom: identity.nom,
-      projetPlantationId: projetId,
-      lignes: selectedLines.map(([taxonId, quantite]) => ({ taxonId, quantite })),
-      statut: "Confirmée",
-      createdAt: new Date().toISOString(),
-    });
-    setStep("reservation");
-    distributionEventCollection.update(eventId, (draft) => {
-      draft.nbInscrits += 1;
-      for (const [taxonId, qty] of selectedLines) {
-        const line = draft.stock.find((s) => s.taxonId === taxonId);
-        if (line && line.quantite !== null) line.quantite = Math.max(0, line.quantite - qty);
-      }
-    });
-    setQuantites({});
-    setCreneauId("");
-  }
-
-  function handleCancel(reservation: Reservation) {
-    if (reservation.statut === "Confirmée") {
-      distributionEventCollection.update(eventId, (draft) => {
-        draft.nbInscrits = Math.max(0, draft.nbInscrits - 1);
-        for (const ligne of reservation.lignes) {
-          const line = draft.stock.find((s) => s.taxonId === ligne.taxonId);
-          if (line && line.quantite !== null) line.quantite += ligne.quantite;
-        }
-      });
+    if (identity.viaLogin) {
+      setJustAuthenticated(true);
+      setProjectId("");
+      setStep("projet");
+    } else {
+      // Brand-new guest account: no real session exists yet (an activation
+      // e-mail was just sent). Authenticated calls (project, reservation,
+      // waitlist) would 401 until they log in — mirrors the same
+      // "check your e-mail" confirmation used by the public project form.
+      setStep("confirmation");
     }
-    reservationsCollection.update(reservation.id, (draft) => {
-      draft.statut = "Annulée";
-    });
   }
 
-  function handleJoinWaitlist(taxonId: string) {
-    if (!projetId) return;
-    reservationsCollection.insert({
-      id: crypto.randomUUID(),
-      eventId,
-      creneauId: creneauId || "",
-      adoptantId: currentMember.id,
-      adoptantNom: currentMember.nom,
-      projetPlantationId: projetId,
-      lignes: [{ taxonId, quantite: 1 }],
-      statut: "ListeAttente",
-      createdAt: new Date().toISOString(),
-    });
+  function taxonName(taxonId: string) {
+    return (taxa ?? []).find((t) => t.id === taxonId)?.common_name ?? taxonId;
   }
 
-  const reservedCreneau = activeReservation ? event.creneaux.find((c) => c.id === activeReservation.creneauId) : null;
-  const canCancelActive = reservedCreneau ? canCancel(reservedCreneau.date, reservedCreneau.heureDebut) : true;
+  function projectName(id: string) {
+    return (projects ?? []).find((p) => p.id === id)?.name ?? id;
+  }
 
-  const availableSpecies = event.stock.filter((s) => s.quantite === null || s.quantite > 0);
-  const exhaustedSpecies = event.stock.filter((s) => s.quantite === 0);
+  function availableQty(stock: { quantity: number | null; quantity_unknown: boolean; reserved_quantity: number }) {
+    if (stock.quantity_unknown) return null;
+    return Math.max(0, (stock.quantity ?? 0) - stock.reserved_quantity);
+  }
+
+  function setQuantity(stockId: string, value: number, max: number | null) {
+    const clamped = max === null ? Math.max(0, value) : Math.min(Math.max(0, value), max);
+    setQuantities((prev) => ({ ...prev, [stockId]: clamped }));
+  }
+
+  if (eventsLoading) return null;
+  if (!event) notFound();
+
+  const isClosed = event.status === "closed";
+  const isActive = reservation && (reservation.status === "confirmed" || reservation.status === "validated");
+  const reservedSlot = reservation ? (slots ?? []).find((s) => s.id === reservation.slot_id) : null;
+  const canCancelActive = reservedSlot ? canCancelSlot(reservedSlot.date, reservedSlot.start_time) : true;
+
+  const selectedLines = Object.entries(quantities).filter(([, qty]) => qty > 0);
+  const canReserve = !isClosed && !!slotId && !!projectId && selectedLines.length > 0 && !submitting;
+
+  let reserveButtonLabel = "Réserver";
+  if (submitting) reserveButtonLabel = "Réservation…";
+  else if (showWizard) reserveButtonLabel = "Valider ma réservation";
+
+  async function handleReserve() {
+    if (!canReserve) return;
+    setSubmitting(true);
+    try {
+      const items = selectedLines.map(([stockId, qty]) => {
+        const stock = (stocks ?? []).find((s) => s.id === stockId);
+        return { stock_id: stockId, qty, taxon_id: stock?.taxon_id ?? "" };
+      });
+      await createReservation(eventId, { slot_id: slotId, project_id: projectId, items });
+      toast.success("Réservation confirmée.");
+      setReservation(await fetchMyReservation(eventId));
+      await queryClient.invalidateQueries({ queryKey: ["public-distribution-stocks", eventId] });
+      setQuantities({});
+      setSlotId("");
+      setStep("reservation");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec de la réservation.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleCancel() {
+    if (!reservation) return;
+    try {
+      setReservation(await cancelReservation(eventId, reservation.id));
+      toast.success("Réservation annulée.");
+      await queryClient.invalidateQueries({ queryKey: ["public-distribution-stocks", eventId] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec de l'annulation.");
+    }
+  }
+
+  async function handleJoinWaitlist(taxonId: string) {
+    try {
+      await joinWaitlist(eventId, taxonId);
+      setWaitlistTaxonIds((prev) => new Set(prev).add(taxonId));
+      toast.success("Ajouté·e à la liste d'attente.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec de l'inscription à la liste d'attente.");
+    }
+  }
+
+  const availableSpecies = (stocks ?? []).filter((s) => {
+    const qty = availableQty(s);
+    return qty === null || qty > 0;
+  });
+  const exhaustedSpecies = (stocks ?? []).filter((s) => availableQty(s) === 0);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-semibold text-2xl">{event.intitule}</h1>
+          <h1 className="font-semibold text-2xl">{event.title}</h1>
           <Badge
             variant="outline"
-            className={cn("border-0 px-2 py-0.5 font-normal text-xs", STATUT_COLORS[event.statut])}
+            className={cn("border-0 px-2 py-0.5 font-normal text-xs", EVENT_STATUS_COLORS[event.status])}
           >
-            {event.statut}
+            {EVENT_STATUS_LABELS[event.status]}
           </Badge>
         </div>
         {event.description && <p className="mt-2 text-muted-foreground text-sm">{event.description}</p>}
-        {event.contactGeneral && (
+        {event.general_contact && (
           <div className="mt-2 flex items-center gap-1.5 text-muted-foreground text-sm">
             <Mail className="size-3.5" />
-            {event.contactGeneral}
+            {event.general_contact}
           </div>
         )}
       </div>
@@ -196,7 +244,17 @@ export function DistributionMemberView({ slug }: { slug: string }) {
         </Alert>
       )}
 
-      {activeReservation && (
+      {reservation?.status === "cancelled" && (
+        <Alert>
+          <AlertTitle>Réservation annulée</AlertTitle>
+          <AlertDescription>
+            Vous avez annulé votre réservation pour cet événement. Une seule réservation est possible par événement,
+            même après annulation.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isActive && reservation && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -205,55 +263,59 @@ export function DistributionMemberView({ slug }: { slug: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            {reservedCreneau && (
+            {reservedSlot && (
               <div className="flex items-start gap-2">
                 <CalendarDays className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                 <div>
-                  <div className="font-medium capitalize">{dateFormatter.format(new Date(reservedCreneau.date))}</div>
+                  <div className="font-medium capitalize">{dateFormatter.format(new Date(reservedSlot.date))}</div>
                   <div className="text-muted-foreground text-xs">
-                    {reservedCreneau.heureDebut} – {reservedCreneau.heureFin} · {reservedCreneau.lieu}
+                    {reservedSlot.start_time} – {reservedSlot.end_time} · {reservedSlot.location_name}
                   </div>
                 </div>
               </div>
             )}
             <Separator />
             <div className="space-y-1">
-              {activeReservation.lignes.map((l) => (
-                <div key={l.taxonId} className="flex items-center justify-between">
-                  <span>{taxonName(l.taxonId)}</span>
-                  <span className="font-medium tabular-nums">{l.quantite}</span>
+              {reservation.items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between">
+                  <span>{taxonName(item.taxon_id)}</span>
+                  <span className="font-medium tabular-nums">{item.reserved_qty}</span>
                 </div>
               ))}
             </div>
             <Separator />
             <div className="flex items-center justify-between text-muted-foreground">
               <span>Projet de plantation</span>
-              <span className="font-medium text-foreground">
-                {(projets ?? []).find((p) => p.id === activeReservation.projetPlantationId)?.nom ??
-                  activeReservation.projetPlantationId}
-              </span>
+              <span className="font-medium text-foreground">{projectName(reservation.project_id)}</span>
             </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="w-full"
-              disabled={!canCancelActive}
-              onClick={() => handleCancel(activeReservation)}
-            >
-              Annuler ma réservation
-            </Button>
-            {!canCancelActive && (
-              <p className="text-center text-muted-foreground text-xs">
-                Annulation possible jusqu'à 48h avant le créneau réservé.
-              </p>
+            {reservation.status === "confirmed" && (
+              <>
+                <Separator />
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  disabled={!canCancelActive}
+                  onClick={handleCancel}
+                >
+                  Annuler ma réservation
+                </Button>
+                {!canCancelActive && (
+                  <p className="text-center text-muted-foreground text-xs">
+                    Annulation possible jusqu'à 48h avant le créneau réservé.
+                  </p>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
       )}
 
-      {!activeReservation && !isClosed && showWizard && <StepperHeader steps={STEPPER_STEPS} activeId={step} />}
+      {!isActive && !isClosed && reservation?.status !== "cancelled" && showWizard && (
+        <StepperHeader steps={STEPPER_STEPS} activeId={step} />
+      )}
 
-      {!activeReservation && !isClosed && showWizard && step === "identite" && (
+      {!isActive && !isClosed && reservation?.status !== "cancelled" && showWizard && step === "identite" && (
         <GuestIdentityStep
           description="L'adresse e-mail est nécessaire pour votre réservation. Un compte Repousse est créé automatiquement — vous recevrez un e-mail avec la marche à suivre pour vous connecter la prochaine fois. Vous pouvez aussi vous connecter directement si vous avez déjà un compte."
           submitLabel="Continuer"
@@ -261,7 +323,27 @@ export function DistributionMemberView({ slug }: { slug: string }) {
         />
       )}
 
-      {!activeReservation && !isClosed && showWizard && step === "projet" && guestIdentity && (
+      {!isActive && !isClosed && showWizard && step === "confirmation" && guestIdentity && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CheckCircle2 className="size-4 text-green-600" />
+              Vérifiez votre e-mail
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Un compte Repousse a été créé pour {guestIdentity.email}. Connectez-vous depuis le lien reçu par e-mail
+              pour finaliser votre réservation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/auth/v2/login">Aller à la connexion</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isActive && !isClosed && reservation?.status !== "cancelled" && showWizard && step === "projet" && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Projet de plantation</CardTitle>
@@ -270,17 +352,9 @@ export function DistributionMemberView({ slug }: { slug: string }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ProjetSelectOrCreate
-              email={guestIdentity.email}
-              nom={guestIdentity.nom}
-              value={projetId}
-              onChange={setProjetId}
-            />
+            <ProjectSelectOrCreate value={projectId} onChange={setProjectId} />
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setStep("identite")}>
-                ← Modifier mes coordonnées
-              </Button>
-              <Button size="sm" className="ml-auto" disabled={!projetId} onClick={() => setStep("reservation")}>
+              <Button size="sm" className="ml-auto" disabled={!projectId} onClick={() => setStep("reservation")}>
                 Continuer
               </Button>
             </div>
@@ -288,7 +362,7 @@ export function DistributionMemberView({ slug }: { slug: string }) {
         </Card>
       )}
 
-      {!activeReservation && !isClosed && (!showWizard || step === "reservation") && (
+      {!isActive && !isClosed && reservation?.status !== "cancelled" && (!showWizard || step === "reservation") && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Réserver un créneau</CardTitle>
@@ -299,23 +373,23 @@ export function DistributionMemberView({ slug }: { slug: string }) {
           <CardContent className="space-y-5">
             <div className="space-y-2">
               <Label>Créneau</Label>
-              <RadioGroup value={creneauId} onValueChange={setCreneauId}>
-                {event.creneaux.map((c) => (
+              <RadioGroup value={slotId} onValueChange={setSlotId}>
+                {(slots ?? []).map((s) => (
                   <label
-                    key={c.id}
-                    htmlFor={`creneau-${c.id}`}
+                    key={s.id}
+                    htmlFor={`slot-${s.id}`}
                     className="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm has-[[data-state=checked]]:border-primary"
                   >
-                    <RadioGroupItem value={c.id} id={`creneau-${c.id}`} className="mt-0.5" />
+                    <RadioGroupItem value={s.id} id={`slot-${s.id}`} className="mt-0.5" />
                     <div>
-                      <div className="font-medium capitalize">{dateFormatter.format(new Date(c.date))}</div>
+                      <div className="font-medium capitalize">{dateFormatter.format(new Date(s.date))}</div>
                       <div className="flex items-center gap-1 text-muted-foreground text-xs">
                         <Clock className="size-3" />
-                        {c.heureDebut} – {c.heureFin}
+                        {s.start_time} – {s.end_time}
                       </div>
                       <div className="flex items-center gap-1 text-muted-foreground text-xs">
                         <MapPin className="size-3" />
-                        {c.lieu}
+                        {s.location_name}
                       </div>
                     </div>
                   </label>
@@ -323,11 +397,11 @@ export function DistributionMemberView({ slug }: { slug: string }) {
               </RadioGroup>
             </div>
 
-            {showWizard && guestIdentity ? (
+            {showWizard ? (
               <div className="flex items-center justify-between rounded-md border p-3 text-sm">
                 <div>
                   <div className="text-muted-foreground text-xs">Projet de plantation</div>
-                  <div className="font-medium">{(projets ?? []).find((p) => p.id === projetId)?.nom ?? projetId}</div>
+                  <div className="font-medium">{projectId ? projectName(projectId) : "Aucun projet sélectionné"}</div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setStep("projet")}>
                   Modifier
@@ -339,45 +413,39 @@ export function DistributionMemberView({ slug }: { slug: string }) {
                   Projet de plantation
                   <span className="ml-1 text-destructive">*</span>
                 </Label>
-                <ProjetSelectOrCreate
-                  email={activeIdentity.email}
-                  nom={activeIdentity.nom}
-                  value={projetId}
-                  onChange={setProjetId}
-                />
+                <ProjectSelectOrCreate value={projectId} onChange={setProjectId} />
               </div>
             )}
 
             {availableSpecies.length > 0 && (
               <div className="space-y-2">
                 <Label>Quantités souhaitées</Label>
-                {availableSpecies.map((s) => (
-                  <div key={s.taxonId} className="flex items-center justify-between gap-3 text-sm">
-                    <span>{taxonName(s.taxonId)}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground text-xs">
-                        {s.quantite === null ? "quantité illimitée" : `${s.quantite} disponibles`}
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={s.quantite ?? undefined}
-                        className="w-20"
-                        value={quantites[s.taxonId] ?? ""}
-                        onChange={(e) => setQuantite(s.taxonId, Number(e.target.value) || 0, s.quantite)}
-                      />
+                {availableSpecies.map((s) => {
+                  const qty = availableQty(s);
+                  return (
+                    <div key={s.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span>{taxonName(s.taxon_id)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-xs">
+                          {qty === null ? "quantité illimitée" : `${qty} disponibles`}
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={qty ?? undefined}
+                          className="w-20"
+                          value={quantities[s.id] ?? ""}
+                          onChange={(e) => setQuantity(s.id, Number(e.target.value) || 0, qty)}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            <Button
-              className="w-full"
-              disabled={!canReserve}
-              onClick={() => handleReserve(showWizard ? (guestIdentity ?? undefined) : undefined)}
-            >
-              {showWizard ? "Valider ma réservation" : "Réserver"}
+            <Button className="w-full" disabled={!canReserve} onClick={handleReserve}>
+              {reserveButtonLabel}
             </Button>
           </CardContent>
         </Card>
@@ -393,10 +461,10 @@ export function DistributionMemberView({ slug }: { slug: string }) {
           </CardHeader>
           <CardContent className="space-y-2">
             {exhaustedSpecies.map((s) => {
-              const onWaitlist = myWaitlistTaxonIds.has(s.taxonId);
+              const onWaitlist = waitlistTaxonIds.has(s.taxon_id);
               return (
-                <div key={s.taxonId} className="flex items-center justify-between text-sm">
-                  <span>{taxonName(s.taxonId)}</span>
+                <div key={s.id} className="flex items-center justify-between text-sm">
+                  <span>{taxonName(s.taxon_id)}</span>
                   {onWaitlist ? (
                     <Badge variant="outline" className="font-normal">
                       En liste d'attente
@@ -405,8 +473,8 @@ export function DistributionMemberView({ slug }: { slug: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={isClosed || !projetId}
-                      onClick={() => handleJoinWaitlist(s.taxonId)}
+                      disabled={isClosed || !authed}
+                      onClick={() => handleJoinWaitlist(s.taxon_id)}
                     >
                       Rejoindre la liste d'attente
                     </Button>
@@ -414,10 +482,8 @@ export function DistributionMemberView({ slug }: { slug: string }) {
                 </div>
               );
             })}
-            {!projetId && !isClosed && (
-              <p className="text-muted-foreground text-xs">
-                Sélectionnez un projet de plantation ci-dessus pour rejoindre une liste d'attente.
-              </p>
+            {!authed && !isClosed && (
+              <p className="text-muted-foreground text-xs">Connectez-vous pour rejoindre une liste d'attente.</p>
             )}
           </CardContent>
         </Card>
