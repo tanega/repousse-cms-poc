@@ -16,6 +16,7 @@ defmodule Repousse.Distributions.Reservation do
              :slot_id,
              :event_id,
              :project_id,
+             :items,
              :inserted_at,
              :updated_at
            ]}

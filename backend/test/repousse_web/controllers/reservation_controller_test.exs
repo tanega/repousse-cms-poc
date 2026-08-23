@@ -41,7 +41,9 @@ defmodule RepousseWeb.ReservationControllerTest do
           }
         })
 
-      assert %{"data" => %{"status" => "confirmed"}} = json_response(conn, 201)
+      assert %{"data" => %{"status" => "confirmed", "items" => [item]}} = json_response(conn, 201)
+      assert item["taxon_id"] == taxon.id
+      assert item["reserved_qty"] == 2
     end
   end
 
@@ -56,7 +58,7 @@ defmodule RepousseWeb.ReservationControllerTest do
         |> authed(user, pm)
         |> get(~p"/api/v1/distributions/#{event.id}/reservations/mine")
 
-      assert %{"data" => %{"id" => id}} = json_response(conn, 200)
+      assert %{"data" => %{"id" => id, "items" => []}} = json_response(conn, 200)
       assert id == reservation.id
     end
   end
