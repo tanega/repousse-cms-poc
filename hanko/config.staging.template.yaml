@@ -1,0 +1,52 @@
+server:
+  public:
+    address: ":8000"
+    cors:
+      enabled: true
+      allow_origins:
+        - "${HANKO_ALLOWED_ORIGIN}"
+      allow_credentials: true
+  admin:
+    address: ":8001"
+
+webauthn:
+  relying_party:
+    id: "${HANKO_RP_ID}"
+    display_name: "Repousse"
+    origins:
+      - "${HANKO_ALLOWED_ORIGIN}"
+
+database:
+  user: "${HANKO_DB_USER}"
+  password: "${HANKO_DB_PASSWORD}"
+  host: "${HANKO_DB_HOST}"
+  port: "${HANKO_DB_PORT}"
+  database: "${HANKO_DB_NAME}"
+  dialect: postgres
+
+secrets:
+  keys:
+    - "${HANKO_SECRET_KEY}"
+
+session:
+  lifespan: "1h"
+  enable_auth_token_header: true
+  cookie:
+    http_only: false
+    same_site: "lax"
+    secure: true
+
+password:
+  enabled: true
+  min_length: 8
+
+passcode:
+  ttl: 120
+
+email_delivery:
+  smtp:
+    host: "${HANKO_SMTP_HOST}"
+    port: "${HANKO_SMTP_PORT}"
+    user: "${HANKO_SMTP_USER}"
+    password: "${HANKO_SMTP_PASSWORD}"
+  from_address: "${HANKO_FROM_ADDRESS}"
