@@ -54,6 +54,26 @@ if mailpit_host = System.get_env("MAILPIT_SMTP_HOST") do
     auth: :never,
     retries: 1,
     no_mx_lookups: true
+else
+  if config_env() == :prod do
+    smtp_host =
+      System.get_env("SMTP_HOST") ||
+        raise """
+        environment variable SMTP_HOST is missing.
+        Set SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASSWORD to your relay's credentials.
+        """
+
+    config :repousse, Repousse.Mailer,
+      adapter: Swoosh.Adapters.SMTP,
+      relay: smtp_host,
+      port: String.to_integer(System.get_env("SMTP_PORT", "587")),
+      username: System.get_env("SMTP_USER"),
+      password: System.get_env("SMTP_PASSWORD"),
+      ssl: false,
+      tls: :always,
+      auth: :always,
+      retries: 2
+  end
 end
 
 config :repousse, :webapp_url, System.get_env("WEBAPP_URL", "http://www.localhost")

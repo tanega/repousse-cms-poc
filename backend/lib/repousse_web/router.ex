@@ -16,6 +16,11 @@ defmodule RepousseWeb.Router do
     plug RepousseWeb.Plugs.RequireRolePlug, role: :admin
   end
 
+  scope "/health", RepousseWeb do
+    get "/alive", HealthController, :alive
+    get "/ready", HealthController, :ready
+  end
+
   scope "/api/v1", RepousseWeb do
     pipe_through [:api, :authenticated]
 
