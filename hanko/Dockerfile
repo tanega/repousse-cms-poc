@@ -1,4 +1,4 @@
-FROM ghcr.io/teamhanko/hanko:latest AS hanko-bin
+FROM ghcr.io/teamhanko/hanko:v3.0.5 AS hanko-bin
 
 FROM alpine:3.22
 
