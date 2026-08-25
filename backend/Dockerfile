@@ -23,11 +23,13 @@ RUN mix release
 # ── Runtime image ──────────────────────────────────────────────────────────
 FROM alpine:3.22 AS runtime
 
-RUN apk add --no-cache openssl libstdc++ ncurses
+RUN apk add --no-cache openssl libstdc++ ncurses curl
 
 WORKDIR /app
 
 COPY --from=build /app/_build/prod/rel/repousse ./
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 ENV PHX_HOST=localhost
 ENV PORT=4000
@@ -35,4 +37,4 @@ ENV MIX_ENV=prod
 
 EXPOSE 4000
 
-CMD ["bin/repousse", "start"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
