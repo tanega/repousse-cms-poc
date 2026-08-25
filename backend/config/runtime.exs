@@ -93,7 +93,7 @@ config :ex_aws, :s3,
   scheme: "#{minio_endpoint_uri.scheme}://",
   host: minio_endpoint_uri.host,
   port: minio_endpoint_uri.port,
-  region: "us-east-1"
+  region: System.get_env("MINIO_REGION", "us-east-1")
 
 if config_env() == :prod do
   database_url =
