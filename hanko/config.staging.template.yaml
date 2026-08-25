@@ -1,13 +1,12 @@
 server:
   public:
     address: ":8000"
-    cors:
-      enabled: true
-      allow_origins:
-        - "${HANKO_ALLOWED_ORIGIN}"
-      allow_credentials: true
   admin:
     address: ":8001"
+
+cors:
+  allow_origins:
+    - "${HANKO_ALLOWED_ORIGIN}"
 
 webauthn:
   relying_party:
