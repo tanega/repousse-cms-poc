@@ -31,6 +31,7 @@ session:
   lifespan: "1h"
   enable_auth_token_header: true
   cookie:
+    domain: "repousse.datae.earth"
     http_only: false
     same_site: "lax"
     secure: true
