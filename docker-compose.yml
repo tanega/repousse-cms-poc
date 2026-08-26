@@ -86,12 +86,11 @@ services:
       "
 
   hanko:
-    image: ghcr.io/teamhanko/hanko:latest
-    command: serve --config /etc/hanko/config.yaml all
-    environment:
-      - CONFIG_FILE=/etc/hanko/config.yaml
-    volumes:
-      - ./hanko/config.yaml:/etc/hanko/config.yaml:ro
+    build:
+      context: ./hanko
+      dockerfile: Dockerfile
+      args:
+        CONFIG_TEMPLATE: config.dev.template.yaml
     labels:
       - traefik.enable=true
       - traefik.http.routers.hanko.rule=Host(`auth.localhost`)
