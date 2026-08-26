@@ -4,6 +4,9 @@ server:
   admin:
     address: ":8001"
 
+service:
+  name: "Association Repousse"
+
 cors:
   allow_origins:
     - "${HANKO_ALLOWED_ORIGIN}"
@@ -50,3 +53,4 @@ email_delivery:
     user: "${HANKO_SMTP_USER}"
     password: "${HANKO_SMTP_PASSWORD}"
   from_address: "${HANKO_FROM_ADDRESS}"
+  from_name: "Association Repousse"

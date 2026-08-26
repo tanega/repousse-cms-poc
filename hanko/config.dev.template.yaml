@@ -4,6 +4,9 @@ server:
   admin:
     address: ":8001"
 
+service:
+  name: "Association Repousse"
+
 cors:
   allow_origins:
     - "http://www.localhost"
@@ -69,3 +72,4 @@ email_delivery:
     host: "mailpit"
     port: "1025"
   from_address: noreply@repousse.org
+  from_name: "Association Repousse"
