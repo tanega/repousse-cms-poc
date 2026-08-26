@@ -4,10 +4,10 @@
 import Link from "next/link";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { parse } from "date-fns";
-import { Check, Clock, MoreHorizontal, TreePine, X } from "lucide-react";
+import { format } from "date-fns";
+import { MoreHorizontal } from "lucide-react";
 
-import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,7 +20,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn, getInitials } from "@/lib/utils";
 
-import { type AdherentRow, isAdhesionActive, profileTypeMeta, statusMeta } from "./data";
+import {
+  type AdherentRow,
+  fullName,
+  isAdhesionActive,
+  profileTypeLabels,
+  roleBadgeMeta,
+  roleLabels,
+  statusMeta,
+} from "./data";
 
 function getAvatarTone(name: string) {
   const tones = [
@@ -36,58 +44,25 @@ function getAvatarTone(name: string) {
   return tones[name.length % tones.length];
 }
 
-function getLoginBadge(minutesAgo: number) {
-  if (minutesAgo < 1) return { className: "bg-green-600 text-green-950 [&>svg]:text-white", icon: Check };
-  if (minutesAgo < 4 * 60) return { className: "bg-amber-500 text-amber-950", icon: Clock };
-  if (minutesAgo < 7 * 24 * 60) return { className: "bg-destructive", icon: null };
-  return { className: "bg-muted-foreground text-muted", icon: X };
-}
-
-function formatLastLogin(minutesAgo: number): string {
-  if (minutesAgo < 1) return "À l'instant";
-  if (minutesAgo < 60) return `Il y a ${Math.round(minutesAgo)} min`;
-  if (minutesAgo < 24 * 60) return `Il y a ${Math.round(minutesAgo / 60)} h`;
-  if (minutesAgo < 30 * 24 * 60) return `Il y a ${Math.round(minutesAgo / (24 * 60))} j`;
-  return `Il y a ${Math.round(minutesAgo / (30 * 24 * 60))} mois`;
-}
-
-function AvatarCell({ lastLoginAt, name }: { lastLoginAt: number; name: string }) {
-  const badge = getLoginBadge(lastLoginAt);
-  const BadgeIcon = badge.icon;
+function ProfileTypeCell({ profileTypes }: { profileTypes: AdherentRow["profiles"] }) {
+  if (profileTypes.length === 0) return <span className="text-muted-foreground text-xs">—</span>;
   return (
-    <Avatar size="lg" className={cn("font-medium", getAvatarTone(name))}>
-      <AvatarFallback>{getInitials(name)}</AvatarFallback>
-      <AvatarBadge className={badge.className}>{BadgeIcon ? <BadgeIcon /> : null}</AvatarBadge>
-    </Avatar>
+    <div className="flex flex-wrap gap-1">
+      {profileTypes.map((p) => (
+        <span key={p.id} className="whitespace-nowrap text-muted-foreground text-xs font-medium">
+          {profileTypeLabels[p.profile_type]}
+        </span>
+      ))}
+    </div>
   );
 }
 
-function ProfileTypeCell({
-  profileTypes,
-  source,
-}: {
-  profileTypes: AdherentRow["profileTypes"];
-  source: AdherentRow["source"];
-}) {
+function RoleBadge({ role }: { role: AdherentRow["role"] }) {
+  if (role === "member") return null;
   return (
-    <div className="grid gap-1">
-      <div className="flex flex-wrap gap-1">
-        {profileTypes.map((pt) => {
-          const meta = profileTypeMeta[pt];
-          const Icon = meta.icon;
-          return (
-            <span
-              key={pt}
-              className={cn("flex items-center gap-1 whitespace-nowrap text-xs font-medium", meta.className)}
-            >
-              <Icon className="size-3" />
-              {pt}
-            </span>
-          );
-        })}
-      </div>
-      <span className="text-muted-foreground text-xs">{source}</span>
-    </div>
+    <Badge className={cn("gap-1.5 border px-2 py-1 font-medium", roleBadgeMeta[role])} variant="outline">
+      {roleLabels[role]}
+    </Badge>
   );
 }
 
@@ -96,7 +71,7 @@ function StatusBadge({ status }: { status: AdherentRow["status"] }) {
   return (
     <Badge className={cn("gap-1.5 border px-2 py-1 font-medium", meta.badgeClass)} variant="outline">
       <span className={cn("size-1.5 rounded-full", meta.dotClass)} />
-      {status}
+      {status === "active" ? "Actif" : "Suspendu"}
     </Badge>
   );
 }
@@ -119,141 +94,125 @@ function AdhesionBadge({ row }: { row: AdherentRow }) {
   );
 }
 
-export function getAdherentsColumns(onDeactivate: (email: string) => void): ColumnDef<AdherentRow>[] {
+export function getAdherentsColumns(onDeactivate: (id: string) => void): ColumnDef<AdherentRow>[] {
   return [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          aria-label="Tout sélectionner"
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          aria-label={`Sélectionner ${row.original.name}`}
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-        />
-      </div>
-    ),
-    enableHiding: false,
-    enableSorting: false,
-  },
-  {
-    id: "search",
-    accessorFn: (row) => `${row.name} ${row.email}`,
-    filterFn: "includesString",
-    enableHiding: true,
-  },
-  {
-    accessorKey: "name",
-    header: "Membre",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <AvatarCell name={row.original.name} lastLoginAt={row.original.lastLoginAt} />
-        <div className="min-w-0">
-          <div className="truncate font-medium text-foreground text-sm">{row.original.name}</div>
-          <div className="truncate text-muted-foreground text-sm">{row.original.email}</div>
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            aria-label="Tout sélectionner"
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          />
         </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "profileTypes",
-    header: "Profils / Source",
-    filterFn: "arrIncludes",
-    cell: ({ row }) => <ProfileTypeCell profileTypes={row.original.profileTypes} source={row.original.source} />,
-  },
-  {
-    accessorKey: "source",
-    header: "Source",
-    filterFn: "equalsString",
-    cell: ({ row }) => <div className="text-sm">{row.original.source}</div>,
-  },
-  {
-    accessorKey: "status",
-    header: "Statut du compte",
-    filterFn: "equalsString",
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
-  },
-  {
-    id: "adhesionActive",
-    header: "Adhésion",
-    cell: ({ row }) => <AdhesionBadge row={row.original} />,
-  },
-  {
-    id: "memberSince",
-    accessorFn: (row) => parse(row.memberSince, "dd MMM yyyy, h:mm a", new Date()).getTime(),
-    header: "Adhésion",
-    cell: ({ row }) => <div className="whitespace-nowrap text-foreground text-sm">{row.original.memberSince}</div>,
-  },
-  {
-    id: "lastLoginAt",
-    accessorFn: (row) => row.lastLoginAt,
-    header: "Dernière connexion",
-    cell: ({ row }) => <div className="text-muted-foreground text-sm">{formatLastLogin(row.original.lastLoginAt)}</div>,
-  },
-  {
-    accessorKey: "loginCount",
-    header: "Connexions",
-    cell: ({ row }) => <div className="font-medium text-sm tabular-nums">{row.original.loginCount}</div>,
-  },
-  {
-    accessorKey: "projectCount",
-    header: "Projets",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1.5 text-sm">
-        <TreePine className="size-3.5 text-primary" />
-        {row.original.projectCount}
-      </div>
-    ),
-  },
-  {
-    id: "actions",
-    header: () => <div className="text-right">Actions</div>,
-    cell: ({ row }) => (
-      <div className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              aria-label={`Actions pour ${row.original.name}`}
-              className="size-8 rounded-md text-muted-foreground hover:bg-muted/50"
-              size="icon-sm"
-              variant="ghost"
-            >
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href="/membres/me">Voir le profil</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/admin/adherents/${encodeURIComponent(row.original.email)}/modifier`}>
-                Modifier le membre
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>Renouveler l'adhésion</DropdownMenuItem>
-            <DropdownMenuItem>Envoyer un email</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              disabled={row.original.status === "Suspendu"}
-              onClick={() => onDeactivate(row.original.email)}
-            >
-              Désactiver le compte
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
-    enableHiding: false,
-    enableSorting: false,
-  },
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            aria-label={`Sélectionner ${fullName(row.original)}`}
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+          />
+        </div>
+      ),
+      enableHiding: false,
+      enableSorting: false,
+    },
+    {
+      id: "search",
+      accessorFn: (row) => `${fullName(row)} ${row.email}`,
+      filterFn: "includesString",
+      enableHiding: true,
+    },
+    {
+      id: "name",
+      header: "Membre",
+      cell: ({ row }) => {
+        const name = fullName(row.original);
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar size="lg" className={cn("font-medium", getAvatarTone(name || row.original.email))}>
+              <AvatarFallback>{getInitials(name || row.original.email)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="truncate font-medium text-foreground text-sm">{name || "—"}</span>
+                <RoleBadge role={row.original.role} />
+              </div>
+              <div className="truncate text-muted-foreground text-sm">{row.original.email}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: "profileTypes",
+      header: "Profils",
+      filterFn: (row, _id, filterValue) => row.original.profiles.some((p) => p.profile_type === filterValue),
+      cell: ({ row }) => <ProfileTypeCell profileTypes={row.original.profiles} />,
+    },
+    {
+      accessorKey: "status",
+      header: "Statut du compte",
+      filterFn: "equalsString",
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+    {
+      id: "adhesionActive",
+      header: "Adhésion",
+      cell: ({ row }) => <AdhesionBadge row={row.original} />,
+    },
+    {
+      id: "membershipYear",
+      accessorFn: (row) => row.membership_year ?? 0,
+      header: "Année d'adhésion",
+      cell: ({ row }) => <div className="text-muted-foreground text-sm">{row.original.membership_year ?? "—"}</div>,
+    },
+    {
+      id: "lastSeenAt",
+      accessorFn: (row) => (row.last_seen_at ? new Date(row.last_seen_at).getTime() : 0),
+      header: "Dernière connexion",
+      cell: ({ row }) => (
+        <div className="text-muted-foreground text-sm">
+          {row.original.last_seen_at ? format(new Date(row.original.last_seen_at), "dd MMM yyyy") : "—"}
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                aria-label={`Actions pour ${fullName(row.original)}`}
+                className="size-8 rounded-md text-muted-foreground hover:bg-muted/50"
+                size="icon-sm"
+                variant="ghost"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/adherents/${row.original.id}/modifier`}>Modifier le membre</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={row.original.status === "suspended"}
+                onClick={() => onDeactivate(row.original.id)}
+              >
+                Désactiver le compte
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+      enableHiding: false,
+      enableSorting: false,
+    },
   ];
 }

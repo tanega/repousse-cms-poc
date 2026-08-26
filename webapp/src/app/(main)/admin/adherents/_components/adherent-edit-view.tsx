@@ -3,33 +3,26 @@
 import { notFound } from "next/navigation";
 
 import { useLiveQuery } from "@tanstack/react-db";
-import { format, parse } from "date-fns";
 
 import { AdherentForm } from "./adherent-form";
 import { adherentCollection } from "./collection";
 
-export function AdherentEditView({ email }: { email: string }) {
+export function AdherentEditView({ id }: { id: string }) {
   const { data: adherents } = useLiveQuery(adherentCollection);
-  const adherent = (adherents ?? []).find((a) => a.email === email);
+  const adherent = (adherents ?? []).find((a) => a.id === id);
   if (!adherent) notFound();
-
-  const [firstName, ...rest] = adherent.name.split(" ");
-  const memberSince = format(parse(adherent.memberSince, "dd MMM yyyy, h:mm a", new Date()), "yyyy-MM-dd");
 
   return (
     <AdherentForm
       mode="edit"
-      adherentEmail={adherent.email}
+      adherentId={adherent.id}
       defaultValues={{
-        firstName,
-        lastName: rest.join(" "),
+        firstName: adherent.first_name ?? "",
+        lastName: adherent.last_name ?? "",
         email: adherent.email,
-        phone: adherent.phone ?? "",
-        profileTypes: adherent.profileTypes,
         status: adherent.status,
-        source: adherent.source,
-        memberSince,
-        notes: adherent.notes ?? "",
+        membershipYear: adherent.membership_year ? `${adherent.membership_year}` : "",
+        adhesionActive: adherent.adhesion_active,
       }}
     />
   );
