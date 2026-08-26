@@ -113,6 +113,7 @@ defmodule RepousseWeb.Router do
       resources "/users", UserController, only: [:index, :show, :create, :update, :delete]
       post "/users/:id/suspend", UserController, :suspend
       post "/users/:id/activate", UserController, :activate
+      patch "/users/:id/role", UserController, :update_role
     end
   end
 
