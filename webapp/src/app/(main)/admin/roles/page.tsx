@@ -1,6 +1,13 @@
-import { Roles } from "@/app/(main)/dashboard/roles/_components/roles";
-import { roles } from "@/app/(main)/dashboard/roles/_components/roles-table/data";
+"use client";
 
-export default function Page() {
-  return <Roles roles={roles} />;
+import dynamic from "next/dynamic";
+
+// TanStack DB's useLiveQuery relies on useSyncExternalStore without a
+// server snapshot — SSR crashes without ssr:false (same as especes-vegetales).
+const RolesView = dynamic(() => import("./_components/roles-view").then((m) => m.RolesView), {
+  ssr: false,
+});
+
+export default function RolesPage() {
+  return <RolesView />;
 }
