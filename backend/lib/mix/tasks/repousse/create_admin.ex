@@ -11,7 +11,7 @@ defmodule Mix.Tasks.Repousse.CreateAdmin do
   Steps:
     1. Creates (or looks up) the user in Hanko via Admin API (:8001)
     2. Upserts the user in the Repousse DB
-    3. Assigns the :admin profile type
+    3. Assigns the :superadmin role
 
   Environment variables:
     HANKO_ADMIN_URL  — defaults to http://localhost:8001
@@ -37,17 +37,15 @@ defmodule Mix.Tasks.Repousse.CreateAdmin do
     user = Repousse.Accounts.find_or_create_by_hanko_id!(hanko_id, email)
     IO.puts("  ✓ User in DB (id: #{user.id})")
 
-    IO.puts("→ Adding admin profile...")
+    IO.puts("→ Assigning superadmin role...")
 
-    case Repousse.Accounts.get_profile(user.id, :admin) do
-      nil ->
-        case Repousse.Accounts.add_profile(user, :admin) do
-          {:ok, _} -> IO.puts("  ✓ Admin profile assigned")
-          {:error, cs} -> Mix.raise("Failed to assign admin profile: #{inspect(cs.errors)}")
-        end
-
-      _existing ->
-        IO.puts("  ℹ Admin profile already exists")
+    if user.role == :superadmin do
+      IO.puts("  ℹ Already superadmin")
+    else
+      case Repousse.Accounts.assign_role(user, :superadmin) do
+        {:ok, _} -> IO.puts("  ✓ Superadmin role assigned")
+        {:error, reason} -> Mix.raise("Failed to assign superadmin role: #{inspect(reason)}")
+      end
     end
 
     IO.puts("\nDone. #{email} is now a superadmin.\n")
