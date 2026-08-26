@@ -27,25 +27,24 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { getAdherentsColumns } from "./adherents-columns";
 import { AdherentsTable } from "./adherents-table";
 import { adherentCollection } from "./collection";
-import { filters } from "./data";
+import { filters, profileTypeLabels, statusLabels } from "./data";
 
 export function Adherents() {
   const { data: rows } = useLiveQuery(adherentCollection);
   const adherents = React.useMemo(() => rows ?? [], [rows]);
 
-  const handleDeactivate = React.useCallback((email: string) => {
-    adherentCollection.update(email, (draft) => {
-      draft.status = "Suspendu";
+  const handleDeactivate = React.useCallback((id: string) => {
+    adherentCollection.update(id, (draft) => {
+      draft.status = "suspended";
     });
   }, []);
   const adherentsColumns = React.useMemo(() => getAdherentsColumns(handleDeactivate), [handleDeactivate]);
 
   const [rowSelection, setRowSelection] = React.useState({});
-  const [sorting, setSorting] = React.useState<SortingState>([{ id: "memberSince", desc: true }]);
+  const [sorting, setSorting] = React.useState<SortingState>([{ id: "lastSeenAt", desc: true }]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
     search: false,
-    source: false,
   });
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
@@ -56,7 +55,7 @@ export function Adherents() {
     data: adherents,
     columns: adherentsColumns,
     state: { rowSelection, sorting, columnFilters, columnVisibility, pagination },
-    getRowId: (row) => row.email,
+    getRowId: (row) => row.id,
     autoResetPageIndex: false,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
@@ -73,7 +72,6 @@ export function Adherents() {
   const searchQuery = (table.getColumn("search")?.getFilterValue() as string) ?? "";
   const profileTypeFilter = (table.getColumn("profileTypes")?.getFilterValue() as string) ?? filters.profileType[0];
   const statusFilter = (table.getColumn("status")?.getFilterValue() as string) ?? filters.status[0];
-  const sourceFilter = (table.getColumn("source")?.getFilterValue() as string) ?? filters.source[0];
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
   function setSelectFilter(columnId: string, value: string) {
@@ -128,14 +126,14 @@ export function Adherents() {
           <div className="flex flex-wrap items-center gap-3">
             <Select value={profileTypeFilter} onValueChange={(v) => setSelectFilter("profileTypes", v)}>
               <SelectTrigger size="sm">
-                <span className="text-muted-foreground">Type :</span>
+                <span className="text-muted-foreground">Profil :</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper" align="start">
                 <SelectGroup>
                   {filters.profileType.map((opt) => (
                     <SelectItem key={opt} value={opt}>
-                      {opt}
+                      {opt === "Tous" ? opt : profileTypeLabels[opt]}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -151,23 +149,7 @@ export function Adherents() {
                 <SelectGroup>
                   {filters.status.map((opt) => (
                     <SelectItem key={opt} value={opt}>
-                      {opt}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Select value={sourceFilter} onValueChange={(v) => setSelectFilter("source", v)}>
-              <SelectTrigger size="sm">
-                <span className="text-muted-foreground">Source :</span>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper" align="start">
-                <SelectGroup>
-                  {filters.source.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt}
+                      {opt === "Tous" ? opt : statusLabels[opt]}
                     </SelectItem>
                   ))}
                 </SelectGroup>
