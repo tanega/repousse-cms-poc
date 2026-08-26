@@ -13,6 +13,12 @@ defmodule RepousseWeb.FallbackController do
     conn |> put_status(:forbidden) |> json(%{error: "Forbidden"})
   end
 
+  def call(conn, {:error, :last_superadmin}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{error: "Cannot change the role of the last remaining superadmin"})
+  end
+
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     errors =
       Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
