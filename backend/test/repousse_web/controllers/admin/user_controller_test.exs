@@ -2,6 +2,7 @@ defmodule RepousseWeb.Admin.UserControllerTest do
   use RepousseWeb.ConnCase, async: false
 
   import Repousse.Factory
+  import Swoosh.TestAssertions
 
   alias Repousse.AuthHelper
   alias Repousse.Accounts
@@ -36,6 +37,23 @@ defmodule RepousseWeb.Admin.UserControllerTest do
       conn = conn |> authed(user, pm) |> get(~p"/api/v1/admin/users")
 
       assert json_response(conn, 403)
+    end
+  end
+
+  describe "POST /admin/users" do
+    test "superadmin creates a member: gets a hanko_id and a welcome email", %{conn: conn, private_map: pm} do
+      superadmin = insert(:superadmin_user)
+      email = "welcome-#{System.unique_integer([:positive])}@example.com"
+
+      conn =
+        conn
+        |> authed(superadmin, pm)
+        |> post(~p"/api/v1/admin/users", %{"user" => %{"email" => email, "first_name" => "Nouveau"}})
+
+      assert %{"data" => %{"email" => ^email, "role" => "member"}} = json_response(conn, 201)
+      assert Accounts.get_user_by_email(email).hanko_id
+
+      assert_email_sent(subject: "Bienvenue chez Repousse !", to: {"Nouveau", email})
     end
   end
 
