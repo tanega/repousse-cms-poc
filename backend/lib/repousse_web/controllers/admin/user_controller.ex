@@ -5,6 +5,7 @@ defmodule RepousseWeb.Admin.UserController do
 
   alias Repousse.{Accounts, Repo}
   alias Repousse.Accounts.{Policy, User}
+  alias Repousse.Integrations.Emails
   alias RepousseWeb.OpenApiHelpers, as: API
   alias RepousseWeb.Schemas.User, as: UserSchema
   import Ecto.Query
@@ -51,6 +52,7 @@ defmodule RepousseWeb.Admin.UserController do
          :ok <- Bodyguard.permit(Policy, :create_user, current_user, %{role: role}),
          {:ok, user} <- Accounts.create_user_with_hanko(params, is_verified: true),
          {:ok, user} <- maybe_assign_role(user, role) do
+      Emails.send_welcome_email(user)
       conn |> put_status(:created) |> json(%{data: Repo.preload(user, :profiles)})
     end
   end
