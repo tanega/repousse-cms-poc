@@ -9,6 +9,16 @@ defmodule Repousse.Accounts do
 
   def get_user(id), do: Repo.get(User, id)
   def get_user!(id), do: Repo.get!(User, id)
+
+  @doc """
+  Preloads everything `User`'s Jason encoder derives. `profiles` is in
+  `@derive`, and each profile derives `hosted_species`, so serializing a user
+  without this nested preload crashes on `%Ecto.Association.NotLoaded{}`.
+  Every call site that hands a user to `json/2` goes through here.
+  """
+  def preload_profiles(user_or_users) do
+    Repo.preload(user_or_users, profiles: :hosted_species)
+  end
   def get_user_by_email(email), do: Repo.get_by(User, email: email)
   def get_user_by_hanko_id(hanko_id), do: Repo.get_by(User, hanko_id: hanko_id)
 
@@ -147,7 +157,11 @@ defmodule Repousse.Accounts do
 
   # ── Profiles ──────────────────────────────────────────────────────────────
 
-  def list_profiles(%User{} = user), do: Repo.preload(user, :profiles).profiles
+  # `force: true` — callers like `set_profiles/2` read the list again right
+  # after mutating it, and `current_user` usually arrives already preloaded.
+  def list_profiles(%User{} = user) do
+    Repo.preload(user, [profiles: :hosted_species], force: true).profiles
+  end
 
   def get_profile(user_id, profile_type) do
     Repo.get_by(UserProfile, user_id: user_id, profile_type: profile_type)
@@ -167,7 +181,82 @@ defmodule Repousse.Accounts do
   end
 
   def update_profile(%UserProfile{} = profile, attrs) do
-    profile |> UserProfile.changeset(attrs) |> Repo.update()
+    profile |> Repo.preload(:hosted_species) |> UserProfile.changeset(attrs) |> Repo.update()
+  end
+
+  @doc """
+  Replaces the user's active engagement profiles with `types` (epic-03
+  US-PROFIL-04). Adds the missing ones, removes the extra ones, and leaves
+  already-active profiles untouched so their host-family details survive.
+
+  Refuses an empty list ("au moins un profil requis"), and refuses to drop
+  `host_family` while the member still has active nurseries — transferring
+  those resources is US-PROFIL-05, out of scope, so we block rather than
+  orphan them.
+  """
+  def set_profiles(%User{} = user, types) when is_list(types) do
+    with {:ok, wanted} <- parse_profile_types(types),
+         :ok <- validate_non_empty(wanted),
+         current = list_profiles(user) |> Enum.map(& &1.profile_type),
+         :ok <- validate_host_family_removal(user, current, wanted) do
+      Enum.each(wanted -- current, &add_profile(user, &1))
+      Enum.each(current -- wanted, &remove_profile(user, &1))
+      {:ok, list_profiles(user)}
+    end
+  end
+
+  @doc """
+  Updates the fields specific to one engagement profile — in practice the
+  Famille d'accueil hosting details (epic-03 US-PROFIL-06). Creates the
+  profile row if the user activated the profile but never filled it in.
+  """
+  def update_profile_details(%User{} = user, profile_type, attrs) do
+    with {:ok, type} <- parse_profile_type(profile_type) do
+      case get_profile(user.id, type) do
+        nil -> {:error, :profile_not_active}
+        profile -> update_profile(profile, attrs)
+      end
+    end
+  end
+
+  def set_profile_visibility(%User{} = user, visibility) do
+    user |> User.self_service_changeset(%{"profile_visibility" => visibility}) |> Repo.update()
+  end
+
+  defp parse_profile_types(types) do
+    Enum.reduce_while(types, {:ok, []}, fn type, {:ok, acc} ->
+      case parse_profile_type(type) do
+        {:ok, parsed} -> {:cont, {:ok, [parsed | acc]}}
+        error -> {:halt, error}
+      end
+    end)
+    |> case do
+      {:ok, parsed} -> {:ok, parsed |> Enum.reverse() |> Enum.uniq()}
+      error -> error
+    end
+  end
+
+  defp parse_profile_type(type) when is_atom(type), do: parse_profile_type(Atom.to_string(type))
+
+  defp parse_profile_type(type) when is_binary(type) do
+    case Enum.find(UserProfile.profile_types(), &(Atom.to_string(&1) == type)) do
+      nil -> {:error, :invalid_profile_type}
+      found -> {:ok, found}
+    end
+  end
+
+  defp parse_profile_type(_), do: {:error, :invalid_profile_type}
+
+  defp validate_non_empty([]), do: {:error, :at_least_one_profile_required}
+  defp validate_non_empty(_), do: :ok
+
+  defp validate_host_family_removal(user, current, wanted) do
+    dropping_host_family? = :host_family in current and :host_family not in wanted
+
+    case dropping_host_family? && Repousse.Nurseries.count_active_nurseries(user.id) do
+      count when is_integer(count) and count > 0 -> {:error, {:nurseries_remaining, count}}
+      _ -> :ok
+    end
   end
 
   def has_role?(%User{role: role}, :superadmin), do: role == :superadmin

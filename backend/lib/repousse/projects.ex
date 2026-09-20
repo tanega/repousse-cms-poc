@@ -92,14 +92,14 @@ defmodule Repousse.Projects do
 
   def list_members(project_id) do
     Repo.all(
-      from pm in ProjectMember, where: pm.project_id == ^project_id, preload: [user: :profiles]
+      from pm in ProjectMember, where: pm.project_id == ^project_id, preload: [user: [profiles: :hosted_species]]
     )
   end
 
   def get_member!(project_id, user_id) do
     ProjectMember
     |> Repo.get_by!(project_id: project_id, user_id: user_id)
-    |> Repo.preload(user: :profiles)
+    |> Repo.preload(user: [profiles: :hosted_species])
   end
 
   def update_member_role(%ProjectMember{} = member, role) do

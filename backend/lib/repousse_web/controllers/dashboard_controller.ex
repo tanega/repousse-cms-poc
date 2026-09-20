@@ -82,6 +82,17 @@ defmodule RepousseWeb.DashboardController do
     json(conn, %{data: projects})
   end
 
+  operation :map_nurseries,
+    summary: "List geolocated nurseries for the map",
+    description:
+      "Members see nurseries of public profiles only; coordinators see every nursery " <>
+        "(epic-03 US-PROFIL-11).",
+    responses: [ok: API.list("Nurseries with coordinates")]
+
+  def map_nurseries(conn, _params) do
+    json(conn, %{data: Repousse.Nurseries.list_map_nurseries(conn.assigns.current_user)})
+  end
+
   operation :calendar,
     summary: "List published distributions for the calendar view",
     responses: [ok: API.list("Calendar events")]

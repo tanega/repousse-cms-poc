@@ -1,7 +1,8 @@
 defmodule Repousse.Factory do
   use ExMachina.Ecto, repo: Repousse.Repo
 
-  alias Repousse.Accounts.{User, UserProfile}
+  alias Repousse.Accounts.{HostedSpecies, User, UserProfile}
+  alias Repousse.Nurseries.{Nursery, NurseryPlant}
   alias Repousse.Distributions.{Event, Slot, Stock, Reservation, ReservationItem, WaitlistEntry}
   alias Repousse.Projects.{Project, ProjectMember, ProjectInvitation, JournalEntry, ProjectMedia, PreferredSpecies}
   alias Repousse.Taxa.{TaxonCategory, Taxon, TaxonVersion, TaxonExternalLink}
@@ -175,6 +176,32 @@ defmodule Repousse.Factory do
     %TaxonExternalLink{
       source_name: "Wikipedia",
       url: "https://fr.wikipedia.org/wiki/Prunus_avium",
+      taxon: build(:taxon)
+    }
+  end
+
+  def hosted_species_factory do
+    %HostedSpecies{
+      user_profile: build(:user_profile, profile_type: :host_family),
+      taxon: build(:taxon)
+    }
+  end
+
+  def nursery_factory do
+    %Nursery{
+      name: sequence(:nursery_name, &"Nurserie #{&1}"),
+      notes: "Exposition sud, arrosage manuel.",
+      address: "12 rue des Lilas, 75020 Paris",
+      lat: 48.8674,
+      lng: 2.3987,
+      user: build(:user)
+    }
+  end
+
+  def nursery_plant_factory do
+    %NurseryPlant{
+      quantity: 12,
+      nursery: build(:nursery),
       taxon: build(:taxon)
     }
   end

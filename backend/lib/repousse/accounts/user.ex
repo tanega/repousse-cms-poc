@@ -17,6 +17,7 @@ defmodule Repousse.Accounts.User do
              :role,
              :taxon_editor,
              :avatar_url,
+             :profile_visibility,
              :last_seen_at,
              :profiles,
              :inserted_at,
@@ -24,6 +25,7 @@ defmodule Repousse.Accounts.User do
            ]}
 
   @roles [:member, :admin, :superadmin]
+  @visibilities [:public, :private]
 
   schema "users" do
     field :email, :string
@@ -36,10 +38,12 @@ defmodule Repousse.Accounts.User do
     field :role, Ecto.Enum, values: @roles, default: :member
     field :taxon_editor, :boolean, default: false
     field :avatar_url, :string
+    field :profile_visibility, Ecto.Enum, values: @visibilities, default: :private
     field :activation_sent_count, :integer, default: 0
     field :last_seen_at, :utc_datetime
 
     has_many :profiles, Repousse.Accounts.UserProfile
+    has_many :nurseries, Repousse.Nurseries.Nursery
     has_many :projects, Repousse.Projects.Project, foreign_key: :owner_id
     has_many :reservations, Repousse.Distributions.Reservation
     has_many :project_members, Repousse.Projects.ProjectMember
@@ -103,10 +107,13 @@ defmodule Repousse.Accounts.User do
 
   # Deliberately separate from `changeset/2` — used by the self-service
   # `PUT /api/v1/me` endpoint, where the caller controls the request body.
-  # Only name fields are castable here so a user can never smuggle a
-  # `role`/`status`/`email` change through their own profile update.
+  # Only name fields and the user's own visibility preference are castable
+  # here so a user can never smuggle a `role`/`status`/`email` change through
+  # their own profile update.
   def self_service_changeset(user, attrs) do
-    cast(user, attrs, [:first_name, :last_name])
+    user
+    |> cast(attrs, [:first_name, :last_name, :profile_visibility])
+    |> validate_inclusion(:profile_visibility, @visibilities)
   end
 
   def avatar_changeset(user, avatar_url) do
@@ -114,4 +121,5 @@ defmodule Repousse.Accounts.User do
   end
 
   def roles, do: @roles
+  def visibilities, do: @visibilities
 end

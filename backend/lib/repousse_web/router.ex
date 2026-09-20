@@ -28,8 +28,19 @@ defmodule RepousseWeb.Router do
     get "/me", AccountsController, :me
     put "/me", AccountsController, :update_me
     put "/me/avatar", AccountsController, :update_avatar
+    put "/me/visibility", AccountsController, :update_visibility
     get "/me/profiles", AccountsController, :profiles
     put "/me/profiles", AccountsController, :update_profiles
+    put "/me/profiles/:profile_type", AccountsController, :update_profile_details
+
+    # Nurseries (epic-03 US-PROFIL-11) — Famille d'accueil plant reserves
+    get "/me/nurseries", NurseryController, :mine
+    post "/me/nurseries", NurseryController, :create
+    put "/me/nurseries/:id", NurseryController, :update
+    delete "/me/nurseries/:id", NurseryController, :archive
+
+    # Member-facing profile page
+    get "/members/:id", MemberController, :show
 
     # Distributions (read + reserve)
     get "/distributions", DistributionController, :index
@@ -103,12 +114,15 @@ defmodule RepousseWeb.Router do
     get "/dashboard/co2", DashboardController, :co2
     get "/dashboard/map/distributions", DashboardController, :map_distributions
     get "/dashboard/map/projects", DashboardController, :map_projects
+    get "/dashboard/map/nurseries", DashboardController, :map_nurseries
     get "/dashboard/calendar", DashboardController, :calendar
     get "/dashboard/exports/:type", DashboardController, :export
 
     # Users admin
     scope "/admin", Admin, as: :admin do
       pipe_through :admin
+
+      get "/nurseries", NurseryController, :index
 
       resources "/users", UserController, only: [:index, :show, :create, :update, :delete]
       post "/users/:id/suspend", UserController, :suspend

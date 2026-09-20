@@ -21,7 +21,7 @@ defmodule RepousseWeb.Admin.UserController do
     current_user = conn.assigns.current_user
 
     with :ok <- Bodyguard.permit(Policy, :manage_users, current_user, %{}) do
-      users = Repo.all(from u in User, order_by: [desc: u.inserted_at]) |> Repo.preload(:profiles)
+      users = Repo.all(from u in User, order_by: [desc: u.inserted_at]) |> Accounts.preload_profiles()
       json(conn, %{data: users})
     end
   end
@@ -35,8 +35,12 @@ defmodule RepousseWeb.Admin.UserController do
     current_user = conn.assigns.current_user
 
     with :ok <- Bodyguard.permit(Policy, :manage_users, current_user, %{}) do
-      user = Accounts.get_user!(id) |> Repo.preload(:profiles)
-      json(conn, %{data: user})
+      user = Accounts.get_user!(id) |> Accounts.preload_profiles()
+
+      # Coordinators see a member's nurseries even on a private profile
+      # (epic-03 US-PROFIL-11) — `nurseries` isn't in User's Jason encoder, so
+      # it rides alongside rather than inside the user object.
+      json(conn, %{data: user, nurseries: Repousse.Nurseries.list_user_nurseries(user.id)})
     end
   end
 
@@ -53,7 +57,7 @@ defmodule RepousseWeb.Admin.UserController do
          {:ok, user} <- Accounts.create_user_with_hanko(params, is_verified: true),
          {:ok, user} <- maybe_assign_role(user, role) do
       Emails.send_welcome_email(user)
-      conn |> put_status(:created) |> json(%{data: Repo.preload(user, :profiles)})
+      conn |> put_status(:created) |> json(%{data: Accounts.preload_profiles(user)})
     end
   end
 
@@ -67,7 +71,7 @@ defmodule RepousseWeb.Admin.UserController do
     current_user = conn.assigns.current_user
 
     with :ok <- Bodyguard.permit(Policy, :manage_users, current_user, %{}) do
-      user = Accounts.get_user!(id) |> Repo.preload(:profiles)
+      user = Accounts.get_user!(id) |> Accounts.preload_profiles()
       with {:ok, updated} <- Accounts.update_user(user, params), do: json(conn, %{data: updated})
     end
   end
@@ -81,7 +85,7 @@ defmodule RepousseWeb.Admin.UserController do
     current_user = conn.assigns.current_user
 
     with :ok <- Bodyguard.permit(Policy, :manage_users, current_user, %{}) do
-      user = Accounts.get_user!(id) |> Repo.preload(:profiles)
+      user = Accounts.get_user!(id) |> Accounts.preload_profiles()
       with {:ok, _deleted} <- Accounts.delete_user(user), do: send_resp(conn, :no_content, "")
     end
   end
@@ -95,7 +99,7 @@ defmodule RepousseWeb.Admin.UserController do
     current_user = conn.assigns.current_user
 
     with :ok <- Bodyguard.permit(Policy, :suspend_user, current_user, %{}) do
-      user = Accounts.get_user!(id) |> Repo.preload(:profiles)
+      user = Accounts.get_user!(id) |> Accounts.preload_profiles()
       with {:ok, updated} <- Accounts.suspend_user(user), do: json(conn, %{data: updated})
     end
   end
@@ -109,7 +113,7 @@ defmodule RepousseWeb.Admin.UserController do
     current_user = conn.assigns.current_user
 
     with :ok <- Bodyguard.permit(Policy, :suspend_user, current_user, %{}) do
-      user = Accounts.get_user!(id) |> Repo.preload(:profiles)
+      user = Accounts.get_user!(id) |> Accounts.preload_profiles()
       with {:ok, updated} <- Accounts.activate_user(user), do: json(conn, %{data: updated})
     end
   end
@@ -130,7 +134,7 @@ defmodule RepousseWeb.Admin.UserController do
 
     with :ok <- Bodyguard.permit(Policy, :assign_role, current_user, %{}),
          {:ok, role} <- cast_role(role_param) do
-      user = Accounts.get_user!(id) |> Repo.preload(:profiles)
+      user = Accounts.get_user!(id) |> Accounts.preload_profiles()
       with {:ok, updated} <- Accounts.assign_role(user, role), do: json(conn, %{data: updated})
     end
   end
