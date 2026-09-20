@@ -1,4 +1,10 @@
-import type { CurrentUser } from "@/types/user";
+import type {
+  CurrentUser,
+  HostingEquipment,
+  ProfileType,
+  ProfileVisibility,
+  UserProfile,
+} from "@/types/user";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -39,6 +45,45 @@ export async function updateCurrentUser(attrs: { first_name?: string; last_name?
   const res = await authedFetch("/api/v1/me", {
     method: "PUT",
     body: JSON.stringify({ user: attrs }),
+  });
+  const { data } = await res.json();
+  return data;
+}
+
+/** Full replace: send every profile that should stay active, not just the delta. */
+export async function updateMyProfiles(profiles: ProfileType[]): Promise<UserProfile[]> {
+  const res = await authedFetch("/api/v1/me/profiles", {
+    method: "PUT",
+    body: JSON.stringify({ profiles }),
+  });
+  const { data } = await res.json();
+  return data;
+}
+
+export interface HostFamilyAttrs {
+  hosting_capacity?: number | null;
+  hosting_surface_m2?: number | null;
+  hosting_address?: string | null;
+  hosting_lat?: number | null;
+  hosting_lng?: number | null;
+  hosting_availability?: string | null;
+  hosting_equipment?: HostingEquipment[];
+  hosted_species?: { taxon_id: string }[];
+}
+
+export async function updateHostFamilyProfile(attrs: HostFamilyAttrs): Promise<UserProfile> {
+  const res = await authedFetch("/api/v1/me/profiles/host_family", {
+    method: "PUT",
+    body: JSON.stringify({ profile: attrs }),
+  });
+  const { data } = await res.json();
+  return data;
+}
+
+export async function updateVisibility(visibility: ProfileVisibility): Promise<CurrentUser> {
+  const res = await authedFetch("/api/v1/me/visibility", {
+    method: "PUT",
+    body: JSON.stringify({ profile_visibility: visibility }),
   });
   const { data } = await res.json();
   return data;
