@@ -1,12 +1,14 @@
 "use client";
 import dynamic from "next/dynamic";
 import { Building2, Leaf, MapPin, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { fetchNurseryMapPoints } from "@/lib/api/nurseries";
+import type { NurseryMapPoint } from "@/types/nursery";
 
 import { pointsDistribution, projetsDePlantation, statsCommunales } from "./_components/data";
 import type { AttributeKey, LayerId } from "./_components/types";
@@ -22,6 +24,7 @@ const POINT_LAYERS: { id: LayerId; label: string; color: string }[] = [
   { id: "projets",       label: "Projets de plantation",  color: "#16a34a" },
   { id: "contacts",      label: "Contacts régionaux",     color: "#9333ea" },
   { id: "stats",         label: "Stats bulles",           color: "#ea580c" },
+  { id: "nurseries",     label: "Nurseries",              color: "#ea580c" },
 ];
 
 const COMMUNE_ATTRS: { key: AttributeKey; label: string }[] = [
@@ -38,7 +41,17 @@ export default function CartePage() {
     projets: true,
     contacts: true,
     stats: true,
+    nurseries: true,
   });
+  const [nurseries, setNurseries] = useState<NurseryMapPoint[]>([]);
+
+  // Only layer backed by the API — the others still read the static mock in
+  // _components/data.ts.
+  useEffect(() => {
+    fetchNurseryMapPoints()
+      .then(setNurseries)
+      .catch(() => setNurseries([]));
+  }, []);
 
   const totalPlants = pointsDistribution.reduce((s, d) => s + d.plantsDistribues, 0);
   const projetsActifs = projetsDePlantation.filter((p) => p.statut === "actif" || p.statut === "en_cours").length;
@@ -70,7 +83,11 @@ export default function CartePage() {
       {/* Map + sidebar */}
       <div className="flex flex-1 gap-4 overflow-hidden min-h-0">
         <div className="flex-1 overflow-hidden rounded-xl border border-border">
-          <CarteMap communesAttribute={communesAttribute} layerVisibility={layerVisibility} />
+          <CarteMap
+            communesAttribute={communesAttribute}
+            layerVisibility={layerVisibility}
+            nurseries={nurseries}
+          />
         </div>
 
         <aside className="flex w-56 shrink-0 flex-col gap-3 overflow-y-auto">

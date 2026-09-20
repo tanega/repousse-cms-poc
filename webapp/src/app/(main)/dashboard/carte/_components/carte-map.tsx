@@ -4,12 +4,14 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Protocol } from "pmtiles";
 import { useEffect, useRef } from "react";
 
+import type { NurseryMapPoint } from "@/types/nursery";
+
 import { pointsContact, pointsDistribution, projetsDePlantation, statsCommunales } from "./data";
 import type { AttributeKey, LayerId } from "./types";
 import { ATTRIBUTE_CONFIG, buildChoroplethPaint } from "./types";
 
 const BASEMAP = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
-const COLORS = { distribution: "#2563eb", projet: "#16a34a", contact: "#9333ea" } as const;
+const COLORS = { distribution: "#2563eb", projet: "#16a34a", contact: "#9333ea", nurserie: "#ea580c" } as const;
 
 function popupHtml(lines: string[]): string {
   return lines.map((l) => `<p style="margin:2px 0;font-size:12px">${l}</p>`).join("");
@@ -18,9 +20,26 @@ function popupHtml(lines: string[]): string {
 interface CarteMapProps {
   communesAttribute: AttributeKey | null;
   layerVisibility: Record<LayerId, boolean>;
+  /** Only real (non-mock) layer so far — fetched by the page, filtered server-side by visibility. */
+  nurseries: NurseryMapPoint[];
 }
 
-export function CarteMap({ communesAttribute, layerVisibility }: CarteMapProps) {
+function nurseryFeatures(nurseries: NurseryMapPoint[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: nurseries.map((n) => ({
+      type: "Feature" as const,
+      geometry: { type: "Point" as const, coordinates: [n.lng, n.lat] },
+      properties: {
+        nom: n.name,
+        adresse: n.address ?? "",
+        proprietaire: [n.owner_first_name, n.owner_last_name].filter(Boolean).join(" "),
+      },
+    })),
+  };
+}
+
+export function CarteMap({ communesAttribute, layerVisibility, nurseries }: CarteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const loadedRef = useRef(false);
@@ -204,6 +223,22 @@ export function CarteMap({ communesAttribute, layerVisibility }: CarteMapProps) 
       map.on("mouseenter", "contacts-points", () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "contacts-points", () => { map.getCanvas().style.cursor = ""; });
 
+      // ── Nurseries (Familles d'accueil) ───────────────────────────────────
+      // Source starts empty: unlike the other layers its data is fetched, so
+      // the effect below fills it once the request resolves.
+      map.addSource("nurseries", { type: "geojson", data: nurseryFeatures([]) });
+      map.addLayer({ id: "nurseries-points", type: "circle", source: "nurseries", paint: { "circle-color": COLORS.nurserie, "circle-radius": 7, "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+      map.on("click", "nurseries-points", (e) => {
+        if (!e.features?.[0]) return;
+        const p = e.features[0].properties;
+        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" }).setLngLat(e.lngLat)
+          .setHTML(`<strong style="font-size:13px">🟠 ${p.nom}</strong>` +
+            popupHtml([p.adresse, p.proprietaire ? `Famille d'accueil : ${p.proprietaire}` : ""].filter(Boolean)))
+          .addTo(map);
+      });
+      map.on("mouseenter", "nurseries-points", () => { map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseleave", "nurseries-points", () => { map.getCanvas().style.cursor = ""; });
+
       loadedRef.current = true;
     });
 
@@ -243,6 +278,7 @@ export function CarteMap({ communesAttribute, layerVisibility }: CarteMapProps) 
       projets: ["projets-points"],
       contacts: ["contacts-points"],
       stats: ["stats-circles"],
+      nurseries: ["nurseries-points"],
     };
     for (const [id, layers] of Object.entries(layerMap)) {
       const vis = layerVisibility[id as LayerId] ? "visible" : "none";
@@ -251,6 +287,14 @@ export function CarteMap({ communesAttribute, layerVisibility }: CarteMapProps) 
       }
     }
   }, [layerVisibility]);
+
+  // Feed the fetched nurseries into the source once they arrive
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
+    const source = map.getSource("nurseries") as maplibregl.GeoJSONSource | undefined;
+    source?.setData(nurseryFeatures(nurseries));
+  }, [nurseries]);
 
   return <div ref={containerRef} className="h-full w-full rounded-xl" />;
 }
