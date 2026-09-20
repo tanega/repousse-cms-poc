@@ -15,13 +15,14 @@ import {
   Map,
   MessageSquare,
   Package,
+  Sprout,
   TreePine,
   Users,
   UsersRound,
   Zap,
 } from "lucide-react";
 
-import type { UserRole } from "@/types/user";
+import type { ProfileType, UserRole } from "@/types/user";
 
 export type NavBadge = "new" | "soon";
 
@@ -35,6 +36,8 @@ export interface NavSubItem {
   newTab?: boolean;
   /** Minimum role required to see this item. Omit for any authenticated user (member+). */
   minRole?: UserRole;
+  /** Engagement profile required to see this item. Omit for every member. */
+  requiresProfile?: ProfileType;
 }
 
 interface NavItemBase {
@@ -46,6 +49,8 @@ interface NavItemBase {
   newTab?: boolean;
   /** Minimum role required to see this item. Omit for any authenticated user (member+). */
   minRole?: UserRole;
+  /** Engagement profile required to see this item. Omit for every member. */
+  requiresProfile?: ProfileType;
 }
 
 export interface NavMainLinkItem extends NavItemBase {
@@ -75,6 +80,13 @@ export const sidebarItems: NavGroup[] = [
         title: "Accueil",
         url: "/dashboard/me",
         icon: Home,
+      },
+      {
+        id: "mes-nurseries",
+        title: "Mes nurseries",
+        url: "/mes-nurseries",
+        icon: Sprout,
+        requiresProfile: "host_family",
       },
     ],
   },

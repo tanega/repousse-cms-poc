@@ -28,7 +28,7 @@ import { useCurrentUser } from "@/lib/auth/use-current-user";
 import type { NavGroup } from "@/navigation/sidebar/sidebar-items";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
-import type { UserRole } from "@/types/user";
+import type { ProfileType, UserRole } from "@/types/user";
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -70,13 +70,21 @@ const _data = {
   ],
 };
 
-// While the user's role hasn't resolved yet, treat it as absent so
-// role-gated items don't flash before being filtered out.
-function filterByRole(groups: NavGroup[], role: UserRole | undefined): NavGroup[] {
+// While the user's role and profiles haven't resolved yet, treat them as
+// absent so gated items don't flash before being filtered out.
+function filterByAccess(
+  groups: NavGroup[],
+  role: UserRole | undefined,
+  profiles: ProfileType[] | undefined,
+): NavGroup[] {
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.minRole || (role && hasMinRole(role, item.minRole))),
+      items: group.items.filter(
+        (item) =>
+          (!item.minRole || (role && hasMinRole(role, item.minRole))) &&
+          (!item.requiresProfile || (profiles ?? []).includes(item.requiresProfile)),
+      ),
     }))
     .filter((group) => group.items.length > 0);
 }
@@ -93,7 +101,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
-  const visibleItems = filterByRole(sidebarItems, user?.role);
+  const visibleItems = filterByAccess(
+    sidebarItems,
+    user?.role,
+    user?.profiles.map((p) => p.profile_type),
+  );
   const homeHref = user && hasMinRole(user.role, "admin") ? APP_CONFIG.defaultPath : "/dashboard/me";
 
   const navUser = {
