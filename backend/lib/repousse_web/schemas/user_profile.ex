@@ -2,6 +2,7 @@ defmodule RepousseWeb.Schemas.UserProfile do
   @moduledoc false
   require OpenApiSpex
   alias OpenApiSpex.Schema
+  alias RepousseWeb.Schemas.HostedSpecies
 
   OpenApiSpex.schema(
     %{
@@ -19,6 +20,22 @@ defmodule RepousseWeb.Schemas.UserProfile do
         hosting_lat: %Schema{type: :number, format: :float, nullable: true},
         hosting_lng: %Schema{type: :number, format: :float, nullable: true},
         hosting_availability: %Schema{type: :string, nullable: true},
+        hosting_surface_m2: %Schema{type: :number, format: :float, nullable: true},
+        hosting_equipment: %Schema{
+          type: :array,
+          items: %Schema{
+            type: :string,
+            enum: [
+              "greenhouse",
+              "tarp",
+              "auto_watering",
+              "artificial_light",
+              "cold_frame",
+              "outdoor_ground"
+            ]
+          }
+        },
+        hosted_species: %Schema{type: :array, items: HostedSpecies},
         inserted_at: %Schema{type: :string, format: "date-time"},
         updated_at: %Schema{type: :string, format: "date-time"}
       },
@@ -35,6 +52,9 @@ defmodule RepousseWeb.Schemas.UserProfile do
         "hosting_lat" => nil,
         "hosting_lng" => nil,
         "hosting_availability" => nil,
+        "hosting_surface_m2" => nil,
+        "hosting_equipment" => [],
+        "hosted_species" => [],
         "inserted_at" => "2026-01-15T10:00:00Z",
         "updated_at" => "2026-01-15T10:00:00Z"
       }

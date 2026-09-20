@@ -11,11 +11,24 @@ defmodule Repousse.JasonEncodingTest do
   import Repousse.Factory
 
   test "User encodes" do
-    assert %{"email" => _} = insert(:user) |> Repousse.Repo.preload(:profiles) |> encode()
+    assert %{"email" => _} = insert(:user) |> Repousse.Accounts.preload_profiles() |> encode()
   end
 
   test "UserProfile encodes" do
-    assert %{"profile_type" => "adoptant"} = insert(:user_profile) |> encode()
+    assert %{"profile_type" => "adoptant"} =
+             insert(:user_profile) |> Repousse.Repo.preload(:hosted_species) |> encode()
+  end
+
+  test "Nursery encodes" do
+    assert %{"name" => _} = insert(:nursery) |> Repousse.Repo.preload(:plants) |> encode()
+  end
+
+  test "NurseryPlant encodes" do
+    assert %{"quantity" => _} = insert(:nursery_plant) |> encode()
+  end
+
+  test "HostedSpecies encodes" do
+    assert %{"taxon_id" => _} = insert(:hosted_species) |> encode()
   end
 
   test "Project encodes" do

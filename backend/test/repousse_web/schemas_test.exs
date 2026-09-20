@@ -25,7 +25,10 @@ defmodule RepousseWeb.SchemasTest do
     Taxon,
     TaxonCategory,
     TaxonVersion,
-    TaxonExternalLink
+    TaxonExternalLink,
+    Nursery,
+    NurseryPlant,
+    HostedSpecies
   }
 
   @schema_modules [
@@ -46,7 +49,10 @@ defmodule RepousseWeb.SchemasTest do
     Taxon,
     TaxonCategory,
     TaxonVersion,
-    TaxonExternalLink
+    TaxonExternalLink,
+    Nursery,
+    NurseryPlant,
+    HostedSpecies
   ]
 
   test "each schema module builds a valid OpenApiSpex.Schema with a title and example" do
