@@ -197,6 +197,11 @@ export function getAdherentsColumns(onDeactivate: (id: string) => void): ColumnD
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
+                {/* Coordinators see the full profile here, nurseries included,
+                    even when the member kept it private. */}
+                <Link href={`/membres/${row.original.id}`}>Voir le profil</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link href={`/admin/adherents/${row.original.id}/modifier`}>Modifier le membre</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
