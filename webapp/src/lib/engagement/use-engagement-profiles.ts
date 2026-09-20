@@ -1,60 +1,76 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
+import { updateMyProfiles } from "@/lib/api/me";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
+import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
+import type { ProfileType } from "@/types/user";
+
+/** UI-facing identifiers. The API speaks `ProfileType`; these are the labels shown to members. */
 export type EngagementProfileId = "Bénévole" | "Adoptant" | "Famille d'accueil";
 
-export const ALL_ENGAGEMENT_PROFILES: EngagementProfileId[] = [
-  "Bénévole",
-  "Adoptant",
-  "Famille d'accueil",
-];
+export const ALL_ENGAGEMENT_PROFILES: EngagementProfileId[] = ["Bénévole", "Adoptant", "Famille d'accueil"];
 
-const STORAGE_KEY = "repousse:engagement_profiles";
-const DEFAULT: EngagementProfileId[] = ["Bénévole"];
+const TO_PROFILE_TYPE: Record<EngagementProfileId, ProfileType> = {
+  Bénévole: "volunteer",
+  Adoptant: "adoptant",
+  "Famille d'accueil": "host_family",
+};
+
+const TO_LABEL: Record<ProfileType, EngagementProfileId> = {
+  volunteer: "Bénévole",
+  adoptant: "Adoptant",
+  host_family: "Famille d'accueil",
+};
+
+export function toProfileType(id: EngagementProfileId): ProfileType {
+  return TO_PROFILE_TYPE[id];
+}
+
+export function toEngagementProfileId(type: ProfileType): EngagementProfileId {
+  return TO_LABEL[type];
+}
 
 export function useEngagementProfiles() {
-  const [profiles, setProfiles] = useState<EngagementProfileId[]>(DEFAULT);
-  const [hydrated, setHydrated] = useState(false);
+  const { user, isLoading } = useCurrentUser();
+  const [isPending, setIsPending] = useState(false);
 
-  useEffect(() => {
+  const profiles = useMemo<EngagementProfileId[]>(
+    () => (user?.profiles ?? []).map((p) => TO_LABEL[p.profile_type]).filter(Boolean),
+    [user],
+  );
+
+  // The API takes the complete list, so both activate and deactivate send the
+  // whole set rather than a delta.
+  const replace = useCallback(async (next: EngagementProfileId[]) => {
+    setIsPending(true);
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed: unknown = JSON.parse(raw);
-        if (
-          Array.isArray(parsed) &&
-          parsed.length > 0 &&
-          parsed.every((p) => ALL_ENGAGEMENT_PROFILES.includes(p as EngagementProfileId))
-        ) {
-          setProfiles(parsed as EngagementProfileId[]);
-        }
-      }
-    } catch {}
-    setHydrated(true);
+      const updated = await updateMyProfiles(next.map(toProfileType));
+      const current = useCurrentUserStore.getState().user;
+      if (current) useCurrentUserStore.getState().setUser({ ...current, profiles: updated });
+    } finally {
+      setIsPending(false);
+    }
   }, []);
 
-  function activate(profile: EngagementProfileId) {
-    setProfiles((prev) => {
-      if (prev.includes(profile)) return prev;
-      const next = [...prev, profile];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
-  }
+  const activate = useCallback(
+    async (profile: EngagementProfileId) => {
+      if (profiles.includes(profile)) return;
+      await replace([...profiles, profile]);
+    },
+    [profiles, replace],
+  );
 
-  function deactivate(profile: EngagementProfileId) {
-    setProfiles((prev) => {
-      if (prev.length <= 1) return prev; // au moins un profil requis
-      const next = prev.filter((p) => p !== profile);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
-  }
+  const deactivate = useCallback(
+    async (profile: EngagementProfileId) => {
+      if (profiles.length <= 1) return; // au moins un profil requis
+      await replace(profiles.filter((p) => p !== profile));
+    },
+    [profiles, replace],
+  );
 
-  function isActive(profile: EngagementProfileId) {
-    return profiles.includes(profile);
-  }
+  const isActive = useCallback((profile: EngagementProfileId) => profiles.includes(profile), [profiles]);
 
-  return { profiles, activate, deactivate, isActive, hydrated };
+  return { profiles, activate, deactivate, isActive, hydrated: !isLoading, isPending };
 }

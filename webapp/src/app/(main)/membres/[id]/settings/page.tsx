@@ -7,11 +7,13 @@ import { Bell, CircleUser, Home, Layers, Settings2, TreePine, Upload, Users } fr
 import { toast } from "sonner";
 import * as z from "zod";
 
-import { updateCurrentUser, uploadAvatar } from "@/lib/api/me";
+import { updateCurrentUser, updateVisibility, uploadAvatar } from "@/lib/api/me";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
 import type { EngagementProfileId } from "@/lib/engagement/use-engagement-profiles";
 import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
+
+import { HostFamilyForm } from "./_components/host-family-form";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,10 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -269,45 +269,49 @@ function AccountSection() {
 }
 
 function ProfileSection() {
+  const { user, isLoading } = useCurrentUser();
+  const [isPending, setIsPending] = useState(false);
+  const isPublic = user?.profile_visibility === "public";
+
+  async function handleToggle(next: boolean) {
+    setIsPending(true);
+    try {
+      const updated = await updateVisibility(next ? "public" : "private");
+      useCurrentUserStore.getState().setUser(updated);
+      toast.success(next ? "Profil rendu public." : "Profil rendu privé.");
+    } catch {
+      toast.error("Échec de la mise à jour de la visibilité.");
+    } finally {
+      setIsPending(false);
+    }
+  }
+
   return (
     <div>
       <SectionHeader
         title="Profil"
-        description="Ces informations seront visibles sur votre profil public."
+        description="Qui peut consulter votre profil et les ressources qui y sont rattachées."
       />
-      <div className="space-y-5 max-w-lg">
-        <div className="space-y-2">
-          <Label htmlFor="display-name">Nom affiché</Label>
-          <Input id="display-name" placeholder="Nom public" defaultValue="Association Repousse" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea
-            id="bio"
-            placeholder="Décrivez votre association..."
-            rows={4}
-            defaultValue="Association loi 1901 dédiée à la plantation d'arbres et à la reforestation urbaine en Île-de-France."
-          />
-          <p className="text-muted-foreground text-xs">Max 200 caractères.</p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="location">Localisation</Label>
-          <Input id="location" placeholder="Ville, Région" defaultValue="Île-de-France, France" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="website">Site web</Label>
-          <Input id="website" placeholder="https://..." defaultValue="https://repousse.org" />
-        </div>
+      <div className="space-y-4 max-w-lg">
         <div className="flex items-center justify-between rounded-lg border p-4">
-          <div>
+          <div className="pr-4">
             <p className="font-medium text-sm">Profil public</p>
             <p className="text-muted-foreground text-xs">
               Permettre aux autres membres de voir votre profil.
             </p>
           </div>
-          <Switch defaultChecked />
+          <Switch
+            checked={isPublic}
+            disabled={isLoading || isPending}
+            onCheckedChange={handleToggle}
+            aria-label="Profil public"
+          />
         </div>
-        <Button>Mettre à jour le profil</Button>
+        <p className="text-muted-foreground text-xs">
+          {isPublic
+            ? "Votre profil, vos profils d'engagement et vos nurseries sont visibles par tous les membres."
+            : "Profil privé : vos nurseries et vos informations d'accueil ne sont visibles que par les coordinateurs."}
+        </p>
       </div>
     </div>
   );
@@ -362,7 +366,16 @@ const engagementProfiles: EngagementProfile[] = [
 ];
 
 function EngagementsSection() {
-  const { isActive, activate, deactivate } = useEngagementProfiles();
+  const { isActive, activate, deactivate, isPending } = useEngagementProfiles();
+
+  async function toggle(profile: EngagementProfileId, active: boolean) {
+    try {
+      await (active ? deactivate(profile) : activate(profile));
+    } catch (err) {
+      // The API refuses to drop Famille d'accueil while nurseries remain.
+      toast.error(err instanceof Error ? err.message : "Échec de la mise à jour du profil.");
+    }
+  }
 
   return (
     <div>
@@ -408,8 +421,8 @@ function EngagementsSection() {
                   <Button
                     size="sm"
                     variant={active ? "outline" : "default"}
-                    disabled={profile.isDefault}
-                    onClick={() => active ? deactivate(profile.id) : activate(profile.id)}
+                    disabled={profile.isDefault || isPending}
+                    onClick={() => toggle(profile.id, active)}
                     className="shrink-0"
                   >
                     {profile.isDefault ? "Profil par défaut" : active ? "Désactiver" : "Activer"}
@@ -445,6 +458,12 @@ function EngagementsSection() {
                       </ol>
                     </div>
                   </div>
+                  {profile.id === "Famille d'accueil" && (
+                    <>
+                      <Separator className="my-4" />
+                      <HostFamilyForm />
+                    </>
+                  )}
                 </CardContent>
               )}
             </Card>

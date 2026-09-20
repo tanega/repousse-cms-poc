@@ -77,6 +77,7 @@ export function AdherentForm({ mode, defaultValues, adherentId }: AdherentFormPr
         role: "member",
         taxon_editor: false,
         avatar_url: null,
+        profile_visibility: "private",
         last_seen_at: null,
         profiles: [],
       });
