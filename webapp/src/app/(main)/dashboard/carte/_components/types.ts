@@ -4,7 +4,7 @@ export type AttributeKey =
   | "nb_points_distribution"
   | "nb_projets_plantation";
 
-export type LayerId = "distributions" | "projets" | "contacts" | "stats";
+export type LayerId = "distributions" | "projets" | "contacts" | "stats" | "nurseries";
 
 interface AttributeCfg {
   label: string;
