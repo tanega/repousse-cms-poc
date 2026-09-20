@@ -140,6 +140,9 @@ Cycle d'hébergement
 | Créer un projet de plantation | — | ✓ | — | ✓ |
 | Être assigné·e comme famille d'accueil | — | — | ✓ | — |
 | Renseigner capacités d'hébergement | — | — | ✓ | — |
+| Gérer ses nurseries | — | — | ✓ | ✓ |
+| Consulter les nurseries d'un profil public | ✓ | ✓ | ✓ | ✓ |
+| Consulter les nurseries d'un profil privé | — | — | — | ✓ |
 | Consulter tous les profils (admin) | — | — | — | ✓ |
 | Modifier un profil en modération | — | — | — | ✓ |
 | Gérer les espèces végétales | — | — | — | ✓ |
@@ -155,6 +158,7 @@ Cycle d'hébergement
 | Champ | Type | Obligatoire | Source |
 |-------|------|:-----------:|--------|
 | Email | string | ✓ (IAM) | HelloAsso / Hanko |
+| Visibilité du profil | enum (`public` / `privé`) | ✓ (défaut `privé`) | Paramètres |
 | Prénom | string | — | Profil utilisateur |
 | Nom | string | — | Profil utilisateur |
 | Photo de profil | image | — | Upload |
@@ -177,12 +181,23 @@ Cycle d'hébergement
 
 | Champ | Type | Remarque |
 |-------|------|----------|
-| Adresse d'accueil | string / coordonnées | Peut différer de l'adresse personnelle |
+| Adresse d'accueil | string / coordonnées | Peut différer de l'adresse personnelle. Masquée aux membres si le profil est privé |
 | Capacité (nombre de plants) | integer | Indicatif |
 | Surface disponible (m²) | float | Facultatif |
 | Espèces pouvant être accueillies | taxon[] | Lié EP-05 |
-| Disponibilités | text / enum | Saisonnière, ponctuelle, permanente |
-| Équipements | enum[] | Serre, bâche, arrosage auto, lumière artificielle… |
+| Disponibilités | text | Champ libre (saisonnière, ponctuelle, permanente…) |
+| Équipements | enum[] | `greenhouse`, `tarp`, `auto_watering`, `artificial_light`, `cold_frame`, `outdoor_ground` |
+| Nurseries | nursery[] | Lieux de réserve — voir US-PROFIL-11 |
+
+### Nurserie (ressource du profil Famille d'accueil)
+
+| Champ | Type | Remarque |
+|-------|------|----------|
+| Nom | string | Obligatoire |
+| Adresse | string / coordonnées | Géocodée via la BAN, alimente le calque carte |
+| Notes générales | text | Exposition, arrosage, contraintes d'accès… |
+| Plantes disponibles | ligne[] | `taxon` (obligatoire, EP-05) + `quantité` + `note` |
+| Archivée le | datetime | Suppression douce — l'historique est conservé |
 
 ---
 
@@ -208,6 +223,7 @@ Cycle d'hébergement
 | Réf | Titre | Priorité |
 |-----|-------|----------|
 | US-PROFIL-06 | Renseigner les informations spécifiques Famille d'accueil | Should |
+| US-PROFIL-11 | Gérer ses nurseries | Should |
 
 ### RGPD & suppression
 
@@ -292,6 +308,25 @@ Cycle d'hébergement
 
 ---
 
+### US-PROFIL-11 — Gérer ses nurseries
+**En tant qu'** Utilisateur avec le profil Famille d'accueil, **je veux** déclarer mes lieux de réserve et les plants que j'y conserve **afin que** l'association sache ce qui est disponible dans le réseau.
+
+Une nurserie est un lieu de réserve : la serre du jardin, le garage, un terrain prêté. Un membre peut en avoir plusieurs, distinctes géographiquement.
+
+**Critères d'acceptation :**
+- Section « Mes nurseries » accessible depuis « Mes ressources », visible uniquement si le profil Famille d'accueil est actif
+- Une nurserie porte : un nom (obligatoire), une adresse géolocalisée (autocomplétion BAN), des notes générales, et une liste de plantes
+- Chaque ligne de plante référence un taxon du catalogue (EP-05), une quantité et une note facultative — pas de saisie libre d'espèce
+- La liste de plantes est remplacée intégralement à chaque enregistrement
+- Archivage plutôt que suppression : la nurserie quitte la liste du membre, son historique reste consultable par les coordinateurs
+- Les nurseries apparaissent sur la page profil de leur propriétaire :
+  - profil **public** → visibles par tous les membres
+  - profil **privé** → visibles des seuls coordinateurs ; les autres membres voient le profil mais pas les nurseries ni l'adresse d'accueil
+- Les nurseries géolocalisées alimentent un calque « Nurseries » sur le tableau de bord Carte, soumis aux mêmes règles de visibilité
+- Le retrait du profil Famille d'accueil est refusé tant qu'il reste des nurseries non archivées *(le transfert de ressources relève d'US-PROFIL-05)*
+
+---
+
 ### US-PROFIL-07 — Accéder aux informations RGPD
 **En tant qu'** Utilisateur, **je veux** accéder facilement aux informations sur la gestion de mes données **afin d'** exercer mes droits.
 
@@ -338,8 +373,10 @@ Cycle d'hébergement
 
 - Liste définitive des champs profil — atelier prestataire (base : formulaire Google Adoptant)
 - Catégories de notifications — atelier prestataire
-- Champs spécifiques Famille d'accueil — atelier prestataire
 - Notification à l'utilisateur lors d'une modification admin — décision à prendre
+- Vue coordinateur transverse des nurseries (« qui a des *Quercus robur* ? ») — l'endpoint
+  `GET /api/v1/admin/nurseries?taxon_id=` existe et est testé, mais n'a pas encore d'écran ;
+  les coordinateurs passent aujourd'hui par la page profil de chaque membre
 
 ## Dépendances
 
