@@ -26,10 +26,12 @@ defmodule Repousse.Projects.Project do
              :updated_at
            ]}
 
+  @management_types [:individual, :collective, :farmer, :school, :condominium, :public_space]
+
   schema "planting_projects" do
     field :name, :string
     field :description, :string
-    field :management_type, Ecto.Enum, values: [:individual, :collective], default: :individual
+    field :management_type, Ecto.Enum, values: @management_types, default: :individual
     field :address, :string
     field :lat, :float
     field :lng, :float

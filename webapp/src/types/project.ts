@@ -1,5 +1,3 @@
-export type ManagementType = "individual" | "collective";
-
 export type PublicationStatus = "private" | "public" | "unpublished";
 
 export interface ProjectPreferredSpecies {
@@ -30,11 +28,24 @@ export interface Project {
   updated_at: string;
 }
 
-export const MANAGEMENT_TYPES: ManagementType[] = ["individual", "collective"];
+export const MANAGEMENT_TYPES = [
+  "individual",
+  "collective",
+  "farmer",
+  "school",
+  "condominium",
+  "public_space",
+] as const;
+
+export type ManagementType = (typeof MANAGEMENT_TYPES)[number];
 
 export const MANAGEMENT_TYPE_LABELS: Record<ManagementType, string> = {
-  individual: "Individuelle",
-  collective: "Collective",
+  individual: "Particulier",
+  collective: "Tiers-lieu / projet collectif",
+  farmer: "Agriculteur",
+  school: "École",
+  condominium: "Copropriété",
+  public_space: "Espace public",
 };
 
 export const PUBLICATION_STATUSES: PublicationStatus[] = ["private", "public", "unpublished"];

@@ -11,7 +11,7 @@ defmodule RepousseWeb.Schemas.Project do
         id: %Schema{type: :string, format: :uuid},
         name: %Schema{type: :string},
         description: %Schema{type: :string, nullable: true},
-        management_type: %Schema{type: :string, enum: ["individual", "collective"]},
+        management_type: %Schema{type: :string, enum: ["individual", "collective", "farmer", "school", "condominium", "public_space"]},
         address: %Schema{type: :string, nullable: true},
         lat: %Schema{type: :number, format: :float, nullable: true},
         lng: %Schema{type: :number, format: :float, nullable: true},
