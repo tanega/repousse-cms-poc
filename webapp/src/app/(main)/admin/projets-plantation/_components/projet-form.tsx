@@ -47,7 +47,7 @@ const COVER_IMAGE_ACCEPT = {
 const projetFormSchema = z.object({
   name: z.string().trim().min(1, "Le nom du projet est requis").max(200),
   description: z.string().trim(),
-  management_type: z.enum(["individual", "collective"]),
+  management_type: z.enum(MANAGEMENT_TYPES),
   address: z.string().trim(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
@@ -333,7 +333,7 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
                         <RadioGroup
                           value={field.state.value}
                           onValueChange={(v) => field.handleChange(v as typeof field.state.value)}
-                          className="flex gap-4"
+                          className="flex flex-wrap gap-4"
                         >
                           {MANAGEMENT_TYPES.map((t) => (
                             <FieldLabel

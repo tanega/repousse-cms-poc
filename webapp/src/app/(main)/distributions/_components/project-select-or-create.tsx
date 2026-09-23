@@ -114,7 +114,7 @@ export function ProjectSelectOrCreate({ value, onChange }: { value: string; onCh
               <RadioGroup
                 value={newManagementType}
                 onValueChange={(v) => setNewManagementType(v as ManagementType)}
-                className="flex gap-4"
+                className="flex flex-wrap gap-4"
               >
                 {MANAGEMENT_TYPES.map((n) => (
                   <Label
