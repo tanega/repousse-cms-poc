@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { ChevronRight, MailIcon, PlusCircleIcon } from "lucide-react";
 
-import { PendingRequestsBadge } from "@/components/notifications/pending-requests-badge";
+import { PendingRequestsBadge, PendingTaxonRequestsBadge } from "@/components/notifications/pending-requests-badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -183,6 +183,7 @@ function NavLinkItem({ item, isActive, showIconFallback }: NavLinkItemProps) {
       </SidebarMenuButton>
       <NavItemBadge badge={item.badge} />
       {item.id === "admin-demandes-parcours" && <PendingRequestsBadge />}
+      {item.id === "admin-especes" && <PendingTaxonRequestsBadge />}
     </SidebarMenuItem>
   );
 }

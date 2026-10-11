@@ -3,12 +3,14 @@
 import { useState } from "react";
 
 import { useForm } from "@tanstack/react-form";
-import { Plus, X } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import * as z from "zod";
 
 import { AdresseSearchBox } from "@/app/(main)/admin/projets-plantation/_components/adresse-search-box";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -19,16 +21,26 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import type { Nursery, NurseryAttrs } from "@/types/nursery";
 import type { Taxon } from "@/types/taxon";
+import { type TaxonRequest, taxonRequestLabel } from "@/types/taxon-request";
 
-const plantSchema = z.object({
-  taxon_id: z.string().min(1, "Choisissez une espèce"),
-  quantity: z.number().int().min(0, "La quantité ne peut pas être négative"),
-  note: z.string(),
-});
+import { TaxonRequestDialog } from "./taxon-request-dialog";
+
+// A line is either a reference taxon (`taxon_id`) or a plant awaiting an
+// admin's decision (`taxon_request_id`, shown under `label`). Empty strings
+// stand for "not set" so the form values stay plain.
+const plantSchema = z
+  .object({
+    taxon_id: z.string(),
+    taxon_request_id: z.string(),
+    label: z.string(),
+    quantity: z.number().int().min(0, "La quantité ne peut pas être négative"),
+    note: z.string(),
+  })
+  .refine((p) => p.taxon_id || p.taxon_request_id, { message: "Choisissez une espèce", path: ["taxon_id"] });
 
 const nurserySchema = z.object({
   name: z.string().trim().min(2, "Le nom doit faire au moins 2 caractères"),
@@ -49,7 +61,9 @@ function toFormValues(nursery: Nursery | null): NurseryFormValues {
     lat: nursery?.lat ?? null,
     lng: nursery?.lng ?? null,
     plants: (nursery?.plants ?? []).map((p) => ({
-      taxon_id: p.taxon_id,
+      taxon_id: p.taxon_id ?? "",
+      taxon_request_id: p.taxon_request_id ?? "",
+      label: p.taxon_request ? taxonRequestLabel(p.taxon_request) : "",
       quantity: p.quantity,
       note: p.note ?? "",
     })),
@@ -64,7 +78,8 @@ function toAttrs(values: NurseryFormValues): NurseryAttrs {
     lat: values.lat,
     lng: values.lng,
     plants: values.plants.map((p) => ({
-      taxon_id: p.taxon_id,
+      taxon_id: p.taxon_id || null,
+      taxon_request_id: p.taxon_id ? null : p.taxon_request_id || null,
       quantity: p.quantity,
       note: p.note.trim() || null,
     })),
@@ -212,16 +227,32 @@ type PlantsField = {
   replaceValue: (index: number, value: NurseryFormValues["plants"][number]) => void;
 };
 
+const lineKey = (line: NurseryFormValues["plants"][number]) => line.taxon_id || `request-${line.taxon_request_id}`;
+
 function PlantLines({ field, taxa }: { field: PlantsField; taxa: Taxon[] }) {
-  const [pendingTaxonId, setPendingTaxonId] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [requestOpen, setRequestOpen] = useState(false);
   const lines = field.state.value;
   const usedIds = new Set(lines.map((l) => l.taxon_id));
   const available = taxa.filter((t) => !usedIds.has(t.id));
 
   function addLine(taxonId: string) {
-    if (!taxonId) return;
-    field.pushValue({ taxon_id: taxonId, quantity: 0, note: "" });
-    setPendingTaxonId("");
+    field.pushValue({ taxon_id: taxonId, taxon_request_id: "", label: "", quantity: 0, note: "" });
+    setPickerOpen(false);
+    setSearch("");
+  }
+
+  function addRequestedLine(request: TaxonRequest) {
+    // An open request with the same name is shared between members: don't add it twice.
+    if (lines.some((l) => l.taxon_request_id === request.id)) return;
+    field.pushValue({
+      taxon_id: "",
+      taxon_request_id: request.id,
+      label: taxonRequestLabel(request),
+      quantity: 0,
+      note: "",
+    });
   }
 
   return (
@@ -229,20 +260,29 @@ function PlantLines({ field, taxa }: { field: PlantsField; taxa: Taxon[] }) {
       {lines.length === 0 && <p className="text-muted-foreground text-xs">Aucune plante déclarée pour l'instant.</p>}
 
       {lines.map((line, index) => {
-        const taxon = taxa.find((t) => t.id === line.taxon_id);
+        const name = line.taxon_id
+          ? (taxa.find((t) => t.id === line.taxon_id)?.common_name ?? line.taxon_id)
+          : line.label || "Plante en attente";
         return (
-          <div key={line.taxon_id} className="flex flex-wrap items-center gap-2 rounded-lg border p-2">
-            <span className="min-w-0 flex-1 truncate text-sm">{taxon?.common_name ?? line.taxon_id}</span>
+          <div key={lineKey(line)} className="flex flex-wrap items-center gap-2 rounded-lg border p-2">
+            <span className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+              <span className="truncate">{name}</span>
+              {!line.taxon_id && (
+                <Badge variant="outline" className="shrink-0 text-[10px] text-amber-600 dark:text-amber-400">
+                  En attente de validation
+                </Badge>
+              )}
+            </span>
             <Input
               type="number"
               min={0}
-              aria-label={`Quantité pour ${taxon?.common_name ?? line.taxon_id}`}
+              aria-label={`Quantité pour ${name}`}
               className="w-24"
               value={line.quantity}
               onChange={(e) => field.replaceValue(index, { ...line, quantity: Number(e.target.value) || 0 })}
             />
             <Input
-              aria-label={`Note pour ${taxon?.common_name ?? line.taxon_id}`}
+              aria-label={`Note pour ${name}`}
               className="w-full sm:w-48"
               placeholder="Note"
               value={line.note}
@@ -252,7 +292,7 @@ function PlantLines({ field, taxa }: { field: PlantsField; taxa: Taxon[] }) {
               type="button"
               variant="ghost"
               size="icon"
-              aria-label={`Retirer ${taxon?.common_name ?? line.taxon_id}`}
+              aria-label={`Retirer ${name}`}
               onClick={() => field.removeValue(index)}
             >
               <X className="size-4" />
@@ -261,21 +301,72 @@ function PlantLines({ field, taxa }: { field: PlantsField; taxa: Taxon[] }) {
         );
       })}
 
-      <div className="flex items-center gap-2">
-        <Select value={pendingTaxonId} onValueChange={addLine} disabled={available.length === 0}>
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Ajouter une espèce…" />
-          </SelectTrigger>
-          <SelectContent>
-            {available.map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.common_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Plus className="size-4 shrink-0 text-muted-foreground" />
-      </div>
+      <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={pickerOpen}
+            className="w-full justify-between font-normal text-muted-foreground"
+          >
+            Ajouter une espèce…
+            <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-(--radix-popover-trigger-width) p-0">
+          <Command>
+            <CommandInput placeholder="Rechercher une plante…" value={search} onValueChange={setSearch} />
+            <CommandList>
+              <CommandEmpty>Aucune plante ne correspond.</CommandEmpty>
+              <CommandGroup>
+                {available.map((t) => (
+                  <CommandItem
+                    key={t.id}
+                    value={`${t.common_name} ${t.scientific_name ?? ""}`}
+                    onSelect={() => addLine(t.id)}
+                  >
+                    <Check className="size-4 opacity-0" />
+                    <span className="truncate">{t.common_name}</span>
+                    {t.scientific_name && (
+                      <span className="ml-auto truncate pl-2 text-muted-foreground text-xs italic">
+                        {t.scientific_name}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+            <div className="border-t p-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => {
+                  setPickerOpen(false);
+                  setRequestOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                Demander l'ajout d'une plante
+              </Button>
+            </div>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {requestOpen && (
+        <TaxonRequestDialog
+          open={requestOpen}
+          onOpenChange={setRequestOpen}
+          initialName={search}
+          onCreated={(request) => {
+            addRequestedLine(request);
+            setSearch("");
+          }}
+        />
+      )}
     </div>
   );
 }

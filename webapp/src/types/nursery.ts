@@ -1,9 +1,25 @@
+import type { Taxon } from "./taxon";
+import { type TaxonRequest, taxonRequestLabel } from "./taxon-request";
+
 export interface NurseryPlant {
   id: string;
   nursery_id: string;
-  taxon_id: string;
+  /** Null while the plant waits for an admin to add it to the reference list. */
+  taxon_id: string | null;
+  taxon_request_id: string | null;
+  taxon_request: TaxonRequest | null;
   quantity: number;
   note: string | null;
+}
+
+export function isPendingPlant(plant: Pick<NurseryPlant, "taxon_id">): boolean {
+  return plant.taxon_id === null;
+}
+
+/** Name to show for a nursery line: the taxon's, or the requested name while pending. */
+export function plantDisplayName(plant: NurseryPlant, taxa: Pick<Taxon, "id" | "common_name">[]): string {
+  if (plant.taxon_id) return taxa.find((t) => t.id === plant.taxon_id)?.common_name ?? "Espèce inconnue";
+  return plant.taxon_request ? taxonRequestLabel(plant.taxon_request) : "Plante en attente";
 }
 
 export interface Nursery {
@@ -27,7 +43,7 @@ export interface NurseryAttrs {
   address?: string | null;
   lat?: number | null;
   lng?: number | null;
-  plants: { taxon_id: string; quantity: number; note?: string | null }[];
+  plants: { taxon_id?: string | null; taxon_request_id?: string | null; quantity: number; note?: string | null }[];
 }
 
 /** Flattened shape returned by GET /dashboard/map/nurseries. */
