@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 
-import { requestProfile, updateMyProfiles } from "@/lib/api/me";
+import { type HostFamilyAttrs, requestProfile, updateMyProfiles } from "@/lib/api/me";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
 import type { ProfileStatus, ProfileType, UserProfile } from "@/types/user";
@@ -85,10 +85,10 @@ export function useEngagementProfiles() {
 
   /** "Rejoindre": creates a pending request (or activates Bénévole straight away). */
   const join = useCallback(
-    async (profile: EngagementProfileId) => {
+    async (profile: EngagementProfileId, details?: HostFamilyAttrs) => {
       setIsPending(true);
       try {
-        const created = await requestProfile(TO_PROFILE_TYPE[profile]);
+        const created = await requestProfile(TO_PROFILE_TYPE[profile], details);
         syncProfiles([...all.filter((p) => p.id !== created.id && p.profile_type !== created.profile_type), created]);
       } finally {
         setIsPending(false);

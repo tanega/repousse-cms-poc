@@ -11,6 +11,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -382,6 +389,8 @@ const engagementProfiles: EngagementProfile[] = [
 
 function EngagementsSection() {
   const { isActive, join, deactivate, cancelRequest, statusOf, rejectionReasonOf, isPending } = useEngagementProfiles();
+  // Famille d'accueil can't be requested blind: the member fills in their hosting details first.
+  const [hostRequestOpen, setHostRequestOpen] = useState(false);
 
   async function run(action: () => Promise<void>, success?: string) {
     try {
@@ -468,12 +477,16 @@ function EngagementsSection() {
                       size="sm"
                       variant={active || awaiting ? "outline" : "default"}
                       disabled={profile.isDefault || awaiting || isPending}
-                      onClick={() =>
-                        run(
+                      onClick={() => {
+                        if (!active && profile.id === "Famille d'accueil") {
+                          setHostRequestOpen(true);
+                          return;
+                        }
+                        void run(
                           () => (active ? deactivate(profile.id) : join(profile.id)),
                           !active && profile.id !== "Bénévole" ? "Demande envoyée aux administrateurs." : undefined,
-                        )
-                      }
+                        );
+                      }}
                     >
                       {profile.isDefault
                         ? "Profil par défaut"
@@ -549,10 +562,32 @@ function EngagementsSection() {
                   )}
                 </CardContent>
               )}
+              {awaiting && profile.id === "Famille d'accueil" && (
+                <CardContent className="pt-0">
+                  <Separator className="mb-4" />
+                  <p className="mb-3 text-muted-foreground text-xs">
+                    Les administrateurs consultent ces informations avant de valider votre demande : vous pouvez les
+                    compléter tant qu'elle est en attente.
+                  </p>
+                  <HostFamilyForm />
+                </CardContent>
+              )}
             </Card>
           );
         })}
       </div>
+
+      <Dialog open={hostRequestOpen} onOpenChange={setHostRequestOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Rejoindre le parcours Famille d'accueil</DialogTitle>
+            <DialogDescription>
+              Décrivez vos capacités d'accueil : les administrateurs les consultent avant de valider votre demande.
+            </DialogDescription>
+          </DialogHeader>
+          <HostFamilyForm mode="request" onRequested={() => setHostRequestOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

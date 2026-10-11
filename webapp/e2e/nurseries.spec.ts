@@ -30,7 +30,15 @@ test.describe("Famille d'accueil — profil d'engagement et nurseries", () => {
         await deactivate.click();
       }
 
+      // Joining needs the hosting details first: the admins review them.
       await card.getByRole("button", { name: "Rejoindre" }).click();
+      const dialog = page.getByRole("dialog");
+      await dialog.getByRole("button", { name: "Envoyer ma demande" }).click();
+      await expect(dialog.getByText("Indiquez votre capacité d'accueil")).toBeVisible();
+
+      await dialog.locator("#hosting_capacity").fill("120");
+      await dialog.locator("#hosting_address").fill("12 rue des Lilas, 75020 Paris");
+      await dialog.getByRole("button", { name: "Envoyer ma demande" }).click();
       await expect(page.getByText("Demande envoyée aux administrateurs.")).toBeVisible();
       await expect(card.getByRole("button", { name: "En attente de validation" })).toBeDisabled();
     });
@@ -46,7 +54,12 @@ test.describe("Famille d'accueil — profil d'engagement et nurseries", () => {
         .getByTestId("profile-request-row")
         .filter({ hasText: MEMBER_EMAIL })
         .filter({ hasText: "Famille d'accueil" });
-      await row.first().getByRole("button", { name: "Accepter" }).click();
+      // The admin reads what the member declared before deciding.
+      await row.first().getByRole("button", { name: "Voir les informations" }).click();
+      const details = page.getByTestId("host-family-details");
+      await expect(details).toContainText("120 plants");
+      await expect(details).toContainText("12 rue des Lilas, 75020 Paris");
+      await page.getByRole("dialog").getByRole("button", { name: "Accepter" }).click();
       await expect(page.getByText("Demande acceptée, le membre est notifié.")).toBeVisible();
     });
   });

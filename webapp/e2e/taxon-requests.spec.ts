@@ -25,7 +25,7 @@ test.describe("Demande d'ajout d'une plante manquante", () => {
       await page.getByRole("button", { name: "Demander l'ajout d'une plante" }).click();
       // The typed name is carried over to the request form.
       await expect(page.locator("#request-common-name")).toHaveValue(PLANT_NAME);
-      await page.locator("#request-scientific-name").fill("Pyrus e2e");
+      await page.locator("#request-scientific-name").fill(`Pyrus e2e ${STAMP}`);
       await page.getByRole("button", { name: "Envoyer la demande" }).click();
       await expect(page.getByText("Demande envoyée aux administrateurs.")).toBeVisible();
 
