@@ -17,10 +17,8 @@ import {
 import { APP_CONFIG } from "@/config/app-config";
 import { hasMinRole } from "@/lib/auth/roles";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
-import type { NavGroup } from "@/navigation/sidebar/sidebar-items";
-import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
+import { filterNavByAccess, sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
-import type { ProfileType, UserRole } from "@/types/user";
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -62,25 +60,6 @@ const _data = {
   ],
 };
 
-// While the user's role and profiles haven't resolved yet, treat them as
-// absent so gated items don't flash before being filtered out.
-function filterByAccess(
-  groups: NavGroup[],
-  role: UserRole | undefined,
-  profiles: ProfileType[] | undefined,
-): NavGroup[] {
-  return groups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter(
-        (item) =>
-          (!item.minRole || (role && hasMinRole(role, item.minRole))) &&
-          (!item.requiresProfile || (profiles ?? []).includes(item.requiresProfile)),
-      ),
-    }))
-    .filter((group) => group.items.length > 0);
-}
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { sidebarVariant, sidebarCollapsible, isSynced } = usePreferencesStore(
     useShallow((s) => ({
@@ -93,7 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
-  const visibleItems = filterByAccess(
+  const visibleItems = filterNavByAccess(
     sidebarItems,
     user?.role,
     user?.profiles.filter((p) => p.status === "active").map((p) => p.profile_type),

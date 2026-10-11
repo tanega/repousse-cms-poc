@@ -7,6 +7,7 @@ import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sideb
 import { LayoutControls } from "@/app/(main)/dashboard/_components/sidebar/layout-controls";
 import { SearchDialog } from "@/app/(main)/dashboard/_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "@/app/(main)/dashboard/_components/sidebar/theme-switcher";
+import { SuperadminOnly } from "@/components/auth/superadmin-only";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -64,7 +65,9 @@ export async function OptionalMemberShell({ children }: { children: ReactNode })
               <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
-              <LayoutControls />
+              <SuperadminOnly>
+                <LayoutControls />
+              </SuperadminOnly>
               <NotificationBell />
               <ThemeSwitcher />
               <AccountSwitcher />
