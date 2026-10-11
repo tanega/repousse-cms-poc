@@ -217,12 +217,14 @@ Cycle d'hébergement
 |-----|-------|----------|
 | US-PROFIL-04 | Sélectionner son ou ses profils utilisateur | Must |
 | US-PROFIL-05 | Retirer un profil et transférer ses ressources | Should |
+| US-PROFIL-12 | Valider l'accès aux parcours Adoptant et Famille d'accueil | Must |
 
 ### Profil Famille d'accueil
 
 | Réf | Titre | Priorité |
 |-----|-------|----------|
 | US-PROFIL-06 | Renseigner les informations spécifiques Famille d'accueil | Should |
+| US-PROFIL-13 | Renseigner ses informations d'accueil avant de demander le parcours | Must |
 | US-PROFIL-11 | Gérer ses nurseries | Should |
 
 ### RGPD & suppression
@@ -284,6 +286,7 @@ Cycle d'hébergement
 - Chaque profil accompagné d'une description courte
 - Au moins un profil requis
 - Profils modifiables depuis les paramètres du compte
+- Adoptant et Famille d'accueil ne s'activent pas directement : ils passent par une demande validée par les administrateurs (US-PROFIL-12)
 
 ---
 
@@ -298,6 +301,20 @@ Cycle d'hébergement
 
 ---
 
+### US-PROFIL-12 — Valider l'accès aux parcours Adoptant et Famille d'accueil
+**En tant que** membre, **je veux** demander à rejoindre un parcours **afin que** les administrateurs du commun valident mon engagement. **En tant qu'**Administrateur, **je veux** être alerté des demandes et les traiter **afin de** garder la main sur l'accès aux parcours.
+
+**Critères d'acceptation :**
+- Adoptant et Famille d'accueil exigent une validation ; Bénévole reste activable directement
+- Dans les paramètres du profil, « Activer » devient « Rejoindre » ; après la demande, le bouton est grisé sur « En attente de validation » et la demande peut être annulée
+- Tant que la demande n'est pas acceptée, le parcours ne débloque rien (nurseries, informations d'accueil, entrées de menu)
+- Les administrateurs et superadministrateurs sont notifiés de chaque demande (centre de notifications dans l'application, email, compteur dans le menu d'administration)
+- Une page d'administration liste les demandes (en attente, acceptées, refusées) ; n'importe quel administrateur peut accepter ou refuser, avec un motif facultatif en cas de refus
+- Le membre est notifié de la décision (notification dans l'application et email) ; après un refus, il peut effectuer une nouvelle demande
+- Les profils déjà actifs lors de l'introduction de la validation le restent
+
+---
+
 ### US-PROFIL-06 — Renseigner les informations spécifiques Famille d'accueil
 **En tant qu'** Utilisateur avec le profil Famille d'accueil, **je veux** renseigner mes capacités d'accueil **afin que** les coordinateurs puissent organiser la conservation des jeunes plants.
 
@@ -305,6 +322,17 @@ Cycle d'hébergement
 - Champs spécifiques (facultatifs) : localisation/adresse d'accueil, capacité de stockage (nombre de plants ou surface), espèces pouvant être accueillies (sélection depuis la liste des taxons), disponibilités générales *(à affiner en atelier)*
 - Champs visibles et accessibles uniquement si profil Famille d'accueil actif
 - Informations consultables par les coordinateurs depuis l'interface d'administration
+
+---
+
+### US-PROFIL-13 — Renseigner ses informations d'accueil avant de demander le parcours
+**En tant que** membre, **je veux** décrire mes capacités d'accueil au moment de ma demande **afin que** les administrateurs puissent les consulter avant de valider (complète US-PROFIL-12).
+
+**Critères d'acceptation :**
+- « Rejoindre » sur Famille d'accueil ouvre le formulaire d'accueil (US-PROFIL-06) ; la demande n'est envoyée que s'il est valide
+- Champs obligatoires à la demande : capacité d'accueil (supérieure à 0) et adresse ou zone d'accueil ; surface, disponibilités, équipements et espèces restent facultatifs
+- Le formulaire reste modifiable tant que la demande est en attente, et reprend les informations envoyées en cas de nouvelle demande après un refus
+- Depuis la page des demandes, l'administrateur ouvre « Voir les informations » et peut accepter ou refuser depuis ce même écran
 
 ---
 

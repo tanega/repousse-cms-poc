@@ -61,6 +61,12 @@ Maintenir une liste de référence contrôlée des genres, espèces et variété
 | US-TAX-10 | Consulter et rechercher la liste des taxons | Must |
 | US-TAX-11 | Consulter la fiche détail d'un taxon | Should |
 
+### Demandes des membres
+
+| Réf | Titre | Priorité |
+|-----|-------|----------|
+| US-TAX-13 | Demander l'ajout d'une plante absente de la liste de référence | Should |
+
 ### Configuration initiale
 
 | Réf | Titre | Priorité |
@@ -197,6 +203,21 @@ Maintenir une liste de référence contrôlée des genres, espèces et variété
 - Sélection d'une liste au démarrage → alimentation automatique via le mécanisme d'import (US-TAX-07)
 - Instance peut fonctionner avec une liste personnalisée indépendante
 - Liste de référence utilisée indiquée dans les paramètres de l'application
+
+---
+
+### US-TAX-13 — Demander l'ajout d'une plante absente de la liste de référence
+**En tant que** membre, **je veux** suggérer l'ajout d'une plante qui n'est pas dans la liste **afin de** pouvoir la déclarer dans ma nurserie (US-PROFIL-11). **En tant qu'**Administrateur ou Éditeur taxons, **je veux** traiter ces demandes **afin de** garder une liste de référence cohérente.
+
+**Critères d'acceptation :**
+- Dans le sélecteur de plantes d'une nurserie, un bouton « Demander l'ajout d'une plante » apparaît sous la liste de suggestions ; il ouvre un formulaire prérempli avec la saisie du membre
+- Champs : nom commun et/ou nom scientifique (au moins un), catégorie et précisions facultatives
+- La plante demandée apparaît dans la nurserie « en attente de validation » ; elle est masquée aux autres membres tant que la demande n'est pas traitée
+- Une demande ouverte pour le même nom est partagée entre les membres : elle n'est traitée qu'une fois
+- Les administrateurs et Éditeurs taxons sont notifiés et traitent les demandes dans un onglet dédié de la page d'administration des taxons (compteur dans le menu)
+- Accepter : créer l'espèce (formulaire prérempli) ou la lier à une espèce existante ; la plante est rattachée aux nurseries concernées (quantités fusionnées si la plante y figure déjà)
+- Refuser : motif facultatif ; la plante est retirée des nurseries concernées
+- Tous les demandeurs sont notifiés de la décision (notification dans l'application et email)
 
 ---
 
