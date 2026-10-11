@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { Check, X } from "lucide-react";
+import { Check, Eye, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,12 +26,21 @@ import {
   type ProfileRequest,
   rejectProfileRequest,
 } from "@/lib/api/profile-requests";
-import type { ProfileStatus, ProfileType } from "@/types/user";
+import type { HostingEquipment, ProfileStatus, ProfileType } from "@/types/user";
 
 const PROFILE_LABELS: Record<ProfileType, string> = {
   volunteer: "Bénévole",
   adoptant: "Adoptant",
   host_family: "Famille d'accueil",
+};
+
+const EQUIPMENT_LABELS: Record<HostingEquipment, string> = {
+  greenhouse: "Serre",
+  tarp: "Bâche",
+  auto_watering: "Arrosage automatique",
+  artificial_light: "Lumière artificielle",
+  cold_frame: "Châssis froid",
+  outdoor_ground: "Pleine terre extérieure",
 };
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" });
@@ -52,6 +61,7 @@ export function ProfileRequestsView() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<ProfileRequest | null>(null);
+  const [reviewing, setReviewing] = useState<ProfileRequest | null>(null);
   const [reason, setReason] = useState("");
 
   const load = useCallback(async (next: ProfileStatus) => {
@@ -156,6 +166,12 @@ export function ProfileRequestsView() {
                       {status === "pending" && (
                         <TableCell className="pr-6">
                           <div className="flex justify-end gap-2">
+                            {r.details && (
+                              <Button size="sm" variant="ghost" onClick={() => setReviewing(r)}>
+                                <Eye className="size-4" />
+                                Voir les informations
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               disabled={busyId === r.id}
@@ -190,6 +206,52 @@ export function ProfileRequestsView() {
         </CardContent>
       </Card>
 
+      <Dialog open={reviewing !== null} onOpenChange={(open) => !open && setReviewing(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Informations d'accueil</DialogTitle>
+            <DialogDescription>
+              {reviewing && `${memberName(reviewing.user)} · ${PROFILE_LABELS[reviewing.profile_type]}`}
+            </DialogDescription>
+          </DialogHeader>
+          {reviewing?.details && <HostFamilyDetailsList details={reviewing.details} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewing(null)}>
+              Fermer
+            </Button>
+            {reviewing && reviewing.status === "pending" && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setReason("");
+                    setRejecting(reviewing);
+                    setReviewing(null);
+                  }}
+                >
+                  <X className="size-4" />
+                  Refuser
+                </Button>
+                <Button
+                  onClick={() => {
+                    const target = reviewing;
+                    setReviewing(null);
+                    void decide(
+                      target,
+                      () => approveProfileRequest(target.id),
+                      "Demande acceptée, le membre est notifié.",
+                    );
+                  }}
+                >
+                  <Check className="size-4" />
+                  Accepter
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={rejecting !== null} onOpenChange={(open) => !open && setRejecting(null)}>
         <DialogContent>
           <DialogHeader>
@@ -216,5 +278,37 @@ export function ProfileRequestsView() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function HostFamilyDetailsList({ details }: { details: NonNullable<ProfileRequest["details"]> }) {
+  const rows: [string, React.ReactNode][] = [
+    ["Adresse ou zone d'accueil", details.hosting_address ?? "—"],
+    ["Capacité", details.hosting_capacity != null ? `${details.hosting_capacity} plants` : "—"],
+    ["Surface disponible", details.hosting_surface_m2 != null ? `${details.hosting_surface_m2} m²` : "—"],
+    ["Disponibilités", details.hosting_availability || "—"],
+    [
+      "Équipements",
+      details.hosting_equipment.length
+        ? details.hosting_equipment.map((e) => EQUIPMENT_LABELS[e] ?? e).join(", ")
+        : "—",
+    ],
+    [
+      "Espèces pouvant être accueillies",
+      details.hosted_species.length
+        ? details.hosted_species.map((s) => s.common_name ?? "Espèce inconnue").join(", ")
+        : "—",
+    ],
+  ];
+
+  return (
+    <dl className="grid gap-3 text-sm" data-testid="host-family-details">
+      {rows.map(([label, value]) => (
+        <div key={label} className="grid gap-0.5 sm:grid-cols-[14rem_1fr] sm:gap-3">
+          <dt className="text-muted-foreground">{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

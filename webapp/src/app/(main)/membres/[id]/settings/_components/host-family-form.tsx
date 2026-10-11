@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useForm } from "@tanstack/react-form";
 import { X } from "lucide-react";
@@ -19,9 +19,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateHostFamilyProfile } from "@/lib/api/me";
 import { fetchPublicTaxa } from "@/lib/api/taxa";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
+import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
 import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
 import type { Taxon } from "@/types/taxon";
-import type { HostingEquipment } from "@/types/user";
+import type { HostingEquipment, UserProfile } from "@/types/user";
 
 const EQUIPMENT_LABELS: Record<HostingEquipment, string> = {
   greenhouse: "Serre",
@@ -45,6 +46,16 @@ const schema = z.object({
   hosted_species: z.array(z.string()),
 });
 
+// Asking to join needs the basics an admin reviews before deciding.
+const requestSchema = schema.superRefine((value, ctx) => {
+  if (!(Number(value.hosting_capacity) > 0)) {
+    ctx.addIssue({ code: "custom", path: ["hosting_capacity"], message: "Indiquez votre capacité d'accueil" });
+  }
+  if (!value.hosting_address.trim()) {
+    ctx.addIssue({ code: "custom", path: ["hosting_address"], message: "Indiquez une adresse ou une zone d'accueil" });
+  }
+});
+
 type HostFamilyValues = z.infer<typeof schema>;
 
 const EMPTY: HostFamilyValues = {
@@ -66,8 +77,33 @@ function toNumberOrNull(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function HostFamilyForm() {
+function toFormValues(profile: UserProfile | undefined): HostFamilyValues {
+  if (!profile) return EMPTY;
+  return {
+    hosting_capacity: profile.hosting_capacity?.toString() ?? "",
+    hosting_surface_m2: profile.hosting_surface_m2?.toString() ?? "",
+    hosting_address: profile.hosting_address ?? "",
+    hosting_lat: profile.hosting_lat,
+    hosting_lng: profile.hosting_lng,
+    hosting_availability: profile.hosting_availability ?? "",
+    hosting_equipment: profile.hosting_equipment ?? [],
+    hosted_species: (profile.hosted_species ?? []).map((s) => s.taxon_id),
+  };
+}
+
+export interface HostFamilyFormProps {
+  /**
+   * `edit` (default) saves the details of a profile the member already has.
+   * `request` is the "Rejoindre" step: it saves them and sends the request to the admins.
+   */
+  mode?: "edit" | "request";
+  onRequested?: () => void;
+}
+
+export function HostFamilyForm({ mode = "edit", onRequested }: HostFamilyFormProps = {}) {
   const { user } = useCurrentUser();
+  const { join } = useEngagementProfiles();
+  const requesting = mode === "request";
   const profile = user?.profiles.find((p) => p.profile_type === "host_family");
   const [taxa, setTaxa] = useState<Taxon[]>([]);
 
@@ -77,12 +113,16 @@ export function HostFamilyForm() {
       .catch(() => toast.error("Impossible de charger la liste des espèces."));
   }, []);
 
+  const initialValues = useMemo(() => toFormValues(profile), [profile]);
+
   const form = useForm({
-    defaultValues: EMPTY,
-    validators: { onChange: schema },
+    // Must track the profile: useForm re-applies `defaultValues` on every render, so a
+    // constant EMPTY would silently undo the reset below and blank the form on save.
+    defaultValues: initialValues,
+    validators: { onChange: requesting ? requestSchema : schema },
     onSubmit: async ({ value }) => {
       try {
-        const updated = await updateHostFamilyProfile({
+        const attrs = {
           hosting_capacity: toNumberOrNull(value.hosting_capacity),
           hosting_surface_m2: toNumberOrNull(value.hosting_surface_m2),
           hosting_address: value.hosting_address.trim() || null,
@@ -91,7 +131,16 @@ export function HostFamilyForm() {
           hosting_availability: value.hosting_availability.trim() || null,
           hosting_equipment: value.hosting_equipment as HostingEquipment[],
           hosted_species: value.hosted_species.map((taxon_id) => ({ taxon_id })),
-        });
+        };
+
+        if (requesting) {
+          await join("Famille d'accueil", attrs);
+          toast.success("Demande envoyée aux administrateurs.");
+          onRequested?.();
+          return;
+        }
+
+        const updated = await updateHostFamilyProfile(attrs);
 
         const current = useCurrentUserStore.getState().user;
         if (current) {
@@ -107,20 +156,10 @@ export function HostFamilyForm() {
     },
   });
 
-  // defaultValues are captured once at useForm() time; the profile arrives later.
+  // The profile can arrive (or change) after mount.
   useEffect(() => {
-    if (!profile) return;
-    form.reset({
-      hosting_capacity: profile.hosting_capacity?.toString() ?? "",
-      hosting_surface_m2: profile.hosting_surface_m2?.toString() ?? "",
-      hosting_address: profile.hosting_address ?? "",
-      hosting_lat: profile.hosting_lat,
-      hosting_lng: profile.hosting_lng,
-      hosting_availability: profile.hosting_availability ?? "",
-      hosting_equipment: profile.hosting_equipment ?? [],
-      hosted_species: (profile.hosted_species ?? []).map((s) => s.taxon_id),
-    });
-  }, [profile, form.reset]);
+    form.reset(initialValues);
+  }, [initialValues, form.reset]);
 
   return (
     <form
@@ -152,6 +191,9 @@ export function HostFamilyForm() {
                 }}
                 onBlur={field.handleBlur}
               />
+              {field.state.meta.isTouched && !field.state.meta.isValid && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
               <p className="text-muted-foreground text-xs">
                 Peut différer de votre adresse personnelle. Visible des coordinateurs.
               </p>
@@ -297,8 +339,17 @@ export function HostFamilyForm() {
 
       <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
         {([canSubmit, isSubmitting]) => (
-          <Button type="submit" size="sm" className="mt-4" disabled={!profile || !canSubmit || isSubmitting}>
-            {isSubmitting ? "Enregistrement…" : "Enregistrer mes capacités d'accueil"}
+          <Button
+            type="submit"
+            size="sm"
+            className="mt-4"
+            disabled={(!requesting && !profile) || !canSubmit || isSubmitting}
+          >
+            {isSubmitting
+              ? "Enregistrement…"
+              : requesting
+                ? "Envoyer ma demande"
+                : "Enregistrer mes capacités d'accueil"}
           </Button>
         )}
       </form.Subscribe>

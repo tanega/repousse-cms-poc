@@ -23,7 +23,9 @@ async function authedFetch(path: string, init: RequestInit = {}): Promise<Respon
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.error ?? `Échec de la requête (${res.status})`);
+    const details =
+      body?.details && typeof body.details === "object" ? Object.values(body.details).flat().join(", ") : null;
+    throw new Error(details || (body?.error ?? `Échec de la requête (${res.status})`));
   }
 
   return res;
@@ -54,9 +56,15 @@ export async function updateMyProfiles(profiles: ProfileType[]): Promise<UserPro
   return data;
 }
 
-/** Ask to join a profile: Adoptant / Famille d'accueil come back `pending`, Bénévole `active`. */
-export async function requestProfile(profile: ProfileType): Promise<UserProfile> {
-  const res = await authedFetch(`/api/v1/me/profiles/${profile}/request`, { method: "POST" });
+/**
+ * Ask to join a profile: Adoptant / Famille d'accueil come back `pending`, Bénévole `active`.
+ * Famille d'accueil must come with its hosting details (capacity and address at least).
+ */
+export async function requestProfile(profile: ProfileType, details?: HostFamilyAttrs): Promise<UserProfile> {
+  const res = await authedFetch(`/api/v1/me/profiles/${profile}/request`, {
+    method: "POST",
+    body: JSON.stringify(details ? { profile: details } : {}),
+  });
   const { data } = await res.json();
   return data;
 }

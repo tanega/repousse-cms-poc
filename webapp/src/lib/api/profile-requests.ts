@@ -1,8 +1,18 @@
-import type { ProfileStatus, ProfileType } from "@/types/user";
+import type { HostingEquipment, ProfileStatus, ProfileType } from "@/types/user";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export const PROFILE_REQUESTS_CHANGED_EVENT = "profile-requests:changed";
+
+/** What a Famille d'accueil member declared, for the admin to review before deciding. */
+export interface HostFamilyDetails {
+  hosting_capacity: number | null;
+  hosting_address: string | null;
+  hosting_surface_m2: number | null;
+  hosting_availability: string | null;
+  hosting_equipment: HostingEquipment[];
+  hosted_species: { taxon_id: string; common_name: string | null }[];
+}
 
 export interface ProfileRequest {
   id: string;
@@ -11,6 +21,8 @@ export interface ProfileRequest {
   requested_at: string | null;
   decided_at: string | null;
   rejection_reason: string | null;
+  /** Profile-specific fields to review; null for profiles without any. */
+  details: HostFamilyDetails | null;
   user: { id: string; first_name: string | null; last_name: string | null; email: string };
 }
 
