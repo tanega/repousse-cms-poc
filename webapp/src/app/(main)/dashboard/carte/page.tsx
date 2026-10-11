@@ -1,7 +1,9 @@
 "use client";
-import dynamic from "next/dynamic";
-import { Building2, Leaf, MapPin, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import dynamic from "next/dynamic";
+
+import { Building2, Leaf, MapPin, Users } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,24 +16,26 @@ import { pointsDistribution, projetsDePlantation, statsCommunales } from "./_com
 import type { AttributeKey, LayerId } from "./_components/types";
 import { ATTRIBUTE_CONFIG } from "./_components/types";
 
-const CarteMap = dynamic(
-  () => import("./_components/carte-map").then((m) => m.CarteMap),
-  { ssr: false, loading: () => <div className="flex h-full items-center justify-center text-muted-foreground text-sm">Chargement de la carte…</div> },
-);
+const CarteMap = dynamic(() => import("./_components/carte-map").then((m) => m.CarteMap), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-muted-foreground text-sm">Chargement de la carte…</div>
+  ),
+});
 
 const POINT_LAYERS: { id: LayerId; label: string; color: string }[] = [
   { id: "distributions", label: "Points de distribution", color: "#2563eb" },
-  { id: "projets",       label: "Projets de plantation",  color: "#16a34a" },
-  { id: "contacts",      label: "Contacts régionaux",     color: "#9333ea" },
-  { id: "stats",         label: "Stats bulles",           color: "#ea580c" },
-  { id: "nurseries",     label: "Nurseries",              color: "#ea580c" },
+  { id: "projets", label: "Projets de plantation", color: "#16a34a" },
+  { id: "contacts", label: "Contacts régionaux", color: "#9333ea" },
+  { id: "stats", label: "Stats bulles", color: "#ea580c" },
+  { id: "nurseries", label: "Nurseries", color: "#ea580c" },
 ];
 
 const COMMUNE_ATTRS: { key: AttributeKey; label: string }[] = [
-  { key: "nb_plants_distribues",    label: "Plants distribués" },
-  { key: "nb_adherents",            label: "Adhérents" },
-  { key: "nb_points_distribution",  label: "Points de distribution" },
-  { key: "nb_projets_plantation",   label: "Projets de plantation" },
+  { key: "nb_plants_distribues", label: "Plants distribués" },
+  { key: "nb_adherents", label: "Adhérents" },
+  { key: "nb_points_distribution", label: "Points de distribution" },
+  { key: "nb_projets_plantation", label: "Projets de plantation" },
 ];
 
 export default function CartePage() {
@@ -74,24 +78,53 @@ export default function CartePage() {
 
       {/* KPI strip */}
       <div className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="py-3"><CardContent className="flex items-center gap-2 px-3"><MapPin className="size-4 text-blue-600 shrink-0" /><div><p className="text-muted-foreground text-xs">Points de distrib.</p><p className="font-semibold text-sm">{pointsDistribution.filter((d) => d.statut === "actif").length} actifs</p></div></CardContent></Card>
-        <Card className="py-3"><CardContent className="flex items-center gap-2 px-3"><Leaf className="size-4 text-green-600 shrink-0" /><div><p className="text-muted-foreground text-xs">Projets plantation</p><p className="font-semibold text-sm">{projetsActifs} en cours</p></div></CardContent></Card>
-        <Card className="py-3"><CardContent className="flex items-center gap-2 px-3"><Building2 className="size-4 text-purple-600 shrink-0" /><div><p className="text-muted-foreground text-xs">Communes couvertes</p><p className="font-semibold text-sm">{communes}</p></div></CardContent></Card>
-        <Card className="py-3"><CardContent className="flex items-center gap-2 px-3"><Users className="size-4 text-orange-600 shrink-0" /><div><p className="text-muted-foreground text-xs">Plants distribués</p><p className="font-semibold text-sm">{totalPlants.toLocaleString("fr-FR")}</p></div></CardContent></Card>
+        <Card className="py-3">
+          <CardContent className="flex items-center gap-2 px-3">
+            <MapPin className="size-4 text-blue-600 shrink-0" />
+            <div>
+              <p className="text-muted-foreground text-xs">Points de distrib.</p>
+              <p className="font-semibold text-sm">
+                {pointsDistribution.filter((d) => d.statut === "actif").length} actifs
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="py-3">
+          <CardContent className="flex items-center gap-2 px-3">
+            <Leaf className="size-4 text-green-600 shrink-0" />
+            <div>
+              <p className="text-muted-foreground text-xs">Projets plantation</p>
+              <p className="font-semibold text-sm">{projetsActifs} en cours</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="py-3">
+          <CardContent className="flex items-center gap-2 px-3">
+            <Building2 className="size-4 text-purple-600 shrink-0" />
+            <div>
+              <p className="text-muted-foreground text-xs">Communes couvertes</p>
+              <p className="font-semibold text-sm">{communes}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="py-3">
+          <CardContent className="flex items-center gap-2 px-3">
+            <Users className="size-4 text-orange-600 shrink-0" />
+            <div>
+              <p className="text-muted-foreground text-xs">Plants distribués</p>
+              <p className="font-semibold text-sm">{totalPlants.toLocaleString("fr-FR")}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Map + sidebar */}
       <div className="flex flex-1 gap-4 overflow-hidden min-h-0">
         <div className="flex-1 overflow-hidden rounded-xl border border-border">
-          <CarteMap
-            communesAttribute={communesAttribute}
-            layerVisibility={layerVisibility}
-            nurseries={nurseries}
-          />
+          <CarteMap communesAttribute={communesAttribute} layerVisibility={layerVisibility} nurseries={nurseries} />
         </div>
 
         <aside className="flex w-56 shrink-0 flex-col gap-3 overflow-y-auto">
-
           {/* Communes choropleth control */}
           <Card>
             <CardHeader className="pb-2">
@@ -109,7 +142,9 @@ export default function CartePage() {
                 <SelectContent>
                   <SelectItem value="none">— Masquer —</SelectItem>
                   {COMMUNE_ATTRS.map((a) => (
-                    <SelectItem key={a.key} value={a.key}>{a.label}</SelectItem>
+                    <SelectItem key={a.key} value={a.key}>
+                      {a.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -125,7 +160,9 @@ export default function CartePage() {
                   </div>
                   <div className="flex justify-between text-muted-foreground" style={{ fontSize: "10px" }}>
                     <span>{attrCfg.steps[0][0]}</span>
-                    <span>≥ {attrCfg.steps[attrCfg.steps.length - 1][0]} {attrCfg.unit}</span>
+                    <span>
+                      ≥ {attrCfg.steps[attrCfg.steps.length - 1][0]} {attrCfg.unit}
+                    </span>
                   </div>
                   <ul className="mt-1 flex flex-col gap-0.5">
                     {attrCfg.steps.map(([threshold, color], i) => (
@@ -134,8 +171,8 @@ export default function CartePage() {
                         <span className="text-foreground">
                           {i < attrCfg.steps.length - 1
                             ? `${threshold} – ${attrCfg.steps[i + 1][0] - 1}`
-                            : `≥ ${threshold}`}
-                          {" "}{attrCfg.unit}
+                            : `≥ ${threshold}`}{" "}
+                          {attrCfg.unit}
                         </span>
                       </li>
                     ))}
@@ -175,15 +212,18 @@ export default function CartePage() {
               <CardDescription className="text-xs">Plants distribués</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-1.5 pt-0">
-              {statsCommunales.sort((a, b) => b.plantsDistribues - a.plantsDistribues).map((s) => (
-                <div key={s.commune} className="flex items-center justify-between text-xs">
-                  <span className="truncate text-foreground">{s.commune}</span>
-                  <span className="ml-2 shrink-0 font-medium text-muted-foreground">{s.plantsDistribues.toLocaleString("fr-FR")}</span>
-                </div>
-              ))}
+              {statsCommunales
+                .sort((a, b) => b.plantsDistribues - a.plantsDistribues)
+                .map((s) => (
+                  <div key={s.commune} className="flex items-center justify-between text-xs">
+                    <span className="truncate text-foreground">{s.commune}</span>
+                    <span className="ml-2 shrink-0 font-medium text-muted-foreground">
+                      {s.plantsDistribues.toLocaleString("fr-FR")}
+                    </span>
+                  </div>
+                ))}
             </CardContent>
           </Card>
-
         </aside>
       </div>
     </div>

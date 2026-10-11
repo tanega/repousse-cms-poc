@@ -1,9 +1,14 @@
 export const kpiMetrics = {
-  totalAdherents: 342, totalAdherentsDelta: 18,
-  totalArbresPlantes: 8740, totalArbresPlantesDelta: 1230,
-  totalDistributions: 47, totalDistributionsDelta: 6,
-  communesCouvertes: 23, communesCouvertesDelta: 3,
-  co2EviteAnnuelTonnes: 87.4, co2EviteVieEntiereTonnes: 1748,
+  totalAdherents: 342,
+  totalAdherentsDelta: 18,
+  totalArbresPlantes: 8740,
+  totalArbresPlantesDelta: 1230,
+  totalDistributions: 47,
+  totalDistributionsDelta: 6,
+  communesCouvertes: 23,
+  communesCouvertesDelta: 3,
+  co2EviteAnnuelTonnes: 87.4,
+  co2EviteVieEntiereTonnes: 1748,
 };
 export const arbresParAnnee = [
   { annee: 2018, plantes: 210, cumulatif: 210 },
@@ -16,18 +21,28 @@ export const arbresParAnnee = [
   { annee: 2025, plantes: 1230, cumulatif: 8740 },
 ];
 export const adherentsParAnnee = [
-  { annee: 2018, adherents: 34 }, { annee: 2019, adherents: 67 },
-  { annee: 2020, adherents: 89 }, { annee: 2021, adherents: 134 },
-  { annee: 2022, adherents: 198 }, { annee: 2023, adherents: 261 },
-  { annee: 2024, adherents: 324 }, { annee: 2025, adherents: 342 },
+  { annee: 2018, adherents: 34 },
+  { annee: 2019, adherents: 67 },
+  { annee: 2020, adherents: 89 },
+  { annee: 2021, adherents: 134 },
+  { annee: 2022, adherents: 198 },
+  { annee: 2023, adherents: 261 },
+  { annee: 2024, adherents: 324 },
+  { annee: 2025, adherents: 342 },
 ];
 export const arbres2025ParMois = [
-  { mois: "Jan", plantes: 0 }, { mois: "Fév", plantes: 180 },
-  { mois: "Mar", plantes: 340 }, { mois: "Avr", plantes: 290 },
-  { mois: "Mai", plantes: 210 }, { mois: "Jun", plantes: 210 },
-  { mois: "Jul", plantes: 0 }, { mois: "Aoû", plantes: 0 },
-  { mois: "Sep", plantes: 0 }, { mois: "Oct", plantes: 0 },
-  { mois: "Nov", plantes: 0 }, { mois: "Déc", plantes: 0 },
+  { mois: "Jan", plantes: 0 },
+  { mois: "Fév", plantes: 180 },
+  { mois: "Mar", plantes: 340 },
+  { mois: "Avr", plantes: 290 },
+  { mois: "Mai", plantes: 210 },
+  { mois: "Jun", plantes: 210 },
+  { mois: "Jul", plantes: 0 },
+  { mois: "Aoû", plantes: 0 },
+  { mois: "Sep", plantes: 0 },
+  { mois: "Oct", plantes: 0 },
+  { mois: "Nov", plantes: 0 },
+  { mois: "Déc", plantes: 0 },
 ];
 export const parCategorie = [
   { categorie: "Arbres", quantite: 3940, couleur: "#2d6a4f" },

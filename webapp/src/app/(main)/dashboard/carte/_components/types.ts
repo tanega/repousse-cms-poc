@@ -1,8 +1,4 @@
-export type AttributeKey =
-  | "nb_plants_distribues"
-  | "nb_adherents"
-  | "nb_points_distribution"
-  | "nb_projets_plantation";
+export type AttributeKey = "nb_plants_distribues" | "nb_adherents" | "nb_points_distribution" | "nb_projets_plantation";
 
 export type LayerId = "distributions" | "projets" | "contacts" | "stats" | "nurseries";
 

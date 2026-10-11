@@ -1,7 +1,9 @@
 "use client";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
 import { arbresParAnnee } from "./data";
 
 const chartConfig = { plantes: { label: "Plants", color: "var(--chart-3)" } } satisfies ChartConfig;

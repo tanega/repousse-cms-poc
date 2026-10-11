@@ -1,8 +1,9 @@
 "use client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Protocol } from "pmtiles";
 import { useEffect, useRef } from "react";
+
+import { Protocol } from "pmtiles";
 
 import type { NurseryMapPoint } from "@/types/nursery";
 
@@ -108,8 +109,12 @@ export function CarteMap({ communesAttribute, layerVisibility, nurseries }: Cart
           .setHTML(`<strong style="font-size:13px">${nom}</strong>` + popupHtml(lines))
           .addTo(map);
       });
-      map.on("mouseenter", "communes-fill", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "communes-fill", () => { map.getCanvas().style.cursor = ""; });
+      map.on("mouseenter", "communes-fill", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "communes-fill", () => {
+        map.getCanvas().style.cursor = "";
+      });
 
       // ── Stats communales — bubble layer ─────────────────────────────────
       map.addSource("stats", {
@@ -138,16 +143,23 @@ export function CarteMap({ communesAttribute, layerVisibility, nurseries }: Cart
       map.on("click", "stats-circles", (e) => {
         if (!e.features?.[0]) return;
         const p = e.features[0].properties;
-        new maplibregl.Popup({ closeButton: false, maxWidth: "200px" }).setLngLat(e.lngLat)
-          .setHTML(`<strong style="font-size:13px">${p.commune} (${p.codePostal})</strong>` +
-            popupHtml([
-              `🌿 ${Number(p.plantsDistribues).toLocaleString("fr-FR")} plants`,
-              `👤 ${p.adherents} adhérent(s)`,
-            ]))
+        new maplibregl.Popup({ closeButton: false, maxWidth: "200px" })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong style="font-size:13px">${p.commune} (${p.codePostal})</strong>` +
+              popupHtml([
+                `🌿 ${Number(p.plantsDistribues).toLocaleString("fr-FR")} plants`,
+                `👤 ${p.adherents} adhérent(s)`,
+              ]),
+          )
           .addTo(map);
       });
-      map.on("mouseenter", "stats-circles", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "stats-circles", () => { map.getCanvas().style.cursor = ""; });
+      map.on("mouseenter", "stats-circles", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "stats-circles", () => {
+        map.getCanvas().style.cursor = "";
+      });
 
       // ── Points de distribution ───────────────────────────────────────────
       map.addSource("distributions", {
@@ -161,20 +173,46 @@ export function CarteMap({ communesAttribute, layerVisibility, nurseries }: Cart
           })),
         },
       });
-      map.addLayer({ id: "distributions-points", type: "circle", source: "distributions", paint: { "circle-color": COLORS.distribution, "circle-radius": 8, "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+      map.addLayer({
+        id: "distributions-points",
+        type: "circle",
+        source: "distributions",
+        paint: {
+          "circle-color": COLORS.distribution,
+          "circle-radius": 8,
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 2,
+        },
+      });
       map.on("click", "distributions-points", (e) => {
         if (!e.features?.[0]) return;
         const p = e.features[0].properties;
-        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" }).setLngLat(e.lngLat)
-          .setHTML(`<strong style="font-size:13px">🔵 ${p.nom}</strong>` +
-            popupHtml([`${p.commune} — ${p.statut === "actif" ? "Actif" : "Archivé"}`, `${Number(p.plantsDistribues).toLocaleString("fr-FR")} plants`, `Dernière distrib. : ${new Date(p.derniereDistribution).toLocaleDateString("fr-FR")}`]))
+        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong style="font-size:13px">🔵 ${p.nom}</strong>` +
+              popupHtml([
+                `${p.commune} — ${p.statut === "actif" ? "Actif" : "Archivé"}`,
+                `${Number(p.plantsDistribues).toLocaleString("fr-FR")} plants`,
+                `Dernière distrib. : ${new Date(p.derniereDistribution).toLocaleDateString("fr-FR")}`,
+              ]),
+          )
           .addTo(map);
       });
-      map.on("mouseenter", "distributions-points", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "distributions-points", () => { map.getCanvas().style.cursor = ""; });
+      map.on("mouseenter", "distributions-points", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "distributions-points", () => {
+        map.getCanvas().style.cursor = "";
+      });
 
       // ── Projets de plantation ────────────────────────────────────────────
-      const statutLabel: Record<string, string> = { actif: "Actif", en_cours: "En cours", complete: "Terminé", archive: "Archivé" };
+      const statutLabel: Record<string, string> = {
+        actif: "Actif",
+        en_cours: "En cours",
+        complete: "Terminé",
+        archive: "Archivé",
+      };
       map.addSource("projets", {
         type: "geojson",
         data: {
@@ -186,20 +224,45 @@ export function CarteMap({ communesAttribute, layerVisibility, nurseries }: Cart
           })),
         },
       });
-      map.addLayer({ id: "projets-points", type: "circle", source: "projets", paint: { "circle-color": COLORS.projet, "circle-radius": 7, "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+      map.addLayer({
+        id: "projets-points",
+        type: "circle",
+        source: "projets",
+        paint: {
+          "circle-color": COLORS.projet,
+          "circle-radius": 7,
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 2,
+        },
+      });
       map.on("click", "projets-points", (e) => {
         if (!e.features?.[0]) return;
         const p = e.features[0].properties;
-        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" }).setLngLat(e.lngLat)
-          .setHTML(`<strong style="font-size:13px">🟢 ${p.nom}</strong>` +
-            popupHtml([`${p.commune} — ${statutLabel[p.statut] ?? p.statut}`, `${p.plantsAssocies} plants · ${Number(p.surface).toLocaleString("fr-FR")} m²`, `Adoptant : ${p.adoptant}`]))
+        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong style="font-size:13px">🟢 ${p.nom}</strong>` +
+              popupHtml([
+                `${p.commune} — ${statutLabel[p.statut] ?? p.statut}`,
+                `${p.plantsAssocies} plants · ${Number(p.surface).toLocaleString("fr-FR")} m²`,
+                `Adoptant : ${p.adoptant}`,
+              ]),
+          )
           .addTo(map);
       });
-      map.on("mouseenter", "projets-points", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "projets-points", () => { map.getCanvas().style.cursor = ""; });
+      map.on("mouseenter", "projets-points", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "projets-points", () => {
+        map.getCanvas().style.cursor = "";
+      });
 
       // ── Contacts régionaux ───────────────────────────────────────────────
-      const typeLabel: Record<string, string> = { coordination: "Coordination", benevole_referent: "Référent bénévole", partenaire: "Partenaire" };
+      const typeLabel: Record<string, string> = {
+        coordination: "Coordination",
+        benevole_referent: "Référent bénévole",
+        partenaire: "Partenaire",
+      };
       map.addSource("contacts", {
         type: "geojson",
         data: {
@@ -211,33 +274,67 @@ export function CarteMap({ communesAttribute, layerVisibility, nurseries }: Cart
           })),
         },
       });
-      map.addLayer({ id: "contacts-points", type: "circle", source: "contacts", paint: { "circle-color": COLORS.contact, "circle-radius": 9, "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+      map.addLayer({
+        id: "contacts-points",
+        type: "circle",
+        source: "contacts",
+        paint: {
+          "circle-color": COLORS.contact,
+          "circle-radius": 9,
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 2,
+        },
+      });
       map.on("click", "contacts-points", (e) => {
         if (!e.features?.[0]) return;
         const p = e.features[0].properties;
-        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" }).setLngLat(e.lngLat)
-          .setHTML(`<strong style="font-size:13px">🟣 ${p.nom}</strong>` +
-            popupHtml([`${p.commune} — ${typeLabel[p.type] ?? p.type}`, p.description]))
+        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong style="font-size:13px">🟣 ${p.nom}</strong>` +
+              popupHtml([`${p.commune} — ${typeLabel[p.type] ?? p.type}`, p.description]),
+          )
           .addTo(map);
       });
-      map.on("mouseenter", "contacts-points", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "contacts-points", () => { map.getCanvas().style.cursor = ""; });
+      map.on("mouseenter", "contacts-points", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "contacts-points", () => {
+        map.getCanvas().style.cursor = "";
+      });
 
       // ── Nurseries (Familles d'accueil) ───────────────────────────────────
       // Source starts empty: unlike the other layers its data is fetched, so
       // the effect below fills it once the request resolves.
       map.addSource("nurseries", { type: "geojson", data: nurseryFeatures([]) });
-      map.addLayer({ id: "nurseries-points", type: "circle", source: "nurseries", paint: { "circle-color": COLORS.nurserie, "circle-radius": 7, "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+      map.addLayer({
+        id: "nurseries-points",
+        type: "circle",
+        source: "nurseries",
+        paint: {
+          "circle-color": COLORS.nurserie,
+          "circle-radius": 7,
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 2,
+        },
+      });
       map.on("click", "nurseries-points", (e) => {
         if (!e.features?.[0]) return;
         const p = e.features[0].properties;
-        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" }).setLngLat(e.lngLat)
-          .setHTML(`<strong style="font-size:13px">🟠 ${p.nom}</strong>` +
-            popupHtml([p.adresse, p.proprietaire ? `Famille d'accueil : ${p.proprietaire}` : ""].filter(Boolean)))
+        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<strong style="font-size:13px">🟠 ${p.nom}</strong>` +
+              popupHtml([p.adresse, p.proprietaire ? `Famille d'accueil : ${p.proprietaire}` : ""].filter(Boolean)),
+          )
           .addTo(map);
       });
-      map.on("mouseenter", "nurseries-points", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "nurseries-points", () => { map.getCanvas().style.cursor = ""; });
+      map.on("mouseenter", "nurseries-points", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "nurseries-points", () => {
+        map.getCanvas().style.cursor = "";
+      });
 
       loadedRef.current = true;
     });

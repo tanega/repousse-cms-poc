@@ -1,7 +1,16 @@
 "use client";
 import { Cell, Pie, PieChart } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+
 import { parCategorie } from "./data";
 
 const chartConfig = parCategorie.reduce<ChartConfig>((acc, item) => {
@@ -19,11 +28,18 @@ export function ParCategorie() {
       <CardContent>
         <ChartContainer config={chartConfig} className="mx-auto h-64 w-full max-w-xs">
           <PieChart>
-            <ChartTooltip content={<ChartTooltipContent formatter={(v) => (v ?? 0).toLocaleString("fr-FR")} nameKey="categorie" />} />
+            <ChartTooltip
+              content={<ChartTooltipContent formatter={(v) => (v ?? 0).toLocaleString("fr-FR")} nameKey="categorie" />}
+            />
             <Pie data={parCategorie} dataKey="quantite" nameKey="categorie" innerRadius={50} outerRadius={90}>
-              {parCategorie.map((entry) => <Cell key={entry.categorie} fill={entry.couleur} />)}
+              {parCategorie.map((entry) => (
+                <Cell key={entry.categorie} fill={entry.couleur} />
+              ))}
             </Pie>
-            <ChartLegend content={<ChartLegendContent nameKey="categorie" />} className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center" />
+            <ChartLegend
+              content={<ChartLegendContent nameKey="categorie" />}
+              className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+            />
           </PieChart>
         </ChartContainer>
       </CardContent>

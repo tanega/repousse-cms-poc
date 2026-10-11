@@ -41,7 +41,8 @@ export default function VieAssociativePage() {
         <div className="border-b border-border pb-3">
           <h2 className="font-semibold text-lg">Adhérents</h2>
           <p className="text-muted-foreground text-sm">
-            Dynamique du réseau associatif — évolution du nombre de membres, répartition par profil d'engagement et taux de renouvellement.
+            Dynamique du réseau associatif — évolution du nombre de membres, répartition par profil d'engagement et taux
+            de renouvellement.
           </p>
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
@@ -51,7 +52,9 @@ export default function VieAssociativePage() {
         <Retention />
       </section>
 
-      <p className="pb-2 text-center text-muted-foreground text-xs">Données de démonstration — rafraîchissement quotidien automatique (à venir)</p>
+      <p className="pb-2 text-center text-muted-foreground text-xs">
+        Données de démonstration — rafraîchissement quotidien automatique (à venir)
+      </p>
     </div>
   );
 }

@@ -8,16 +8,11 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
   return (
     <main>
       <div className="grid h-dvh justify-center p-2 lg:grid-cols-2">
-        <div
-          className="relative order-2 hidden h-full rounded-3xl lg:flex"
-          style={{ backgroundColor: "#caca40" }}
-        >
+        <div className="relative order-2 hidden h-full rounded-3xl lg:flex" style={{ backgroundColor: "#caca40" }}>
           <div className="absolute top-10 space-y-1 px-10 text-foreground">
             <Image src="/img/repousse-logo.webp" alt="Repousse" width={40} height={40} className="size-10" />
             <h1 className="font-medium text-2xl">Association Repousse</h1>
-            <p className="text-sm">
-              Commun numérique pour une pépinière participative qui oeuvre dans la vraie vie!
-            </p>
+            <p className="text-sm">Commun numérique pour une pépinière participative qui oeuvre dans la vraie vie!</p>
           </div>
 
           <div className="absolute bottom-10 flex w-full justify-between px-10">
