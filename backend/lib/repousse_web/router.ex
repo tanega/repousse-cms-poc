@@ -33,6 +33,12 @@ defmodule RepousseWeb.Router do
     put "/me/profiles", AccountsController, :update_profiles
     put "/me/profiles/:profile_type", AccountsController, :update_profile_details
 
+    # In-app notification centre
+    get "/me/notifications", NotificationController, :index
+    get "/me/notifications/unread_count", NotificationController, :unread_count
+    post "/me/notifications/read_all", NotificationController, :read_all
+    post "/me/notifications/:id/read", NotificationController, :read
+
     # Nurseries (epic-03 US-PROFIL-11) — Famille d'accueil plant reserves
     get "/me/nurseries", NurseryController, :mine
     post "/me/nurseries", NurseryController, :create

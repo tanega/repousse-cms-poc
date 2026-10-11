@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { requireRole } from "@/lib/auth/require-role";
@@ -59,6 +60,7 @@ export default async function ProjetsPlantationBrowseLayout({ children }: Readon
             </div>
             <div className="flex items-center gap-2">
               <LayoutControls />
+              <NotificationBell />
               <ThemeSwitcher />
               <AccountSwitcher />
             </div>

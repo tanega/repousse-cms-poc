@@ -71,6 +71,27 @@ defmodule Repousse.Integrations.Emails do
     |> Mailer.deliver()
   end
 
+  @doc """
+  Emails an in-app notification (see `Repousse.Notifications`): title as
+  subject, body plus a link back to the webapp.
+  """
+  def send_notification_email(%User{} = user, notification) do
+    link = if notification.link, do: "\n\n#{webapp_url()}#{notification.link}", else: ""
+
+    new()
+    |> to({display_name(user), user.email})
+    |> from({"Association Repousse", "no-reply@repousse.org"})
+    |> subject(notification.title)
+    |> text_body("""
+    Bonjour#{if user.first_name, do: " #{user.first_name}", else: ""},
+
+    #{notification.body || notification.title}#{link}
+
+    L'équipe Repousse
+    """)
+    |> Mailer.deliver()
+  end
+
   defp display_name(%User{first_name: first, last_name: last}) when is_binary(first) or is_binary(last) do
     [first, last] |> Enum.filter(& &1) |> Enum.join(" ")
   end
