@@ -108,6 +108,23 @@ defmodule RepousseWeb.AccountsController do
 
   def update_profiles(_conn, _params), do: {:error, "`profiles` doit être une liste"}
 
+  operation :request_profile,
+    summary: "Ask to join an engagement profile",
+    description:
+      "Adoptant and Famille d'accueil are `pending` until an administrator decides " <>
+        "(admins are notified, and so is the member once decided). Bénévole is " <>
+        "activated immediately. A rejected request can be re-submitted.",
+    parameters: [
+      profile_type: [in: :path, type: :string, description: "Profile type", example: "host_family"]
+    ],
+    responses: [created: API.object(UserProfile, "The pending (or activated) profile")]
+
+  def request_profile(conn, %{"profile_type" => profile_type}) do
+    with {:ok, profile} <- Accounts.request_profile(conn.assigns.current_user, profile_type) do
+      conn |> put_status(:created) |> json(%{data: profile})
+    end
+  end
+
   operation :update_profile_details,
     summary: "Update the fields specific to one engagement profile",
     description:

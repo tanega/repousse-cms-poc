@@ -106,7 +106,7 @@ defmodule Repousse.Nurseries do
   them exist without it would strand them on profile removal.
   """
   def create_nursery(%User{} = user, attrs) do
-    if Accounts.get_profile(user.id, :host_family) do
+    if Accounts.get_active_profile(user.id, :host_family) do
       %Nursery{}
       |> Nursery.changeset(Map.put(stringify(attrs), "user_id", user.id))
       |> Repo.insert()

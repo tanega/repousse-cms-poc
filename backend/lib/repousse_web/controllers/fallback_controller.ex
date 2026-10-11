@@ -35,6 +35,20 @@ defmodule RepousseWeb.FallbackController do
     |> json(%{error: "Ce profil d'engagement n'est pas actif sur votre compte"})
   end
 
+  def call(conn, {:error, :profile_requires_approval}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{error: "Ce profil doit être demandé puis validé par un administrateur"})
+  end
+
+  def call(conn, {:error, :profile_request_not_pending}) do
+    conn |> put_status(:conflict) |> json(%{error: "Cette demande a déjà été traitée"})
+  end
+
+  def call(conn, {:error, :profile_already_requested}) do
+    conn |> put_status(:conflict) |> json(%{error: "Une demande est déjà en attente ou ce profil est déjà actif"})
+  end
+
   def call(conn, {:error, :host_family_profile_required}) do
     conn
     |> put_status(:unprocessable_entity)
