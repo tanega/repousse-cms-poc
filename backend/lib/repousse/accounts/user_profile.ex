@@ -92,11 +92,26 @@ defmodule Repousse.Accounts.UserProfile do
   def request_changeset(profile, attrs) do
     profile
     |> changeset(attrs)
+    |> validate_host_family_details()
     |> put_change(:status, :pending)
     |> put_change(:requested_at, DateTime.utc_now() |> DateTime.truncate(:second))
     |> put_change(:decided_at, nil)
     |> put_change(:decided_by_id, nil)
     |> put_change(:rejection_reason, nil)
+  end
+
+  # A Famille d'accueil request must come with the hosting basics, so the
+  # admin deciding on it has something to look at.
+  defp validate_host_family_details(changeset) do
+    if get_field(changeset, :profile_type) == :host_family do
+      changeset
+      |> validate_required([:hosting_capacity, :hosting_address],
+        message: "à renseigner pour demander ce parcours"
+      )
+      |> validate_number(:hosting_capacity, greater_than: 0)
+    else
+      changeset
+    end
   end
 
   def decision_changeset(profile, status, decider_id, reason \\ nil) when status in [:active, :rejected] do

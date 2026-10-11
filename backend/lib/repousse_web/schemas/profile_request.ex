@@ -15,6 +15,11 @@ defmodule RepousseWeb.Schemas.ProfileRequest do
         requested_at: %Schema{type: :string, format: "date-time", nullable: true},
         decided_at: %Schema{type: :string, format: "date-time", nullable: true},
         rejection_reason: %Schema{type: :string, nullable: true},
+        details: %Schema{
+          type: :object,
+          nullable: true,
+          description: "Profile-specific fields to review (Famille d'accueil hosting details)"
+        },
         user: %Schema{
           type: :object,
           properties: %{

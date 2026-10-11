@@ -73,9 +73,27 @@ defmodule RepousseWeb.Admin.ProfileRequestController do
       requested_at: profile.requested_at,
       decided_at: profile.decided_at,
       rejection_reason: profile.rejection_reason,
+      details: details(profile),
       user: %{id: user.id, first_name: user.first_name, last_name: user.last_name, email: user.email}
     }
   end
+
+  # The profile's own fields, so the admin can review them before deciding.
+  defp details(%{profile_type: :host_family} = profile) do
+    %{
+      hosting_capacity: profile.hosting_capacity,
+      hosting_address: profile.hosting_address,
+      hosting_surface_m2: profile.hosting_surface_m2,
+      hosting_availability: profile.hosting_availability,
+      hosting_equipment: profile.hosting_equipment,
+      hosted_species:
+        Enum.map(profile.hosted_species, fn s ->
+          %{taxon_id: s.taxon_id, common_name: s.taxon && s.taxon.common_name}
+        end)
+    }
+  end
+
+  defp details(_profile), do: nil
 
   defp fetch(id) do
     with {:ok, _} <- Ecto.UUID.cast(id),

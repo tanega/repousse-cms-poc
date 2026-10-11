@@ -7,13 +7,15 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
   alias Repousse.Accounts
   alias Repousse.Notifications
 
+  @hosting %{"hosting_capacity" => 80, "hosting_address" => "12 rue des Lilas, Paris"}
+
   describe "request_profile/2" do
     test "gated profile becomes pending and notifies every admin" do
       user = insert(:user)
       admin = insert(:admin_user)
       superadmin = insert(:superadmin_user)
 
-      assert {:ok, profile} = Accounts.request_profile(user, "host_family")
+      assert {:ok, profile} = Accounts.request_profile(user, "host_family", @hosting)
       assert profile.status == :pending
       assert profile.requested_at
 
@@ -21,6 +23,30 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
       assert [%{type: "profile_request.created"}] = Notifications.list_for_user(superadmin)
       assert [] = Notifications.list_for_user(user)
       assert_email_sent(to: {"Alice Dupont", admin.email})
+    end
+
+    test "Famille d'accueil needs its hosting details before it can be requested" do
+      user = insert(:user)
+
+      assert {:error, changeset} = Accounts.request_profile(user, "host_family")
+      assert %{hosting_capacity: [_], hosting_address: [_]} = errors_on(changeset)
+      assert {:error, changeset} = Accounts.request_profile(user, "host_family", %{"hosting_capacity" => 0, "hosting_address" => "x"})
+      assert %{hosting_capacity: [_]} = errors_on(changeset)
+      assert Accounts.count_pending_profile_requests() == 0
+    end
+
+    test "the hosting details are stored with the request and visible to the reviewer" do
+      user = insert(:user)
+      taxon = insert(:taxon)
+
+      attrs = Map.merge(@hosting, %{"hosting_equipment" => ["greenhouse"], "hosted_species" => [%{"taxon_id" => taxon.id}]})
+      assert {:ok, profile} = Accounts.request_profile(user, "host_family", attrs)
+      assert profile.status == :pending
+
+      [request] = Accounts.list_profile_requests()
+      assert request.hosting_capacity == 80
+      assert request.hosting_equipment == ["greenhouse"]
+      assert [%{taxon: %{common_name: _}}] = request.hosted_species
     end
 
     test "volunteer is activated immediately without notifying admins" do
@@ -37,7 +63,7 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
       assert {:error, :profile_already_requested} = Accounts.request_profile(user, "adoptant")
 
       insert(:user_profile, user: user, profile_type: :host_family)
-      assert {:error, :profile_already_requested} = Accounts.request_profile(user, "host_family")
+      assert {:error, :profile_already_requested} = Accounts.request_profile(user, "host_family", @hosting)
     end
 
     test "rejects unknown profile types" do
@@ -49,7 +75,7 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
     setup do
       user = insert(:user)
       admin = insert(:admin_user)
-      {:ok, profile} = Accounts.request_profile(user, "host_family")
+      {:ok, profile} = Accounts.request_profile(user, "host_family", @hosting)
       %{user: user, admin: admin, profile: Accounts.get_profile_request(profile.id)}
     end
 
@@ -72,7 +98,7 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
       assert [%{type: "profile_request.rejected", body: body}] = Notifications.list_for_user(user)
       assert body =~ "Dossier incomplet"
 
-      assert {:ok, again} = Accounts.request_profile(user, "host_family")
+      assert {:ok, again} = Accounts.request_profile(user, "host_family", @hosting)
       assert again.status == :pending
       assert again.rejection_reason == nil
     end
@@ -102,11 +128,12 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
     end
   end
 
-  test "pending host_family cannot create nurseries nor edit hosting details" do
+  test "pending host_family cannot create nurseries but can still complete its hosting details" do
     user = insert(:user)
-    {:ok, _} = Accounts.request_profile(user, "host_family")
+    {:ok, _} = Accounts.request_profile(user, "host_family", @hosting)
 
     assert {:error, :host_family_profile_required} = Repousse.Nurseries.create_nursery(user, %{"name" => "X"})
-    assert {:error, :profile_not_active} = Accounts.update_profile_details(user, "host_family", %{})
+    assert {:error, :invalid_profile_type} = Accounts.update_profile_details(user, "unknown", %{})
+    assert {:ok, %{hosting_capacity: 120}} = Accounts.update_profile_details(user, "host_family", %{"hosting_capacity" => 120})
   end
 end
