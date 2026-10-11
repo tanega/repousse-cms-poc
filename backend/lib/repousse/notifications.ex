@@ -41,6 +41,17 @@ defmodule Repousse.Notifications do
     |> Enum.map(fn admin -> {admin.id, notify(admin, attrs, opts)} end)
   end
 
+  @doc "Notifies everyone allowed to manage taxa: admins, superadmins and `taxon_editor`s."
+  def notify_taxon_managers(attrs, opts \\ []) do
+    except = Keyword.get(opts, :except, [])
+
+    from(u in User,
+      where: (u.role in [:admin, :superadmin] or u.taxon_editor == true) and u.id not in ^except
+    )
+    |> Repo.all()
+    |> Enum.map(fn manager -> {manager.id, notify(manager, attrs, opts)} end)
+  end
+
   def list_for_user(%User{id: user_id}, opts \\ []) do
     limit = Keyword.get(opts, :limit, @default_limit)
 

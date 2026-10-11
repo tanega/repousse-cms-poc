@@ -45,6 +45,20 @@ defmodule RepousseWeb.FallbackController do
     conn |> put_status(:conflict) |> json(%{error: "Cette demande a déjà été traitée"})
   end
 
+  def call(conn, {:error, :taxon_request_not_pending}) do
+    conn |> put_status(:conflict) |> json(%{error: "Cette demande a déjà été traitée"})
+  end
+
+  def call(conn, {:error, :taxon_required}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{error: "Indiquez le taxon à créer (`taxon`) ou un taxon existant (`taxon_id`)"})
+  end
+
+  def call(conn, {:error, :taxon_not_found}) do
+    conn |> put_status(:unprocessable_entity) |> json(%{error: "Taxon introuvable"})
+  end
+
   def call(conn, {:error, :profile_already_requested}) do
     conn |> put_status(:conflict) |> json(%{error: "Une demande est déjà en attente ou ce profil est déjà actif"})
   end

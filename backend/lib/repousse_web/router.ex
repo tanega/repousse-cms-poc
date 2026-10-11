@@ -40,6 +40,10 @@ defmodule RepousseWeb.Router do
     post "/me/notifications/read_all", NotificationController, :read_all
     post "/me/notifications/:id/read", NotificationController, :read
 
+    # Requests to add a missing plant to the reference list
+    get "/me/taxon_requests", TaxonRequestController, :mine
+    post "/me/taxon_requests", TaxonRequestController, :create
+
     # Nurseries (epic-03 US-PROFIL-11) — Famille d'accueil plant reserves
     get "/me/nurseries", NurseryController, :mine
     post "/me/nurseries", NurseryController, :create
@@ -114,6 +118,15 @@ defmodule RepousseWeb.Router do
       resources "/taxa", TaxonController, except: [:new, :edit]
       get "/taxa/:id/versions", TaxonController, :versions
       post "/taxa/:id/restore/:version_id", TaxonController, :restore
+    end
+
+    # Taxon requests for managers (admins + taxon editors): authorized in the
+    # controller via Taxa.Policy, so no :admin pipeline here.
+    scope "/admin", Admin, as: :admin do
+      get "/taxon_requests", TaxonRequestController, :index
+      get "/taxon_requests/count", TaxonRequestController, :count
+      post "/taxon_requests/:id/approve", TaxonRequestController, :approve
+      post "/taxon_requests/:id/reject", TaxonRequestController, :reject
     end
 
     # Dashboard
