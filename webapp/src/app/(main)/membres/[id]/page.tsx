@@ -5,30 +5,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import {
-  Calendar,
-  Home,
-  Lock,
-  MapPin,
-  Ruler,
-  Sprout,
-  TreePine,
-  Users,
-  Warehouse,
-} from "lucide-react";
+import { Calendar, Home, Lock, MapPin, Ruler, Sprout, TreePine, Users, Warehouse } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { isPendingPlant, plantDisplayName } from "@/types/nursery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { type MemberProfile, fetchMemberProfile } from "@/lib/api/members";
+import { fetchMemberProfile, type MemberProfile } from "@/lib/api/members";
 import { fetchPublicTaxa } from "@/lib/api/taxa";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
-import {
-  type EngagementProfileId,
-  toEngagementProfileId,
-} from "@/lib/engagement/use-engagement-profiles";
+import { type EngagementProfileId, toEngagementProfileId } from "@/lib/engagement/use-engagement-profiles";
 import { cn, getInitials } from "@/lib/utils";
 import type { Taxon } from "@/types/taxon";
 import type { HostingEquipment, UserProfile } from "@/types/user";
@@ -83,9 +71,7 @@ export default function MemberProfilePage() {
   useEffect(() => {
     fetchMemberProfile(id)
       .then(setProfile)
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : "Profil introuvable."),
-      );
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Profil introuvable."));
   }, [id]);
 
   useEffect(() => {
@@ -102,8 +88,7 @@ export default function MemberProfilePage() {
   }
 
   const { user: member, profiles, nurseries, visible } = profile;
-  const displayName =
-    [member.first_name, member.last_name].filter(Boolean).join(" ") || "Membre sans nom";
+  const displayName = [member.first_name, member.last_name].filter(Boolean).join(" ") || "Membre sans nom";
   const engagements = profiles.map((p) => toEngagementProfileId(p.profile_type)).filter(Boolean);
   const hostFamily = profiles.find((p) => p.profile_type === "host_family");
   const canEdit = isOwnProfile || member.id === user?.id;
@@ -138,9 +123,7 @@ export default function MemberProfilePage() {
             <div className="-mt-12 shrink-0">
               <Avatar className="size-24 rounded-xl border-4 border-card shadow-md">
                 <AvatarImage src={member.avatar_url ?? undefined} alt={displayName} />
-                <AvatarFallback className="rounded-xl text-2xl">
-                  {getInitials(displayName)}
-                </AvatarFallback>
+                <AvatarFallback className="rounded-xl text-2xl">{getInitials(displayName)}</AvatarFallback>
               </Avatar>
             </div>
             <div className="pb-1">
@@ -219,8 +202,8 @@ export default function MemberProfilePage() {
                   <Lock className="size-8 text-muted-foreground" />
                   <p className="font-medium text-sm">Nurseries non visibles</p>
                   <p className="max-w-md text-muted-foreground text-sm">
-                    Ce membre a choisi de garder son profil privé. Seuls les coordinateurs peuvent
-                    consulter ses nurseries.
+                    Ce membre a choisi de garder son profil privé. Seuls les coordinateurs peuvent consulter ses
+                    nurseries.
                   </p>
                 </CardContent>
               </Card>
@@ -254,25 +237,24 @@ export default function MemberProfilePage() {
                         </Badge>
                         <ul className="space-y-1 text-sm">
                           {nursery.plants.map((plant) => {
-                            const taxon = taxa.find((t) => t.id === plant.taxon_id);
+                            const pending = isPendingPlant(plant);
                             return (
                               <li key={plant.id} className="flex items-center justify-between gap-2">
                                 <span className="flex min-w-0 items-center gap-1.5">
                                   <Sprout className="size-3.5 shrink-0 text-muted-foreground" />
-                                  <span className="truncate">
-                                    {taxon?.common_name ?? "Espèce inconnue"}
-                                  </span>
+                                  <span className="truncate">{plantDisplayName(plant, taxa)}</span>
+                                  {pending && (
+                                    <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-400">
+                                      En attente
+                                    </Badge>
+                                  )}
                                 </span>
-                                <span className="shrink-0 text-muted-foreground">
-                                  {plant.quantity}
-                                </span>
+                                <span className="shrink-0 text-muted-foreground">{plant.quantity}</span>
                               </li>
                             );
                           })}
                         </ul>
-                        {nursery.notes && (
-                          <p className="text-muted-foreground text-sm">{nursery.notes}</p>
-                        )}
+                        {nursery.notes && <p className="text-muted-foreground text-sm">{nursery.notes}</p>}
                       </CardContent>
                     </Card>
                   );
@@ -286,15 +268,7 @@ export default function MemberProfilePage() {
   );
 }
 
-function HostFamilyCard({
-  profile,
-  taxa,
-  visible,
-}: {
-  profile: UserProfile;
-  taxa: Taxon[];
-  visible: boolean;
-}) {
+function HostFamilyCard({ profile, taxa, visible }: { profile: UserProfile; taxa: Taxon[]; visible: boolean }) {
   const species = profile.hosted_species.map(
     (s) => taxa.find((t) => t.id === s.taxon_id)?.common_name ?? "Espèce inconnue",
   );
@@ -326,16 +300,12 @@ function HostFamilyCard({
         <Row
           icon={<MapPin className="size-4" />}
           label="Zone d'accueil"
-          value={
-            visible ? (profile.hosting_address ?? "Non renseignée") : "Réservée aux coordinateurs"
-          }
+          value={visible ? (profile.hosting_address ?? "Non renseignée") : "Réservée aux coordinateurs"}
         />
 
         {profile.hosting_equipment.length > 0 && (
           <div className="pt-2">
-            <p className="mb-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-              Équipements
-            </p>
+            <p className="mb-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide">Équipements</p>
             <div className="flex flex-wrap gap-1.5">
               {profile.hosting_equipment.map((e) => (
                 <Badge key={e} variant="secondary">
