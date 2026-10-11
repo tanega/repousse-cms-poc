@@ -13,7 +13,7 @@ test.describe("Famille d'accueil — profil d'engagement et nurseries", () => {
   test.describe("en tant que membre", () => {
     test.use({ storageState: "e2e/.auth/member.json" });
 
-    test("activate the profile, fill hosting details and create a nursery", async ({ page }) => {
+    test("asks to join the Famille d'accueil profile and waits for validation", async ({ page }) => {
       await page.goto("/membres/me/settings");
 
       // Profile defaults to private — that's what makes the coordinator check below meaningful.
@@ -21,10 +21,48 @@ test.describe("Famille d'accueil — profil d'engagement et nurseries", () => {
       await expect(page.getByRole("switch", { name: "Profil public" })).not.toBeChecked();
 
       await page.getByRole("button", { name: "Profils d'engagement" }).click();
-      const activate = page.getByRole("button", { name: "Activer" }).last();
-      if (await activate.isVisible().catch(() => false)) {
-        await activate.click();
+      const card = page.locator('[data-slot="card"]').filter({ hasText: "Famille d'accueil" }).last();
+
+      // Start from "not a host family" so the request flow is actually exercised
+      // (the dev seed may already have the profile active).
+      const deactivate = card.getByRole("button", { name: "Désactiver" });
+      if (await deactivate.isVisible().catch(() => false)) {
+        await deactivate.click();
       }
+
+      await card.getByRole("button", { name: "Rejoindre" }).click();
+      await expect(page.getByText("Demande envoyée aux administrateurs.")).toBeVisible();
+      await expect(card.getByRole("button", { name: "En attente de validation" })).toBeDisabled();
+    });
+  });
+
+  test.describe("validation par un administrateur", () => {
+    test.use({ storageState: "e2e/.auth/admin.json" });
+
+    test("approves the pending request", async ({ page }) => {
+      await page.goto("/admin/demandes-parcours");
+
+      const row = page
+        .getByTestId("profile-request-row")
+        .filter({ hasText: MEMBER_EMAIL })
+        .filter({ hasText: "Famille d'accueil" });
+      await row.first().getByRole("button", { name: "Accepter" }).click();
+      await expect(page.getByText("Demande acceptée, le membre est notifié.")).toBeVisible();
+    });
+  });
+
+  test.describe("en tant que membre (après validation)", () => {
+    test.use({ storageState: "e2e/.auth/member.json" });
+
+    test("is notified, fills hosting details and creates a nursery", async ({ page }) => {
+      await page.goto("/membres/me/settings");
+
+      // The decision shows up in the notification bell.
+      await page.locator('button[aria-label="Notifications"]').click();
+      await expect(page.getByText(/Votre demande est acceptée : Famille d'accueil/).first()).toBeVisible();
+      await page.keyboard.press("Escape");
+
+      await page.getByRole("button", { name: "Profils d'engagement" }).click();
       await expect(page.getByRole("button", { name: "Désactiver" }).last()).toBeVisible();
 
       // The hosting-details form only renders once the profile is active.

@@ -18,9 +18,16 @@ export interface HostedSpecies {
   taxon_id: string;
 }
 
+/** `pending`/`rejected` apply to profiles that need an admin's approval (Adoptant, Famille d'accueil). */
+export type ProfileStatus = "pending" | "active" | "rejected";
+
 export interface UserProfile {
   id: string;
   profile_type: ProfileType;
+  status: ProfileStatus;
+  requested_at: string | null;
+  decided_at: string | null;
+  rejection_reason: string | null;
   engagement_note: string | null;
   address: string | null;
   avatar_url: string | null;

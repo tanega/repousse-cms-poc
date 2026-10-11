@@ -1,10 +1,4 @@
-import type {
-  CurrentUser,
-  HostingEquipment,
-  ProfileType,
-  ProfileVisibility,
-  UserProfile,
-} from "@/types/user";
+import type { CurrentUser, HostingEquipment, ProfileType, ProfileVisibility, UserProfile } from "@/types/user";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -56,6 +50,13 @@ export async function updateMyProfiles(profiles: ProfileType[]): Promise<UserPro
     method: "PUT",
     body: JSON.stringify({ profiles }),
   });
+  const { data } = await res.json();
+  return data;
+}
+
+/** Ask to join a profile: Adoptant / Famille d'accueil come back `pending`, Bénévole `active`. */
+export async function requestProfile(profile: ProfileType): Promise<UserProfile> {
+  const res = await authedFetch(`/api/v1/me/profiles/${profile}/request`, { method: "POST" });
   const { data } = await res.json();
   return data;
 }
