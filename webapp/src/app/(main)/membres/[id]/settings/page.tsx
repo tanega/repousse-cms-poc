@@ -7,14 +7,6 @@ import { Bell, CircleUser, Home, Layers, Settings2, TreePine, Upload, Users } fr
 import { toast } from "sonner";
 import * as z from "zod";
 
-import { updateCurrentUser, updateVisibility, uploadAvatar } from "@/lib/api/me";
-import { useCurrentUser } from "@/lib/auth/use-current-user";
-import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
-import type { EngagementProfileId } from "@/lib/engagement/use-engagement-profiles";
-import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
-
-import { HostFamilyForm } from "./_components/host-family-form";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +15,14 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { updateCurrentUser, updateVisibility, uploadAvatar } from "@/lib/api/me";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
+import type { EngagementProfileId } from "@/lib/engagement/use-engagement-profiles";
+import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
 import { cn } from "@/lib/utils";
+import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
+
+import { HostFamilyForm } from "./_components/host-family-form";
 
 const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_AVATAR_BYTES = 5_000_000;
@@ -190,10 +189,7 @@ function AccountSection() {
 
   return (
     <div>
-      <SectionHeader
-        title="Compte"
-        description="Mettez à jour les paramètres de votre compte."
-      />
+      <SectionHeader title="Compte" description="Mettez à jour les paramètres de votre compte." />
       <form
         className="space-y-5 max-w-lg"
         onSubmit={(e) => {
@@ -251,9 +247,7 @@ function AccountSection() {
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
             <Input id="email" type="email" value={user?.email ?? ""} disabled />
-            <p className="text-muted-foreground text-xs">
-              Contactez un administrateur pour modifier votre email.
-            </p>
+            <p className="text-muted-foreground text-xs">Contactez un administrateur pour modifier votre email.</p>
           </Field>
         </FieldGroup>
         <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
@@ -296,9 +290,7 @@ function ProfileSection() {
         <div className="flex items-center justify-between rounded-lg border p-4">
           <div className="pr-4">
             <p className="font-medium text-sm">Profil public</p>
-            <p className="text-muted-foreground text-xs">
-              Permettre aux autres membres de voir votre profil.
-            </p>
+            <p className="text-muted-foreground text-xs">Permettre aux autres membres de voir votre profil.</p>
           </div>
           <Switch
             checked={isPublic}
@@ -336,7 +328,8 @@ const engagementProfiles: EngagementProfile[] = [
     colorClass: "text-muted-foreground",
     bgClass: "bg-muted/60",
     borderClass: "border-border",
-    description: "Profil par défaut. Vous participez aux ateliers, suivez les activités et restez informé·e de la vie de l'association.",
+    description:
+      "Profil par défaut. Vous participez aux ateliers, suivez les activités et restez informé·e de la vie de l'association.",
     unlocks: ["Calendrier des ateliers", "Actualités de l'association", "Espace membre", "Tableau de bord personnel"],
     steps: ["Inscription", "Activation du compte", "Onboarding guidé", "Accès à l'espace membre"],
     isDefault: true,
@@ -347,9 +340,20 @@ const engagementProfiles: EngagementProfile[] = [
     colorClass: "text-emerald-600 dark:text-emerald-400",
     bgClass: "bg-emerald-500/8",
     borderClass: "border-emerald-500/20",
-    description: "Réservez des plants lors des distributions et créez vos projets de plantation personnels ou collectifs.",
-    unlocks: ["Réservation de plants", "Création de projets de plantation", "Suivi des plantations", "Page profil publique"],
-    steps: ["Activation du profil", "Complétion des infos (localisation, espèces)", "Accès aux distributions", "Cycle plantation → suivi → rapport"],
+    description:
+      "Réservez des plants lors des distributions et créez vos projets de plantation personnels ou collectifs.",
+    unlocks: [
+      "Réservation de plants",
+      "Création de projets de plantation",
+      "Suivi des plantations",
+      "Page profil publique",
+    ],
+    steps: [
+      "Activation du profil",
+      "Complétion des infos (localisation, espèces)",
+      "Accès aux distributions",
+      "Cycle plantation → suivi → rapport",
+    ],
     isDefault: false,
   },
   {
@@ -358,21 +362,33 @@ const engagementProfiles: EngagementProfile[] = [
     colorClass: "text-violet-600 dark:text-violet-400",
     bgClass: "bg-violet-500/8",
     borderClass: "border-violet-500/20",
-    description: "Hébergez et prenez soin de jeunes plants avant leur distribution. Rôle logistique clé pour la conservation des espèces.",
-    unlocks: ["Assignation de lots de plants", "Fiche d'hébergement", "Contact direct coordinateurs", "Historique d'accueil"],
-    steps: ["Activation du profil", "Renseignement des capacités d'accueil", "Visibilité des coordinateurs", "Accueil → suivi → remise"],
+    description:
+      "Hébergez et prenez soin de jeunes plants avant leur distribution. Rôle logistique clé pour la conservation des espèces.",
+    unlocks: [
+      "Assignation de lots de plants",
+      "Fiche d'hébergement",
+      "Contact direct coordinateurs",
+      "Historique d'accueil",
+    ],
+    steps: [
+      "Activation du profil",
+      "Renseignement des capacités d'accueil",
+      "Visibilité des coordinateurs",
+      "Accueil → suivi → remise",
+    ],
     isDefault: false,
   },
 ];
 
 function EngagementsSection() {
-  const { isActive, activate, deactivate, isPending } = useEngagementProfiles();
+  const { isActive, join, deactivate, cancelRequest, statusOf, rejectionReasonOf, isPending } = useEngagementProfiles();
 
-  async function toggle(profile: EngagementProfileId, active: boolean) {
+  async function run(action: () => Promise<void>, success?: string) {
     try {
-      await (active ? deactivate(profile) : activate(profile));
+      await action();
+      if (success) toast.success(success);
     } catch (err) {
-      // The API refuses to drop Famille d'accueil while nurseries remain.
+      // e.g. the API refuses to drop Famille d'accueil while nurseries remain.
       toast.error(err instanceof Error ? err.message : "Échec de la mise à jour du profil.");
     }
   }
@@ -387,20 +403,48 @@ function EngagementsSection() {
         {engagementProfiles.map((profile) => {
           const Icon = profile.icon;
           const active = isActive(profile.id);
+          const status = statusOf(profile.id);
+          const awaiting = status === "pending";
+          const rejectionReason = status === "rejected" ? rejectionReasonOf(profile.id) : null;
           return (
-            <Card key={profile.id} className={cn("border transition-colors", active ? profile.borderClass : "border-border")}>
+            <Card
+              key={profile.id}
+              className={cn("border transition-colors", active ? profile.borderClass : "border-border")}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", active ? profile.bgClass : "bg-muted/40")}>
+                    <div
+                      className={cn(
+                        "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                        active ? profile.bgClass : "bg-muted/40",
+                      )}
+                    >
                       <Icon className={cn("size-4", active ? profile.colorClass : "text-muted-foreground")} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <CardTitle className="text-sm">{profile.id}</CardTitle>
                         {active ? (
-                          <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/10 text-emerald-600 text-[10px] dark:text-emerald-400">
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-500/20 bg-emerald-500/10 text-emerald-600 text-[10px] dark:text-emerald-400"
+                          >
                             Actif
+                          </Badge>
+                        ) : awaiting ? (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-500/20 bg-amber-500/10 text-[10px] text-amber-600 dark:text-amber-400"
+                          >
+                            En attente de validation
+                          </Badge>
+                        ) : status === "rejected" ? (
+                          <Badge
+                            variant="outline"
+                            className="border-destructive/20 bg-destructive/10 text-[10px] text-destructive"
+                          >
+                            Demande refusée
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-[10px] text-muted-foreground">
@@ -413,20 +457,44 @@ function EngagementsSection() {
                           </Badge>
                         )}
                       </div>
-                      <CardDescription className="mt-0.5 text-xs leading-snug">
-                        {profile.description}
-                      </CardDescription>
+                      <CardDescription className="mt-0.5 text-xs leading-snug">{profile.description}</CardDescription>
+                      {rejectionReason && (
+                        <p className="mt-1 text-destructive text-xs">Motif du refus : {rejectionReason}</p>
+                      )}
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant={active ? "outline" : "default"}
-                    disabled={profile.isDefault || isPending}
-                    onClick={() => toggle(profile.id, active)}
-                    className="shrink-0"
-                  >
-                    {profile.isDefault ? "Profil par défaut" : active ? "Désactiver" : "Activer"}
-                  </Button>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <Button
+                      size="sm"
+                      variant={active || awaiting ? "outline" : "default"}
+                      disabled={profile.isDefault || awaiting || isPending}
+                      onClick={() =>
+                        run(
+                          () => (active ? deactivate(profile.id) : join(profile.id)),
+                          !active && profile.id !== "Bénévole" ? "Demande envoyée aux administrateurs." : undefined,
+                        )
+                      }
+                    >
+                      {profile.isDefault
+                        ? "Profil par défaut"
+                        : active
+                          ? "Désactiver"
+                          : awaiting
+                            ? "En attente de validation"
+                            : "Rejoindre"}
+                    </Button>
+                    {awaiting && (
+                      <Button
+                        size="sm"
+                        variant="link"
+                        className="h-auto p-0 text-xs"
+                        disabled={isPending}
+                        onClick={() => run(() => cancelRequest(profile.id), "Demande annulée.")}
+                      >
+                        Annuler la demande
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               {active && (
@@ -434,11 +502,20 @@ function EngagementsSection() {
                   <Separator className="mb-4" />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="mb-2 font-medium text-xs uppercase tracking-wide text-muted-foreground">Ce profil débloque</p>
+                      <p className="mb-2 font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                        Ce profil débloque
+                      </p>
                       <ul className="space-y-1">
                         {profile.unlocks.map((item) => (
                           <li key={item} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <span className={cn("size-1.5 shrink-0 rounded-full", active ? profile.colorClass.replace("text-", "bg-").replace("dark:text-", "dark:bg-") : "bg-muted-foreground")} />
+                            <span
+                              className={cn(
+                                "size-1.5 shrink-0 rounded-full",
+                                active
+                                  ? profile.colorClass.replace("text-", "bg-").replace("dark:text-", "dark:bg-")
+                                  : "bg-muted-foreground",
+                              )}
+                            />
                             {item}
                           </li>
                         ))}
@@ -449,7 +526,13 @@ function EngagementsSection() {
                       <ol className="space-y-1">
                         {profile.steps.map((step, i) => (
                           <li key={step} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className={cn("flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold", active ? profile.bgClass : "bg-muted/60", active ? profile.colorClass : "text-muted-foreground")}>
+                            <span
+                              className={cn(
+                                "flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
+                                active ? profile.bgClass : "bg-muted/60",
+                                active ? profile.colorClass : "text-muted-foreground",
+                              )}
+                            >
                               {i + 1}
                             </span>
                             {step}
@@ -477,24 +560,27 @@ function EngagementsSection() {
 function NotificationsSection() {
   return (
     <div>
-      <SectionHeader
-        title="Notifications"
-        description="Choisissez les notifications que vous souhaitez recevoir."
-      />
+      <SectionHeader title="Notifications" description="Choisissez les notifications que vous souhaitez recevoir." />
       <div className="space-y-4 max-w-lg">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Notifications par email</CardTitle>
-            <CardDescription className="text-xs">
-              Recevez des mises à jour par email.
-            </CardDescription>
+            <CardDescription className="text-xs">Recevez des mises à jour par email.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {[
               { id: "notif-members", label: "Nouveaux membres", description: "Quand un membre rejoint l'association." },
-              { id: "notif-projects", label: "Mises à jour des projets", description: "Avancement et nouvelles tâches." },
+              {
+                id: "notif-projects",
+                label: "Mises à jour des projets",
+                description: "Avancement et nouvelles tâches.",
+              },
               { id: "notif-events", label: "Événements", description: "Rappels d'événements et de plantations." },
-              { id: "notif-digest", label: "Résumé hebdomadaire", description: "Récapitulatif de l'activité de la semaine." },
+              {
+                id: "notif-digest",
+                label: "Résumé hebdomadaire",
+                description: "Récapitulatif de l'activité de la semaine.",
+              },
             ].map((item) => (
               <div key={item.id} className="flex items-center justify-between">
                 <div>

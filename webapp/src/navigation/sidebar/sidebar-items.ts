@@ -19,6 +19,7 @@ import {
   TreePine,
   Users,
   UsersRound,
+  UserCheck,
   Zap,
 } from "lucide-react";
 
@@ -169,6 +170,13 @@ export const sidebarItems: NavGroup[] = [
         title: "Membres",
         url: "/admin/adherents",
         icon: UsersRound,
+        minRole: "admin",
+      },
+      {
+        id: "admin-demandes-parcours",
+        title: "Demandes de parcours",
+        url: "/admin/demandes-parcours",
+        icon: UserCheck,
         minRole: "admin",
       },
       {

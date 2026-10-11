@@ -149,8 +149,8 @@ export function getAdherentsColumns(onDeactivate: (id: string) => void): ColumnD
     {
       id: "profileTypes",
       header: "Profils",
-      filterFn: (row, _id, filterValue) => row.original.profiles.some((p) => p.profile_type === filterValue),
-      cell: ({ row }) => <ProfileTypeCell profileTypes={row.original.profiles} />,
+      filterFn: (row, _id, filterValue) => row.original.profiles.some((p) => p.status === "active" && p.profile_type === filterValue),
+      cell: ({ row }) => <ProfileTypeCell profileTypes={row.original.profiles.filter((p) => p.status === "active")} />,
     },
     {
       accessorKey: "status",
