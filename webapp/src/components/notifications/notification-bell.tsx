@@ -9,7 +9,6 @@ import { Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from "@/lib/api/notifications";
 import { cn } from "@/lib/utils";
 import type { AppNotification } from "@/types/notification";
@@ -84,7 +83,8 @@ export function NotificationBell() {
         {items.length === 0 ? (
           <p className="px-3 py-8 text-center text-muted-foreground text-sm">Aucune notification</p>
         ) : (
-          <ScrollArea className="max-h-96">
+          // Native overflow: Radix ScrollArea ignores max-height (its viewport is size-full), so the list grew past the popover.
+          <div className="max-h-[min(24rem,70vh)] overflow-y-auto overscroll-contain">
             <ul className="divide-y">
               {items.map((n) => (
                 <li key={n.id}>
@@ -92,7 +92,7 @@ export function NotificationBell() {
                 </li>
               ))}
             </ul>
-          </ScrollArea>
+          </div>
         )}
       </PopoverContent>
     </Popover>
