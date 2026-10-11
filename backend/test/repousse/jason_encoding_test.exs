@@ -24,7 +24,7 @@ defmodule Repousse.JasonEncodingTest do
   end
 
   test "NurseryPlant encodes" do
-    assert %{"quantity" => _} = insert(:nursery_plant) |> encode()
+    assert %{"quantity" => _} = insert(:nursery_plant) |> Repousse.Repo.preload(:taxon_request) |> encode()
   end
 
   test "HostedSpecies encodes" do

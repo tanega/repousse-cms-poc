@@ -16,7 +16,7 @@ defmodule Repousse.Nurseries do
   alias Repousse.Nurseries.Nursery
   alias Repousse.Repo
 
-  @preloads [:plants]
+  @preloads [plants: :taxon_request]
 
   def list_user_nurseries(user_id) do
     from(n in Nursery,
@@ -33,7 +33,18 @@ defmodule Repousse.Nurseries do
   coordinator; an empty list otherwise.
   """
   def list_visible_nurseries(%User{} = owner, viewer) do
-    if visible_to?(owner, viewer), do: list_user_nurseries(owner.id), else: []
+    if visible_to?(owner, viewer) do
+      nurseries = list_user_nurseries(owner.id)
+      if owner.id == viewer.id or Accounts.admin?(viewer), do: nurseries, else: Enum.map(nurseries, &without_pending_plants/1)
+    else
+      []
+    end
+  end
+
+  # Plants still waiting on a taxon request aren't part of the reference list
+  # yet: only their owner and coordinators get to see them.
+  defp without_pending_plants(%Nursery{} = nursery) do
+    %{nursery | plants: Enum.reject(nursery.plants, &is_nil(&1.taxon_id))}
   end
 
   def visible_to?(%User{} = owner, %User{} = viewer) do
@@ -106,22 +117,53 @@ defmodule Repousse.Nurseries do
   them exist without it would strand them on profile removal.
   """
   def create_nursery(%User{} = user, attrs) do
-    if Accounts.get_active_profile(user.id, :host_family) do
-      %Nursery{}
-      |> Nursery.changeset(Map.put(stringify(attrs), "user_id", user.id))
-      |> Repo.insert()
-      |> preload_result()
-    else
-      {:error, :host_family_profile_required}
+    attrs = stringify(attrs)
+
+    cond do
+      is_nil(Accounts.get_active_profile(user.id, :host_family)) ->
+        {:error, :host_family_profile_required}
+
+      not pending_requests_only?(attrs) ->
+        {:error, :taxon_request_not_pending}
+
+      true ->
+        %Nursery{}
+        |> Nursery.changeset(Map.put(attrs, "user_id", user.id))
+        |> Repo.insert()
+        |> preload_result()
     end
   end
 
   def update_nursery(%Nursery{} = nursery, attrs) do
-    nursery
-    |> Repo.preload(@preloads)
-    |> Nursery.changeset(stringify(attrs))
-    |> Repo.update()
-    |> preload_result()
+    attrs = stringify(attrs)
+
+    if pending_requests_only?(attrs) do
+      nursery
+      |> Repo.preload(@preloads)
+      |> Nursery.changeset(attrs)
+      |> Repo.update()
+      |> preload_result()
+    else
+      {:error, :taxon_request_not_pending}
+    end
+  end
+
+  # A plant line may wait on a taxon request (`taxon_request_id`), but only
+  # while that request is still open — once decided, its lines were already
+  # attached or removed, and a new one would never be resolved.
+  defp pending_requests_only?(attrs) do
+    ids =
+      attrs
+      |> Map.get("plants", [])
+      |> List.wrap()
+      |> Enum.map(&(&1["taxon_request_id"] || &1[:taxon_request_id]))
+      |> Enum.reject(&is_nil/1)
+
+    ids == [] or
+      Repo.aggregate(
+        from(r in Repousse.Taxa.TaxonRequest, where: r.id in ^ids and r.status == :pending),
+        :count
+      ) == length(Enum.uniq(ids))
   end
 
   def archive_nursery(%Nursery{} = nursery) do
