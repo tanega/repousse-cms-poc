@@ -4,8 +4,6 @@ import Link from "next/link";
 
 import { BadgeCheck, Bell, LogOut, User } from "lucide-react";
 
-import { hankoLogout } from "@/lib/hanko.client";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -17,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
+import { hankoLogout } from "@/lib/hanko.client";
 import { getInitials } from "@/lib/utils";
 
 export function AccountSwitcher() {

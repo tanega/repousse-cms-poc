@@ -4,8 +4,6 @@ import Link from "next/link";
 
 import { CircleUser, CreditCard, EllipsisVertical, LogOut, MessageSquareDot, User } from "lucide-react";
 
-import { hankoLogout } from "@/lib/hanko.client";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -17,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { hankoLogout } from "@/lib/hanko.client";
 import { getInitials } from "@/lib/utils";
 
 export function NavUser({

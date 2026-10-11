@@ -1,7 +1,16 @@
 "use client";
 import { Cell, Pie, PieChart } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+
 import { adherentsParProfil } from "./data";
 
 const chartConfig = adherentsParProfil.reduce<ChartConfig>((acc, item) => {
@@ -21,9 +30,14 @@ export function AdherentsParProfil() {
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent nameKey="profil" />} />
             <Pie data={adherentsParProfil} dataKey="nombre" nameKey="profil" innerRadius={50} outerRadius={90}>
-              {adherentsParProfil.map((entry) => <Cell key={entry.profil} fill={entry.couleur} />)}
+              {adherentsParProfil.map((entry) => (
+                <Cell key={entry.profil} fill={entry.couleur} />
+              ))}
             </Pie>
-            <ChartLegend content={<ChartLegendContent nameKey="profil" />} className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center" />
+            <ChartLegend
+              content={<ChartLegendContent nameKey="profil" />}
+              className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+            />
           </PieChart>
         </ChartContainer>
       </CardContent>

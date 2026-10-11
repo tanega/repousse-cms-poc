@@ -1,7 +1,9 @@
 "use client";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
 import { arbresParAnnee } from "./data";
 
 const chartConfig = {
@@ -28,7 +30,13 @@ export function ArbresCumules() {
             <XAxis dataKey="annee" tickLine={false} axisLine={false} tickMargin={8} />
             <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(v) => v.toLocaleString("fr-FR")} />
             <ChartTooltip content={<ChartTooltipContent formatter={(v) => (v ?? 0).toLocaleString("fr-FR")} />} />
-            <Area dataKey="cumulatif" type="monotone" fill="url(#gradCumulatif)" stroke="var(--color-cumulatif)" strokeWidth={2} />
+            <Area
+              dataKey="cumulatif"
+              type="monotone"
+              fill="url(#gradCumulatif)"
+              stroke="var(--color-cumulatif)"
+              strokeWidth={2}
+            />
           </AreaChart>
         </ChartContainer>
       </CardContent>

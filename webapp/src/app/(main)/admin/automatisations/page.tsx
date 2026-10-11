@@ -209,9 +209,7 @@ export default function AutomatisationsPage() {
             <Zap className="size-4 text-primary" />
             Historique des imports
           </CardTitle>
-          <CardDescription>
-            {jobs.length} exécutions enregistrées.
-          </CardDescription>
+          <CardDescription>{jobs.length} exécutions enregistrées.</CardDescription>
         </CardHeader>
         <CardContent className="px-0">
           <Table className="**:data-[slot='table-cell']:px-4 **:data-[slot='table-head']:px-4">

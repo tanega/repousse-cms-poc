@@ -1,7 +1,9 @@
 "use client";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
 import { arbres2025ParMois } from "./data";
 
 const chartConfig = { plantes: { label: "Plants distribués", color: "var(--chart-2)" } } satisfies ChartConfig;
@@ -19,7 +21,13 @@ export function Arbres2025() {
             <CartesianGrid vertical={false} />
             <XAxis dataKey="mois" tickLine={false} axisLine={false} tickMargin={8} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Line dataKey="plantes" type="monotone" stroke="var(--color-plantes)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-plantes)" }} />
+            <Line
+              dataKey="plantes"
+              type="monotone"
+              stroke="var(--color-plantes)"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "var(--color-plantes)" }}
+            />
           </LineChart>
         </ChartContainer>
       </CardContent>

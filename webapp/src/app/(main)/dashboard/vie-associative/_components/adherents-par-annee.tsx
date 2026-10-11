@@ -1,7 +1,9 @@
 "use client";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
 import { adherentsParAnnee } from "./data";
 
 const chartConfig = { adherents: { label: "Adhérents", color: "var(--chart-1)" } } satisfies ChartConfig;
