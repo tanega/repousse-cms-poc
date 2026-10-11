@@ -227,9 +227,11 @@ defmodule Repousse.Accounts do
   """
   def update_profile_details(%User{} = user, profile_type, attrs) do
     with {:ok, type} <- parse_profile_type(profile_type) do
-      case get_active_profile(user.id, type) do
-        nil -> {:error, :profile_not_active}
-        profile -> update_profile(profile, attrs)
+      # Pending profiles stay editable: the member may complete their details
+      # while an admin looks at the request.
+      case get_profile(user.id, type) do
+        %UserProfile{status: status} = profile when status in [:active, :pending] -> update_profile(profile, attrs)
+        _ -> {:error, :profile_not_active}
       end
     end
   end
@@ -237,11 +239,13 @@ defmodule Repousse.Accounts do
   @profile_labels %{volunteer: "Bénévole", adoptant: "Adoptant", host_family: "Famille d'accueil"}
 
   @doc """
-  A member asks to join an engagement profile. Profiles needing approval
+  A member asks to join an engagement profile. `attrs` carries the profile's
+  own details; a Famille d'accueil request must include the hosting basics
+  (capacity and address) so the admin can review them before deciding. Profiles needing approval
   become `pending` and every admin is notified; the others (Bénévole) are
   activated straight away. A previously rejected request can be re-submitted.
   """
-  def request_profile(%User{} = user, profile_type) do
+  def request_profile(%User{} = user, profile_type, attrs \\ %{}) do
     with {:ok, type} <- parse_profile_type(profile_type) do
       existing = get_profile(user.id, type)
 
@@ -253,14 +257,20 @@ defmodule Repousse.Accounts do
           {:error, :profile_already_requested}
 
         true ->
-          submit_request(user, type, existing)
+          submit_request(user, type, existing, attrs)
       end
     end
   end
 
-  defp submit_request(user, type, existing) do
+  defp submit_request(user, type, existing, attrs) do
+    attrs =
+      (if is_map(attrs), do: attrs, else: %{})
+      |> Map.new(fn {k, v} -> {to_string(k), v} end)
+      |> Map.merge(%{"user_id" => user.id, "profile_type" => Atom.to_string(type)})
+
     changeset =
-      UserProfile.request_changeset(existing || %UserProfile{}, %{user_id: user.id, profile_type: type})
+      (existing && Repo.preload(existing, :hosted_species) || %UserProfile{})
+      |> UserProfile.request_changeset(attrs)
 
     with {:ok, profile} <- Repo.insert_or_update(changeset) do
       Notifications.notify_admins(%{
@@ -280,7 +290,7 @@ defmodule Repousse.Accounts do
     from(p in UserProfile,
       where: p.status == ^status and not is_nil(p.requested_at),
       order_by: [asc: p.requested_at],
-      preload: [:user]
+      preload: [:user, hosted_species: :taxon]
     )
     |> Repo.all()
   end
@@ -289,7 +299,7 @@ defmodule Repousse.Accounts do
     Repo.aggregate(from(p in UserProfile, where: p.status == :pending), :count)
   end
 
-  def get_profile_request(id), do: Repo.get(UserProfile, id) |> Repo.preload(:user)
+  def get_profile_request(id), do: Repo.get(UserProfile, id) |> Repo.preload([:user, hosted_species: :taxon])
 
   def approve_profile_request(%UserProfile{status: :pending} = profile, %User{} = admin) do
     decide(profile, :active, admin, nil)
@@ -328,7 +338,7 @@ defmodule Repousse.Accounts do
         payload: %{profile_id: updated.id, profile_type: updated.profile_type, reason: reason}
       })
 
-      {:ok, Repo.preload(updated, [:user, :hosted_species])}
+      {:ok, Repo.preload(updated, [:user, hosted_species: :taxon])}
     end
   end
 

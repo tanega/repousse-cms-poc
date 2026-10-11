@@ -113,14 +113,18 @@ defmodule RepousseWeb.AccountsController do
     description:
       "Adoptant and Famille d'accueil are `pending` until an administrator decides " <>
         "(admins are notified, and so is the member once decided). Bénévole is " <>
-        "activated immediately. A rejected request can be re-submitted.",
+        "activated immediately. A rejected request can be re-submitted. Famille d'accueil " <>
+        "requires the hosting details in `profile` (at least `hosting_capacity` > 0 and " <>
+        "`hosting_address`), which the administrator reviews before deciding.",
+    request_body: {"Profile details", "application/json", %OpenApiSpex.Schema{type: :object}},
     parameters: [
       profile_type: [in: :path, type: :string, description: "Profile type", example: "host_family"]
     ],
     responses: [created: API.object(UserProfile, "The pending (or activated) profile")]
 
-  def request_profile(conn, %{"profile_type" => profile_type}) do
-    with {:ok, profile} <- Accounts.request_profile(conn.assigns.current_user, profile_type) do
+  def request_profile(conn, %{"profile_type" => profile_type} = params) do
+    with {:ok, profile} <-
+           Accounts.request_profile(conn.assigns.current_user, profile_type, params["profile"] || %{}) do
       conn |> put_status(:created) |> json(%{data: profile})
     end
   end
