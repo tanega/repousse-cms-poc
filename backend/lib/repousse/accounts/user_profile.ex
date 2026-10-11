@@ -6,12 +6,19 @@ defmodule Repousse.Accounts.UserProfile do
   @foreign_key_type :binary_id
 
   @profile_types [:volunteer, :adoptant, :host_family]
+  @statuses [:pending, :active, :rejected]
+  # Profiles a member can't self-activate: a coordinator validates the request.
+  @approval_required [:adoptant, :host_family]
   @equipment [:greenhouse, :tarp, :auto_watering, :artificial_light, :cold_frame, :outdoor_ground]
 
   @derive {Jason.Encoder,
            only: [
              :id,
              :profile_type,
+             :status,
+             :requested_at,
+             :decided_at,
+             :rejection_reason,
              :engagement_note,
              :address,
              :avatar_url,
@@ -30,6 +37,10 @@ defmodule Repousse.Accounts.UserProfile do
 
   schema "user_profiles" do
     field :profile_type, Ecto.Enum, values: @profile_types
+    field :status, Ecto.Enum, values: @statuses, default: :active
+    field :requested_at, :utc_datetime
+    field :decided_at, :utc_datetime
+    field :rejection_reason, :string
     field :engagement_note, :string
     field :address, :string
     field :avatar_url, :string
@@ -45,6 +56,7 @@ defmodule Repousse.Accounts.UserProfile do
     field :hosting_equipment, {:array, :string}, default: []
 
     belongs_to :user, Repousse.Accounts.User
+    belongs_to :decided_by, Repousse.Accounts.User
     has_many :hosted_species, Repousse.Accounts.HostedSpecies, on_replace: :delete
 
     timestamps(type: :utc_datetime)
@@ -76,6 +88,27 @@ defmodule Repousse.Accounts.UserProfile do
     |> unique_constraint([:user_id, :profile_type])
   end
 
+  @doc "Changeset for a member asking to join a profile that needs approval."
+  def request_changeset(profile, attrs) do
+    profile
+    |> changeset(attrs)
+    |> put_change(:status, :pending)
+    |> put_change(:requested_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> put_change(:decided_at, nil)
+    |> put_change(:decided_by_id, nil)
+    |> put_change(:rejection_reason, nil)
+  end
+
+  def decision_changeset(profile, status, decider_id, reason \\ nil) when status in [:active, :rejected] do
+    change(profile,
+      status: status,
+      decided_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      decided_by_id: decider_id,
+      rejection_reason: if(status == :rejected, do: reason)
+    )
+  end
+
+  def requires_approval?(type), do: type in @approval_required
   def profile_types, do: @profile_types
   def equipment, do: @equipment
 end

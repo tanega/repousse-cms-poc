@@ -111,7 +111,7 @@ defmodule RepousseWeb.AccountsControllerTest do
   end
 
   describe "PUT /api/v1/me/profiles" do
-    test "adds the missing profiles and removes the extra ones", %{conn: conn, private_map: pm} do
+    test "removes the extra profiles", %{conn: conn, private_map: pm} do
       user = insert(:user)
       insert(:user_profile, user: user, profile_type: :volunteer)
       insert(:user_profile, user: user, profile_type: :adoptant)
@@ -119,11 +119,10 @@ defmodule RepousseWeb.AccountsControllerTest do
       conn =
         conn
         |> authed(user, pm)
-        |> put(~p"/api/v1/me/profiles", %{"profiles" => ["volunteer", "host_family"]})
+        |> put(~p"/api/v1/me/profiles", %{"profiles" => ["volunteer"]})
 
       assert %{"data" => data} = json_response(conn, 200)
-      types = data |> Enum.map(& &1["profile_type"]) |> Enum.sort()
-      assert types == ["host_family", "volunteer"]
+      assert Enum.map(data, & &1["profile_type"]) == ["volunteer"]
     end
 
     test "leaves an already-active profile untouched", %{conn: conn, private_map: pm} do

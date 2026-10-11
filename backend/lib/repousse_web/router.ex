@@ -32,6 +32,7 @@ defmodule RepousseWeb.Router do
     get "/me/profiles", AccountsController, :profiles
     put "/me/profiles", AccountsController, :update_profiles
     put "/me/profiles/:profile_type", AccountsController, :update_profile_details
+    post "/me/profiles/:profile_type/request", AccountsController, :request_profile
 
     # In-app notification centre
     get "/me/notifications", NotificationController, :index
@@ -129,6 +130,11 @@ defmodule RepousseWeb.Router do
       pipe_through :admin
 
       get "/nurseries", NurseryController, :index
+
+      get "/profile_requests", ProfileRequestController, :index
+      get "/profile_requests/count", ProfileRequestController, :count
+      post "/profile_requests/:id/approve", ProfileRequestController, :approve
+      post "/profile_requests/:id/reject", ProfileRequestController, :reject
 
       resources "/users", UserController, only: [:index, :show, :create, :update, :delete]
       post "/users/:id/suspend", UserController, :suspend

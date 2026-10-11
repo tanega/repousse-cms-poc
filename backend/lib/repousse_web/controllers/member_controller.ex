@@ -26,7 +26,7 @@ defmodule RepousseWeb.MemberController do
 
     with {:ok, owner} <- fetch(id, viewer) do
       visible? = Nurseries.visible_to?(owner, viewer)
-      profiles = Accounts.list_profiles(owner)
+      profiles = Accounts.list_active_profiles(owner)
 
       json(conn, %{
         data: %{

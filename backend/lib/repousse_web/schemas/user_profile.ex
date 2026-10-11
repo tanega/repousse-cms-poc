@@ -11,6 +11,10 @@ defmodule RepousseWeb.Schemas.UserProfile do
       properties: %{
         id: %Schema{type: :string, format: :uuid},
         profile_type: %Schema{type: :string, enum: ["volunteer", "adoptant", "host_family"]},
+        status: %Schema{type: :string, enum: ["pending", "active", "rejected"]},
+        requested_at: %Schema{type: :string, format: "date-time", nullable: true},
+        decided_at: %Schema{type: :string, format: "date-time", nullable: true},
+        rejection_reason: %Schema{type: :string, nullable: true},
         engagement_note: %Schema{type: :string, nullable: true},
         address: %Schema{type: :string, nullable: true},
         avatar_url: %Schema{type: :string, nullable: true},
@@ -43,6 +47,10 @@ defmodule RepousseWeb.Schemas.UserProfile do
       example: %{
         "id" => "b1b2c3d4-0000-4000-8000-000000000000",
         "profile_type" => "adoptant",
+        "status" => "active",
+        "requested_at" => nil,
+        "decided_at" => nil,
+        "rejection_reason" => nil,
         "engagement_note" => nil,
         "address" => nil,
         "avatar_url" => nil,

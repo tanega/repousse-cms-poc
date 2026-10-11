@@ -2,6 +2,7 @@ defmodule Repousse.Accounts do
   import Ecto.Query
   alias Repousse.Auth.HankoAdmin
   alias Repousse.Integrations.Emails
+  alias Repousse.Notifications
   alias Repousse.Repo
   alias Repousse.Accounts.{User, UserProfile}
 
@@ -167,6 +168,15 @@ defmodule Repousse.Accounts do
     Repo.get_by(UserProfile, user_id: user_id, profile_type: profile_type)
   end
 
+  @doc "Profiles the member actually holds — excludes pending and rejected requests."
+  def list_active_profiles(%User{} = user) do
+    Enum.filter(list_profiles(user), &(&1.status == :active))
+  end
+
+  def get_active_profile(user_id, profile_type) do
+    Repo.get_by(UserProfile, user_id: user_id, profile_type: profile_type, status: :active)
+  end
+
   def add_profile(%User{} = user, profile_type) do
     %UserProfile{}
     |> UserProfile.changeset(%{user_id: user.id, profile_type: profile_type})
@@ -189,6 +199,10 @@ defmodule Repousse.Accounts do
   US-PROFIL-04). Adds the missing ones, removes the extra ones, and leaves
   already-active profiles untouched so their host-family details survive.
 
+  Profiles needing approval (Adoptant, Famille d'accueil) can only be removed
+  here, never added: members go through `request_profile/2` and a coordinator
+  decides. Removing a pending or rejected profile cancels the request.
+
   Refuses an empty list ("au moins un profil requis"), and refuses to drop
   `host_family` while the member still has active nurseries — transferring
   those resources is US-PROFIL-05, out of scope, so we block rather than
@@ -198,6 +212,7 @@ defmodule Repousse.Accounts do
     with {:ok, wanted} <- parse_profile_types(types),
          :ok <- validate_non_empty(wanted),
          current = list_profiles(user) |> Enum.map(& &1.profile_type),
+         :ok <- validate_no_unapproved_additions(wanted -- current),
          :ok <- validate_host_family_removal(user, current, wanted) do
       Enum.each(wanted -- current, &add_profile(user, &1))
       Enum.each(current -- wanted, &remove_profile(user, &1))
@@ -212,10 +227,124 @@ defmodule Repousse.Accounts do
   """
   def update_profile_details(%User{} = user, profile_type, attrs) do
     with {:ok, type} <- parse_profile_type(profile_type) do
-      case get_profile(user.id, type) do
+      case get_active_profile(user.id, type) do
         nil -> {:error, :profile_not_active}
         profile -> update_profile(profile, attrs)
       end
+    end
+  end
+
+  @profile_labels %{volunteer: "Bénévole", adoptant: "Adoptant", host_family: "Famille d'accueil"}
+
+  @doc """
+  A member asks to join an engagement profile. Profiles needing approval
+  become `pending` and every admin is notified; the others (Bénévole) are
+  activated straight away. A previously rejected request can be re-submitted.
+  """
+  def request_profile(%User{} = user, profile_type) do
+    with {:ok, type} <- parse_profile_type(profile_type) do
+      existing = get_profile(user.id, type)
+
+      cond do
+        not UserProfile.requires_approval?(type) and is_nil(existing) ->
+          with {:ok, profile} <- add_profile(user, type), do: {:ok, Repo.preload(profile, :hosted_species)}
+
+        existing && existing.status in [:pending, :active] ->
+          {:error, :profile_already_requested}
+
+        true ->
+          submit_request(user, type, existing)
+      end
+    end
+  end
+
+  defp submit_request(user, type, existing) do
+    changeset =
+      UserProfile.request_changeset(existing || %UserProfile{}, %{user_id: user.id, profile_type: type})
+
+    with {:ok, profile} <- Repo.insert_or_update(changeset) do
+      Notifications.notify_admins(%{
+        type: "profile_request.created",
+        title: "Nouvelle demande : #{@profile_labels[type]}",
+        body: "#{display_name(user)} souhaite rejoindre le parcours #{@profile_labels[type]}.",
+        link: "/admin/demandes-parcours",
+        payload: %{profile_id: profile.id, user_id: user.id, profile_type: type}
+      })
+
+      {:ok, Repo.preload(profile, :hosted_species)}
+    end
+  end
+
+  @doc "Profile requests for coordinators, oldest first. `status` defaults to `:pending`."
+  def list_profile_requests(status \\ :pending) do
+    from(p in UserProfile,
+      where: p.status == ^status and not is_nil(p.requested_at),
+      order_by: [asc: p.requested_at],
+      preload: [:user]
+    )
+    |> Repo.all()
+  end
+
+  def count_pending_profile_requests do
+    Repo.aggregate(from(p in UserProfile, where: p.status == :pending), :count)
+  end
+
+  def get_profile_request(id), do: Repo.get(UserProfile, id) |> Repo.preload(:user)
+
+  def approve_profile_request(%UserProfile{status: :pending} = profile, %User{} = admin) do
+    decide(profile, :active, admin, nil)
+  end
+
+  def approve_profile_request(_profile, _admin), do: {:error, :profile_request_not_pending}
+
+  def reject_profile_request(%UserProfile{status: :pending} = profile, %User{} = admin, reason) do
+    decide(profile, :rejected, admin, blank_to_nil(reason))
+  end
+
+  def reject_profile_request(_profile, _admin, _reason), do: {:error, :profile_request_not_pending}
+
+  defp decide(profile, status, admin, reason) do
+    with {:ok, updated} <-
+           profile |> UserProfile.decision_changeset(status, admin.id, reason) |> Repo.update() do
+      label = @profile_labels[updated.profile_type]
+      user = profile.user || get_user!(profile.user_id)
+
+      {title, body} =
+        case status do
+          :active ->
+            {"Votre demande est acceptée : #{label}", "Vous pouvez désormais accéder au parcours #{label}."}
+
+          :rejected ->
+            {"Votre demande n'a pas été retenue : #{label}",
+             "Les administrateurs n'ont pas validé votre demande pour le parcours #{label}." <>
+               if(reason, do: " Motif : #{reason}", else: "") <> " Vous pouvez effectuer une nouvelle demande."}
+        end
+
+      Notifications.notify(user, %{
+        type: "profile_request.#{if status == :active, do: "approved", else: "rejected"}",
+        title: title,
+        body: body,
+        link: "/membres/me",
+        payload: %{profile_id: updated.id, profile_type: updated.profile_type, reason: reason}
+      })
+
+      {:ok, Repo.preload(updated, [:user, :hosted_species])}
+    end
+  end
+
+  defp blank_to_nil(nil), do: nil
+
+  defp blank_to_nil(reason) when is_binary(reason) do
+    case String.trim(reason) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp display_name(%User{first_name: f, last_name: l, email: email}) do
+    case [f, l] |> Enum.reject(&(&1 in [nil, ""])) |> Enum.join(" ") do
+      "" -> email
+      name -> name
     end
   end
 
@@ -246,6 +375,12 @@ defmodule Repousse.Accounts do
   end
 
   defp parse_profile_type(_), do: {:error, :invalid_profile_type}
+
+  defp validate_no_unapproved_additions(added) do
+    if Enum.any?(added, &UserProfile.requires_approval?/1),
+      do: {:error, :profile_requires_approval},
+      else: :ok
+  end
 
   defp validate_non_empty([]), do: {:error, :at_least_one_profile_required}
   defp validate_non_empty(_), do: :ok
