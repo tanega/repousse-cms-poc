@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
 export default function Home() {
-  redirect("/dashboard/default");
-  return <>Coming Soon</>;
+  // /dashboard sends each role to its own landing page.
+  redirect("/dashboard");
 }

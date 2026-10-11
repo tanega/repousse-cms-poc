@@ -17,8 +17,9 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import type { NavMainItem } from "@/navigation/sidebar/sidebar-items";
-import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
+import type { NavGroup, NavMainItem } from "@/navigation/sidebar/sidebar-items";
+import { filterNavByAccess, sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
 type SearchItem = {
   id: string;
@@ -36,38 +37,38 @@ function getSubItemGroup(groupLabel: string | undefined, itemTitle: string) {
   return sidebarGroupLabels.has(itemTitle) ? (groupLabel ?? "Other") : itemTitle;
 }
 
-const searchItems: SearchItem[] = sidebarItems.flatMap((group) =>
-  group.items.flatMap((item) => {
-    if (item.subItems) {
-      return item.subItems.map((sub) => ({
-        id: sub.id,
-        group: getSubItemGroup(group.label, item.title),
-        label: sub.title,
-        url: sub.url,
-        icon: item.icon,
-        disabled: sub.disabled,
-        newTab: sub.newTab,
-      }));
-    }
-    return [
-      {
-        id: item.id,
-        group: group.label ?? "Other",
-        label: item.title,
-        url: item.url,
-        icon: item.icon,
-        disabled: item.disabled,
-        newTab: item.newTab,
-      },
-    ];
-  }),
-);
+function buildSearchItems(groups: NavGroup[]): SearchItem[] {
+  return groups.flatMap((group) =>
+    group.items.flatMap((item) => {
+      if (item.subItems) {
+        return item.subItems.map((sub) => ({
+          id: sub.id,
+          group: getSubItemGroup(group.label, item.title),
+          label: sub.title,
+          url: sub.url,
+          icon: item.icon,
+          disabled: sub.disabled,
+          newTab: sub.newTab,
+        }));
+      }
+      return [
+        {
+          id: item.id,
+          group: group.label ?? "Other",
+          label: item.title,
+          url: item.url,
+          icon: item.icon,
+          disabled: item.disabled,
+          newTab: item.newTab,
+        },
+      ];
+    }),
+  );
+}
 
 function getAvailableItems(items: SearchItem[]) {
   return items.filter((item) => !item.disabled && !item.url.includes("coming-soon"));
 }
-
-const recommendations = getAvailableItems(searchItems);
 
 function groupBy(items: SearchItem[]) {
   const groups = [...new Set(items.map((item) => item.group))];
@@ -81,6 +82,20 @@ export function SearchDialog() {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const router = useRouter();
+  const { user } = useCurrentUser();
+  // Same visibility rules as the sidebar: no shortcut to pages the user can't open.
+  const searchItems = React.useMemo(
+    () =>
+      buildSearchItems(
+        filterNavByAccess(
+          sidebarItems,
+          user?.role,
+          user?.profiles.filter((p) => p.status === "active").map((p) => p.profile_type),
+        ),
+      ),
+    [user],
+  );
+  const recommendations = React.useMemo(() => getAvailableItems(searchItems), [searchItems]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {

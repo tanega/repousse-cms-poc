@@ -17,12 +17,13 @@ import {
   Package,
   Sprout,
   TreePine,
+  UserCheck,
   Users,
   UsersRound,
-  UserCheck,
   Zap,
 } from "lucide-react";
 
+import { hasMinRole } from "@/lib/auth/roles";
 import type { ProfileType, UserRole } from "@/types/user";
 
 export type NavBadge = "new" | "soon";
@@ -143,21 +144,21 @@ export const sidebarItems: NavGroup[] = [
         title: "Calendrier",
         url: "/dashboard/calendar",
         icon: Calendar,
-        minRole: "admin",
+        minRole: "superadmin",
       },
       {
         id: "admin-kanban",
         title: "Kanban",
         url: "/admin/kanban",
         icon: Kanban,
-        minRole: "admin",
+        minRole: "superadmin",
       },
       {
         id: "tasks",
         title: "Tâches",
         url: "/dashboard/tasks",
         icon: CheckSquare,
-        minRole: "admin",
+        minRole: "superadmin",
       },
     ],
   },
@@ -250,21 +251,21 @@ export const sidebarItems: NavGroup[] = [
         title: "Chat",
         url: "/dashboard/chat",
         icon: MessageSquare,
-        minRole: "admin",
+        minRole: "superadmin",
       },
       {
         id: "kanban",
         title: "Kanban",
         url: "/dashboard/kanban",
         icon: Kanban,
-        minRole: "admin",
+        minRole: "superadmin",
       },
       {
         id: "dashboard",
         title: "Dashboard",
         url: "/dashboard/default",
         icon: LayoutDashboard,
-        minRole: "admin",
+        minRole: "superadmin",
       },
     ],
   },
@@ -275,7 +276,7 @@ export const sidebarItems: NavGroup[] = [
       {
         id: "legacy-dashboards",
         title: "Dashboards",
-        minRole: "admin",
+        minRole: "superadmin",
         subItems: [
           {
             id: "legacy-default",
@@ -320,7 +321,7 @@ export const sidebarItems: NavGroup[] = [
       {
         id: "legacy-pages",
         title: "Pages",
-        minRole: "admin",
+        minRole: "superadmin",
         subItems: [
           { id: "legacy-email", title: "Email", url: "/dashboard/mail" },
           { id: "legacy-invoice", title: "Invoice", url: "/dashboard/invoice" },
@@ -359,3 +360,25 @@ export const sidebarItems: NavGroup[] = [
     ],
   },
 ];
+
+/**
+ * Keeps the groups and items the user may see. While the role and profiles
+ * haven't resolved yet they are treated as absent, so gated items don't flash
+ * before being filtered out. Shared by the sidebar and the command palette.
+ */
+export function filterNavByAccess(
+  groups: NavGroup[],
+  role: UserRole | undefined,
+  profiles: ProfileType[] | undefined,
+): NavGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          (!item.minRole || (role && hasMinRole(role, item.minRole))) &&
+          (!item.requiresProfile || (profiles ?? []).includes(item.requiresProfile)),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { siGithub } from "simple-icons";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
+import { SuperadminOnly } from "@/components/auth/superadmin-only";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { SimpleIcon } from "@/components/simple-icon";
 import { Button } from "@/components/ui/button";
@@ -68,20 +69,24 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
-              <LayoutControls />
+              <SuperadminOnly>
+                <LayoutControls />
+              </SuperadminOnly>
               <NotificationBell />
               <ThemeSwitcher />
-              <Button asChild size="icon">
-                <Link
-                  prefetch={false}
-                  href="https://github.com/arhamkhnz/next-shadcn-admin-dashboard"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Open GitHub repository"
-                >
-                  <SimpleIcon icon={siGithub} className="fill-primary-foreground" />
-                </Link>
-              </Button>
+              <SuperadminOnly>
+                <Button asChild size="icon">
+                  <Link
+                    prefetch={false}
+                    href="https://github.com/arhamkhnz/next-shadcn-admin-dashboard"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Open GitHub repository"
+                  >
+                    <SimpleIcon icon={siGithub} className="fill-primary-foreground" />
+                  </Link>
+                </Button>
+              </SuperadminOnly>
               <AccountSwitcher />
             </div>
           </div>

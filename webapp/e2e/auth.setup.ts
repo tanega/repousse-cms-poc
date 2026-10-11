@@ -1,4 +1,4 @@
-import { type Page, expect, test as setup } from "@playwright/test";
+import { expect, type Page, test as setup } from "@playwright/test";
 
 // Runs once before specs that need a real backend session. Role gates
 // (admin/layout.tsx) and authenticated-only API calls now hit the real
@@ -8,10 +8,13 @@ import { type Page, expect, test as setup } from "@playwright/test";
 // reuse it via `test.use({ storageState: ... })`.
 const ADMIN_AUTH_FILE = "e2e/.auth/admin.json";
 const MEMBER_AUTH_FILE = "e2e/.auth/member.json";
+const PLAIN_ADMIN_AUTH_FILE = "e2e/.auth/plain-admin.json";
 const ADMIN_EMAIL = "superadmin@repousse.local";
 // Seeded role: :member (see backend/priv/repo/seeds.exs) — a real non-admin
 // account for member-facing specs (distributions reservations, etc.).
 const MEMBER_EMAIL = "lecteur@repousse.local";
+// Seeded role: :admin — an administrator who is not superadmin.
+const PLAIN_ADMIN_EMAIL = "admin@repousse.local";
 
 async function getLatestOtp(email: string): Promise<string | null> {
   const res = await fetch("http://localhost:8025/api/v1/messages?limit=20");
@@ -70,11 +73,12 @@ async function loginWithPasscode(page: Page, email: string): Promise<void> {
   await firstDigit.click();
   await page.keyboard.type(code!, { delay: 50 });
 
-  const submitOtpButton = hankoAuth
-    .locator("button[type='submit'], button")
-    .filter({ hasText: /continuer|continue/i });
+  const submitOtpButton = hankoAuth.locator("button[type='submit'], button").filter({ hasText: /continuer|continue/i });
   if ((await submitOtpButton.count()) > 0 && (await submitOtpButton.first().isVisible())) {
-    await submitOtpButton.first().click().catch(() => {});
+    await submitOtpButton
+      .first()
+      .click()
+      .catch(() => {});
   }
 
   for (let i = 0; i < 10; i++) {
@@ -97,4 +101,9 @@ setup("authenticate as admin", async ({ page }) => {
 setup("authenticate as member", async ({ page }) => {
   await loginWithPasscode(page, MEMBER_EMAIL);
   await page.context().storageState({ path: MEMBER_AUTH_FILE });
+});
+
+setup("authenticate as plain admin", async ({ page }) => {
+  await loginWithPasscode(page, PLAIN_ADMIN_EMAIL);
+  await page.context().storageState({ path: PLAIN_ADMIN_AUTH_FILE });
 });

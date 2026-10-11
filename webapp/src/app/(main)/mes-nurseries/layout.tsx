@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
+import { SuperadminOnly } from "@/components/auth/superadmin-only";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -58,7 +59,9 @@ export default async function MesNurseriesLayout({ children }: Readonly<{ childr
               <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
-              <LayoutControls />
+              <SuperadminOnly>
+                <LayoutControls />
+              </SuperadminOnly>
               <NotificationBell />
               <ThemeSwitcher />
               <AccountSwitcher />
