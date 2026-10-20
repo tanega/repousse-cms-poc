@@ -30,6 +30,7 @@ defmodule Repousse.Accounts.UserProfile do
              :hosting_availability,
              :hosting_surface_m2,
              :hosting_equipment,
+             :hosting_phone,
              :hosted_species,
              :inserted_at,
              :updated_at
@@ -54,6 +55,7 @@ defmodule Repousse.Accounts.UserProfile do
     field :hosting_availability, :string
     field :hosting_surface_m2, :float
     field :hosting_equipment, {:array, :string}, default: []
+    field :hosting_phone, :string
 
     belongs_to :user, Repousse.Accounts.User
     belongs_to :decided_by, Repousse.Accounts.User
@@ -77,6 +79,7 @@ defmodule Repousse.Accounts.UserProfile do
       :hosting_availability,
       :hosting_surface_m2,
       :hosting_equipment,
+      :hosting_phone,
       :user_id
     ])
     |> validate_required([:profile_type, :user_id])
@@ -84,6 +87,7 @@ defmodule Repousse.Accounts.UserProfile do
     |> validate_number(:hosting_capacity, greater_than_or_equal_to: 0)
     |> validate_number(:hosting_surface_m2, greater_than_or_equal_to: 0)
     |> validate_subset(:hosting_equipment, Enum.map(@equipment, &Atom.to_string/1))
+    |> normalize_phone(:hosting_phone)
     |> cast_assoc(:hosted_species)
     |> unique_constraint([:user_id, :profile_type])
   end
@@ -112,6 +116,32 @@ defmodule Repousse.Accounts.UserProfile do
     else
       changeset
     end
+  end
+
+  # Stored as E.164 so exports and `tel:` links stay uniform: a French
+  # national number (`06 12 34 56 78`) becomes `+33612345678`, an
+  # international one keeps its `+` prefix. Separators are ignored.
+  defp normalize_phone(changeset, field) do
+    case get_change(changeset, field) do
+      nil ->
+        changeset
+
+      raw ->
+        case raw |> String.replace(~r/[\s.\-()]/, "") |> to_e164() do
+          {:ok, phone} -> put_change(changeset, field, phone)
+          :error -> add_error(changeset, field, "numéro de téléphone invalide")
+        end
+    end
+  end
+
+  defp to_e164(""), do: {:ok, nil}
+  defp to_e164("0" <> <<d, rest::binary-size(8)>>) when d in ?1..?9, do: digits("+33" <> <<d>> <> rest)
+  defp to_e164("00" <> rest), do: to_e164("+" <> rest)
+  defp to_e164("+" <> rest) when byte_size(rest) in 8..15, do: digits("+" <> rest)
+  defp to_e164(_), do: :error
+
+  defp digits("+" <> rest = phone) do
+    if rest =~ ~r/^[1-9][0-9]+$/, do: {:ok, phone}, else: :error
   end
 
   def decision_changeset(profile, status, decider_id, reason \\ nil) when status in [:active, :rejected] do

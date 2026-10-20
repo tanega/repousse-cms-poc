@@ -83,6 +83,7 @@ defmodule RepousseWeb.Admin.ProfileRequestController do
     %{
       hosting_capacity: profile.hosting_capacity,
       hosting_address: profile.hosting_address,
+      hosting_phone: profile.hosting_phone,
       hosting_surface_m2: profile.hosting_surface_m2,
       hosting_availability: profile.hosting_availability,
       hosting_equipment: profile.hosting_equipment,

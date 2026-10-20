@@ -27,6 +27,8 @@ defmodule RepousseWeb.MemberController do
     with {:ok, owner} <- fetch(id, viewer) do
       visible? = Nurseries.visible_to?(owner, viewer)
       profiles = Accounts.list_active_profiles(owner)
+      # The hosting phone is for coordinators, even on a public profile.
+      profiles = if owner.id == viewer.id or Accounts.admin?(viewer), do: profiles, else: Enum.map(profiles, &strip_phone/1)
 
       json(conn, %{
         data: %{
@@ -64,4 +66,6 @@ defmodule RepousseWeb.MemberController do
   defp strip_hosting(profile) do
     %{profile | hosting_address: nil, hosting_lat: nil, hosting_lng: nil, hosted_species: []}
   end
+
+  defp strip_phone(profile), do: %{profile | hosting_phone: nil}
 end

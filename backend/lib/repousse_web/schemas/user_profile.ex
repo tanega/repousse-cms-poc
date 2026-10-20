@@ -39,6 +39,11 @@ defmodule RepousseWeb.Schemas.UserProfile do
             ]
           }
         },
+        hosting_phone: %Schema{
+          type: :string,
+          nullable: true,
+          description: "E.164. Only returned to the member and coordinators"
+        },
         hosted_species: %Schema{type: :array, items: HostedSpecies},
         inserted_at: %Schema{type: :string, format: "date-time"},
         updated_at: %Schema{type: :string, format: "date-time"}
@@ -62,6 +67,7 @@ defmodule RepousseWeb.Schemas.UserProfile do
         "hosting_availability" => nil,
         "hosting_surface_m2" => nil,
         "hosting_equipment" => [],
+        "hosting_phone" => nil,
         "hosted_species" => [],
         "inserted_at" => "2026-01-15T10:00:00Z",
         "updated_at" => "2026-01-15T10:00:00Z"

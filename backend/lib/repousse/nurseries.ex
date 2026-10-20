@@ -75,6 +75,30 @@ defmodule Repousse.Nurseries do
   end
 
   @doc """
+  Contact details of the given nursery owners, keyed by user id — the
+  coordinator view (epic-03 US-PROFIL-15/16) shows who to call for a given
+  stock. `phone` comes from the owner's Famille d'accueil profile.
+  """
+  def owner_contacts(user_ids) do
+    from(u in User,
+      left_join: p in Accounts.UserProfile,
+      on: p.user_id == u.id and p.profile_type == :host_family,
+      where: u.id in ^Enum.uniq(user_ids),
+      select:
+        {u.id,
+         %{
+           id: u.id,
+           first_name: u.first_name,
+           last_name: u.last_name,
+           email: u.email,
+           phone: p.hosting_phone
+         }}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc """
   Non-archived nurseries with coordinates, for the map layer. Restricted to
   public profiles unless the viewer is a coordinator.
   """

@@ -26,7 +26,8 @@ defmodule RepousseWeb.MemberControllerTest do
       user: owner,
       profile_type: :host_family,
       hosting_address: "3 impasse du Verger",
-      hosting_capacity: 120
+      hosting_capacity: 120,
+      hosting_phone: "+33612345678"
     )
 
     insert(:nursery, user: owner, name: "Serre du jardin")
@@ -43,6 +44,14 @@ defmodule RepousseWeb.MemberControllerTest do
       assert data["visible"] == true
       assert [%{"name" => "Serre du jardin"}] = data["nurseries"]
       assert [%{"hosting_address" => "3 impasse du Verger"}] = data["profiles"]
+    end
+
+    test "a public profile still hides the hosting phone from other members", %{conn: conn, private_map: pm} do
+      owner = host_family_owner(:public)
+
+      conn = conn |> authed(insert(:user), pm) |> get(~p"/api/v1/members/#{owner.id}")
+
+      assert %{"data" => %{"profiles" => [%{"hosting_phone" => nil}]}} = json_response(conn, 200)
     end
 
     test "a private profile hides nurseries and hosting address", %{conn: conn, private_map: pm} do
@@ -64,6 +73,7 @@ defmodule RepousseWeb.MemberControllerTest do
       assert %{"data" => data} = json_response(conn, 200)
       assert data["visible"] == true
       assert [%{"name" => "Serre du jardin"}] = data["nurseries"]
+      assert [%{"hosting_phone" => "+33612345678"}] = data["profiles"]
     end
 
     test "the owner sees their own private profile in full", %{conn: conn, private_map: pm} do
