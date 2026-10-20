@@ -26,6 +26,7 @@ import {
   type ProfileRequest,
   rejectProfileRequest,
 } from "@/lib/api/profile-requests";
+import { formatPhone } from "@/lib/phone";
 import type { HostingEquipment, ProfileStatus, ProfileType } from "@/types/user";
 
 const PROFILE_LABELS: Record<ProfileType, string> = {
@@ -284,6 +285,7 @@ export function ProfileRequestsView() {
 function HostFamilyDetailsList({ details }: { details: NonNullable<ProfileRequest["details"]> }) {
   const rows: [string, React.ReactNode][] = [
     ["Adresse ou zone d'accueil", details.hosting_address ?? "—"],
+    ["Téléphone", details.hosting_phone ? formatPhone(details.hosting_phone) : "—"],
     ["Capacité", details.hosting_capacity != null ? `${details.hosting_capacity} plants` : "—"],
     ["Surface disponible", details.hosting_surface_m2 != null ? `${details.hosting_surface_m2} m²` : "—"],
     ["Disponibilités", details.hosting_availability || "—"],

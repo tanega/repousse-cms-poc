@@ -46,6 +46,21 @@ export interface NurseryAttrs {
   plants: { taxon_id?: string | null; taxon_request_id?: string | null; quantity: number; note?: string | null }[];
 }
 
+/** Owner contact attached to each nursery by the coordinator listing. */
+export interface NurseryOwner {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+  /** E.164, from the owner's Famille d'accueil profile. */
+  phone: string | null;
+}
+
+/** Shape returned by GET /admin/nurseries (coordinator view, private profiles included). */
+export interface AdminNursery extends Nursery {
+  owner: NurseryOwner | null;
+}
+
 /** Flattened shape returned by GET /dashboard/map/nurseries. */
 export interface NurseryMapPoint {
   id: string;
