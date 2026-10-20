@@ -8,6 +8,7 @@ export const PROFILE_REQUESTS_CHANGED_EVENT = "profile-requests:changed";
 export interface HostFamilyDetails {
   hosting_capacity: number | null;
   hosting_address: string | null;
+  hosting_phone: string | null;
   hosting_surface_m2: number | null;
   hosting_availability: string | null;
   hosting_equipment: HostingEquipment[];

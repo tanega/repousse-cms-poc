@@ -77,6 +77,7 @@ export interface HostFamilyAttrs {
   hosting_lng?: number | null;
   hosting_availability?: string | null;
   hosting_equipment?: HostingEquipment[];
+  hosting_phone?: string | null;
   hosted_species?: { taxon_id: string }[];
 }
 

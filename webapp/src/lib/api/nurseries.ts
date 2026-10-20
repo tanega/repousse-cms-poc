@@ -1,4 +1,4 @@
-import type { Nursery, NurseryAttrs, NurseryMapPoint } from "@/types/nursery";
+import type { AdminNursery, Nursery, NurseryAttrs, NurseryMapPoint } from "@/types/nursery";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -62,6 +62,13 @@ export async function archiveNursery(id: string): Promise<Nursery> {
 
 export async function fetchNurseryMapPoints(): Promise<NurseryMapPoint[]> {
   const res = await authedFetch("/api/v1/dashboard/map/nurseries");
+  const { data } = await res.json();
+  return data;
+}
+
+/** Every member's non-archived nurseries with their owner's contact — admins only. */
+export async function fetchAllNurseries(): Promise<AdminNursery[]> {
+  const res = await authedFetch("/api/v1/admin/nurseries");
   const { data } = await res.json();
   return data;
 }

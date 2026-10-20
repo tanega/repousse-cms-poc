@@ -20,6 +20,7 @@ import {
   UserCheck,
   Users,
   UsersRound,
+  Warehouse,
   Zap,
 } from "lucide-react";
 
@@ -194,6 +195,13 @@ export const sidebarItems: NavGroup[] = [
         title: "Espèces végétales",
         url: "/admin/especes-vegetales",
         icon: Leaf,
+        minRole: "admin",
+      },
+      {
+        id: "admin-familles-accueil",
+        title: "Familles d'accueil & nurseries",
+        url: "/admin/familles-accueil",
+        icon: Warehouse,
         minRole: "admin",
       },
       {

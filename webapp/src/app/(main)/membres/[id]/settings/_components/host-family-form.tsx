@@ -20,6 +20,7 @@ import { updateHostFamilyProfile } from "@/lib/api/me";
 import { fetchPublicTaxa } from "@/lib/api/taxa";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useEngagementProfiles } from "@/lib/engagement/use-engagement-profiles";
+import { formatPhone, isPlausiblePhone } from "@/lib/phone";
 import { useCurrentUserStore } from "@/stores/current-user/current-user-store";
 import type { Taxon } from "@/types/taxon";
 import type { HostingEquipment, UserProfile } from "@/types/user";
@@ -43,6 +44,7 @@ const schema = z.object({
   hosting_lng: z.number().nullable(),
   hosting_availability: z.string(),
   hosting_equipment: z.array(z.string()),
+  hosting_phone: z.string().refine((value) => !value.trim() || isPlausiblePhone(value), "Numéro de téléphone invalide"),
   hosted_species: z.array(z.string()),
 });
 
@@ -66,6 +68,7 @@ const EMPTY: HostFamilyValues = {
   hosting_lng: null,
   hosting_availability: "",
   hosting_equipment: [],
+  hosting_phone: "",
   hosted_species: [],
 };
 
@@ -87,6 +90,7 @@ function toFormValues(profile: UserProfile | undefined): HostFamilyValues {
     hosting_lng: profile.hosting_lng,
     hosting_availability: profile.hosting_availability ?? "",
     hosting_equipment: profile.hosting_equipment ?? [],
+    hosting_phone: formatPhone(profile.hosting_phone),
     hosted_species: (profile.hosted_species ?? []).map((s) => s.taxon_id),
   };
 }
@@ -130,6 +134,7 @@ export function HostFamilyForm({ mode = "edit", onRequested }: HostFamilyFormPro
           hosting_lng: value.hosting_lng,
           hosting_availability: value.hosting_availability.trim() || null,
           hosting_equipment: value.hosting_equipment as HostingEquipment[],
+          hosting_phone: value.hosting_phone.trim() || null,
           hosted_species: value.hosted_species.map((taxon_id) => ({ taxon_id })),
         };
 
@@ -199,6 +204,32 @@ export function HostFamilyForm({ mode = "edit", onRequested }: HostFamilyFormPro
               </p>
             </Field>
           )}
+        </form.Field>
+
+        <form.Field name="hosting_phone">
+          {(field) => {
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Téléphone</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="06 12 34 56 78"
+                  value={field.state.value}
+                  aria-invalid={isInvalid}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                <p className="text-muted-foreground text-xs">
+                  Facultatif. Visible uniquement des coordinateurs, pour organiser les distributions.
+                </p>
+              </Field>
+            );
+          }}
         </form.Field>
 
         <div className="grid gap-4 sm:grid-cols-2">

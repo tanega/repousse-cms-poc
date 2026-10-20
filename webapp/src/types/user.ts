@@ -39,6 +39,8 @@ export interface UserProfile {
   hosting_availability: string | null;
   hosting_surface_m2: number | null;
   hosting_equipment: HostingEquipment[];
+  /** E.164. Only returned to the member themself and to coordinators. */
+  hosting_phone: string | null;
   hosted_species: HostedSpecies[];
 }
 
