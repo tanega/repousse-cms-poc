@@ -8,6 +8,7 @@ Permettre à l'équipe de coordination de Repousse de créer et publier des év�
 
 - **Coordinateur / Admin** — création, publication, validation terrain
 - **Adoptant** — inscription, réservation, annulation
+- **Famille d'accueil** — fournit des plants de ses nurseries aux événements
 - **Système** — automatisations (stock, emails, liste d'attente)
 
 ## Règles métier clés
@@ -20,6 +21,8 @@ Permettre à l'équipe de coordination de Repousse de créer et publier des év�
 - Statuts événement : `Brouillon` → `Publié` → `Clôturé`
 - Publication déclenche automatiquement un email aux membres adhérents
 - Interface terrain : PWA mobile
+- Un événement peut être approvisionné depuis les nurseries des familles d'accueil : affectation `Proposée` → `Acceptée` / `Refusée` / `Expirée` → `Livrée` (ou `Annulée` avant livraison)
+- Une proposition d'affectation expire **14 jours** après son envoi sans réponse
 
 ## Récits utilisateurs
 
@@ -48,6 +51,14 @@ Permettre à l'équipe de coordination de Repousse de créer et publier des év�
 |-----|-------|----------|
 | US-DIST-10 | Consulter les inscrits d'un créneau (mobile) | Must |
 | US-DIST-11 | Valider les quantités distribuées | Must |
+
+### Coordinateur & Famille d'accueil — Approvisionnement depuis les nurseries
+
+| Réf | Titre | Priorité |
+|-----|-------|----------|
+| US-DIST-12 | Proposer une affectation de plants d'une nurserie à un événement | Should |
+| US-DIST-13 | Répondre à une proposition d'affectation | Should |
+| US-DIST-14 | Suivre, livrer ou annuler une affectation | Should |
 
 ## Détail des récits
 
@@ -174,16 +185,57 @@ Permettre à l'équipe de coordination de Repousse de créer et publier des év�
 
 ---
 
+### US-DIST-12 — Proposer une affectation de plants d'une nurserie à un événement
+**En tant que** Coordinateur, **je veux** demander à une famille d'accueil de fournir une quantité de plants pour un événement **afin de** constituer le stock de la distribution à partir du réseau de nurseries.
+
+**Critères d'acceptation :**
+- Accessible depuis la vue des stocks (US-PROFIL-15 : ligne taxon ou nurserie) et depuis la page de l'événement
+- Choix d'un événement `Brouillon` ou `Publié`, d'une nurserie, d'un taxon qu'elle conserve et d'une quantité
+- Quantité limitée au disponible de la ligne : quantité déclarée moins les affectations `Proposée` et `Acceptée`
+- La proposition réserve immédiatement la quantité côté nurserie, sans modifier le stock de l'événement
+- La famille est notifiée (centre de notifications et email) avec l'échéance de réponse
+- Échéance : 14 jours après la proposition ; passé ce délai, l'affectation passe `Expirée`, la quantité est libérée et le coordinateur est notifié
+
+---
+
+### US-DIST-13 — Répondre à une proposition d'affectation
+**En tant qu'** Utilisateur avec le profil Famille d'accueil, **je veux** accepter ou refuser les demandes de plants **afin de** confirmer ce que je peux réellement fournir.
+
+**Critères d'acceptation :**
+- Bloc « Demandes d'affectation » dans « Mes nurseries » : événement, dates des créneaux, taxon, quantité, échéance
+- Acceptation : la quantité est ajoutée au stock de l'événement pour ce taxon (ligne créée si absente)
+- Refus avec motif facultatif : la quantité est libérée côté nurserie
+- Le coordinateur auteur de la proposition est notifié de la réponse
+- La famille ne peut pas descendre la quantité d'une ligne de plante sous le total réservé, ni archiver une nurserie portant des affectations en cours
+
+---
+
+### US-DIST-14 — Suivre, livrer ou annuler une affectation
+**En tant que** Coordinateur, **je veux** suivre les affectations jusqu'à la remise des plants **afin que** les stocks des nurseries reflètent ce qui a réellement quitté le réseau.
+
+**Critères d'acceptation :**
+- Liste des affectations par événement et dans la vue nurseries, filtrable par statut
+- « Marquer livrée » sur une affectation `Acceptée` : la quantité est déduite de la ligne de plante de la nurserie ; l'affectation n'est plus modifiable
+- Annulation possible tant que l'affectation n'est pas livrée ; si elle était `Acceptée`, la quantité est retirée du stock de l'événement
+- Annulation refusée si le stock non réservé de l'événement est insuffisant (plants déjà réservés par des Adoptants)
+- La famille est notifiée de l'annulation
+
+---
+
 ## Points ouverts
 
 - Délai de confirmation après notification liste d'attente (US-DIST-08)
 - Dérogation coordinateur pour annulation < 48h ?
 - Export (CSV/PDF) de la liste des inscrits par créneau — prévu ?
 - Disponibilité hors connexion (US-DIST-10) — à confirmer selon choix technique
+- Livraison partielle d'une affectation (US-DIST-14) — saisir une quantité livrée inférieure ?
+- Relance de la famille avant expiration d'une proposition (US-DIST-12) — rappel à J-3 ?
+- Stock d'événement en « quantité inconnue » (US-DIST-03) : comportement à l'acceptation d'une affectation
 
 ## Dépendances
 
 - **EP-02** (Auth) — authentification requise pour toutes les actions
 - **EP-03** (Profils) — profil Adoptant + projet de plantation obligatoire à la réservation
 - **EP-05** (Taxons) — sélection des espèces depuis la liste administrable
+- **EP-03** (Profils) — nurseries des familles d'accueil comme source d'approvisionnement (US-PROFIL-11, US-PROFIL-15)
 - **EP-06** (Dashboard) — données de distribution alimentent les indicateurs d'impact
