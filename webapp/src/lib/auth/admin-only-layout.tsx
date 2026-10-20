@@ -4,18 +4,10 @@ import { requireRole } from "@/lib/auth/require-role";
 import { getCurrentUserServer } from "@/server/current-user";
 
 /**
- * Shared guard for routes stricter than their parent layout's "member"
- * baseline (Tableaux de bord and /projets-plantation browsing). Re-exported as the default
- * export of each route's own layout.tsx.
- */
-export async function AdminOnlyLayout({ children }: { children: ReactNode }) {
-  requireRole(await getCurrentUserServer(), "admin");
-  return children;
-}
-
-/**
- * Same guard, superadmin only: the Coordination, Pages and Legacy sidebar
- * sections are template leftovers kept for the superadmin account alone.
+ * Shared guard for routes kept for the superadmin account alone: the
+ * Tableaux de bord (demo data only, until a dedicated dev role exists) and
+ * the Coordination, Pages and Legacy sidebar sections (template leftovers).
+ * Re-exported as the default export of each route's own layout.tsx.
  */
 export async function SuperadminOnlyLayout({ children }: { children: ReactNode }) {
   requireRole(await getCurrentUserServer(), "superadmin");

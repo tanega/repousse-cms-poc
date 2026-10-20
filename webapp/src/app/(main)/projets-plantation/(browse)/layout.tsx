@@ -19,7 +19,8 @@ import { SearchDialog } from "../../dashboard/_components/sidebar/search-dialog"
 import { ThemeSwitcher } from "../../dashboard/_components/sidebar/theme-switcher";
 
 export default async function ProjetsPlantationBrowseLayout({ children }: Readonly<{ children: ReactNode }>) {
-  requireRole(await getCurrentUserServer(), "admin");
+  // Tableaux de bord section: demo data, superadmin only (see SuperadminOnlyLayout).
+  requireRole(await getCurrentUserServer(), "superadmin");
 
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";

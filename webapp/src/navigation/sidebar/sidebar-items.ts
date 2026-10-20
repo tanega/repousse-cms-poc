@@ -95,27 +95,28 @@ export const sidebarItems: NavGroup[] = [
   {
     id: 1,
     label: "Tableaux de bord",
+    // Demo data only: kept for the superadmin until a dedicated dev role exists.
     items: [
       {
         id: "vie-associative",
         title: "Vie associative",
         url: "/dashboard/vie-associative",
         icon: Leaf,
-        minRole: "admin",
+        minRole: "superadmin",
       },
       {
         id: "carte",
         title: "Carte",
         url: "/dashboard/carte",
         icon: Map,
-        minRole: "admin",
+        minRole: "superadmin",
       },
       {
         id: "crm",
         title: "CRM",
         url: "/dashboard/crm",
         icon: ChartBar,
-        minRole: "admin",
+        minRole: "superadmin",
       },
       {
         id: "distributions",
@@ -124,14 +125,14 @@ export const sidebarItems: NavGroup[] = [
         icon: Package,
         // /distributions itself stays a public guest-facing form (see
         // middleware PUBLIC_PATHS) — only the sidebar entry is hidden.
-        minRole: "admin",
+        minRole: "superadmin",
       },
       {
         id: "projets-plantation",
         title: "Projets de plantation",
         url: "/projets-plantation",
         icon: TreePine,
-        minRole: "admin",
+        minRole: "superadmin",
       },
     ],
   },
