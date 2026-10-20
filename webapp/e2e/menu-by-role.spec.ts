@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
 
-// The Coordination / Pages / Legacy sidebar sections and the GitHub link and
-// theme settings of the top bar are template leftovers: only the superadmin
-// account keeps them.
-const LEFTOVER_SECTIONS = ["Coordination", "Pages", "Legacy"];
+// The Tableaux de bord section (demo data only), the Coordination / Pages /
+// Legacy sidebar sections and the GitHub link and theme settings of the top
+// bar (template leftovers) are kept for the superadmin account only.
+const LEFTOVER_SECTIONS = ["Tableaux de bord", "Coordination", "Pages", "Legacy"];
 
 test.describe("administrateur (non superadmin)", () => {
   test.use({ storageState: "e2e/.auth/plain-admin.json" });
 
   test("does not see the template sections nor the GitHub / theme settings controls", async ({ page }) => {
-    await page.goto("/dashboard/vie-associative");
+    await page.goto("/admin/adherents");
 
     // The admin sections are still there…
     await expect(page.getByRole("link", { name: "Membres" })).toBeVisible();
@@ -23,8 +23,17 @@ test.describe("administrateur (non superadmin)", () => {
     await expect(page.getByRole("button", { name: "Theme settings" })).toHaveCount(0);
   });
 
+  test("lands on the Membres admin page", async ({ page }) => {
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/admin\/adherents/);
+  });
+
   test("cannot open the leftover pages directly", async ({ page }) => {
     for (const path of [
+      "/dashboard/vie-associative",
+      "/dashboard/carte",
+      "/dashboard/crm",
+      "/projets-plantation",
       "/dashboard/tasks",
       "/dashboard/calendar",
       "/admin/kanban",
@@ -37,7 +46,7 @@ test.describe("administrateur (non superadmin)", () => {
   });
 
   test("the command palette does not offer them either", async ({ page }) => {
-    await page.goto("/dashboard/vie-associative");
+    await page.goto("/admin/adherents");
     await page.keyboard.press("Control+j");
     await page.getByPlaceholder(/Search|Rechercher/i).fill("Kanban");
     await expect(page.getByRole("option", { name: /Kanban/ })).toHaveCount(0);
@@ -58,6 +67,8 @@ test.describe("superadmin", () => {
 
     await page.goto("/dashboard/tasks");
     await expect(page).toHaveURL(/\/dashboard\/tasks/);
+    await page.goto("/dashboard/carte");
+    await expect(page).toHaveURL(/\/dashboard\/carte/);
   });
 });
 

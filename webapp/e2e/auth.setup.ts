@@ -82,7 +82,7 @@ async function loginWithPasscode(page: Page, email: string): Promise<void> {
   }
 
   for (let i = 0; i < 10; i++) {
-    if (/\/dashboard/.test(page.url())) break;
+    if (/\/(dashboard|admin)/.test(page.url())) break;
     await page.waitForTimeout(1000);
     const passer = hankoAuth.getByText("Passer", { exact: true });
     if ((await passer.count()) > 0) {
@@ -90,7 +90,8 @@ async function loginWithPasscode(page: Page, email: string): Promise<void> {
     }
   }
 
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
+  // Admins land on /admin/adherents, members on /dashboard/me.
+  await expect(page).toHaveURL(/\/(dashboard|admin)/, { timeout: 15_000 });
 }
 
 setup("authenticate as admin", async ({ page }) => {
