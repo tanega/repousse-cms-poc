@@ -182,6 +182,7 @@ Cycle d'hébergement
 | Champ | Type | Remarque |
 |-------|------|----------|
 | Adresse d'accueil | string / coordonnées | Peut différer de l'adresse personnelle. Masquée aux membres si le profil est privé |
+| Téléphone de contact | string | Facultatif. Visible des seuls coordinateurs — voir US-PROFIL-14 |
 | Capacité (nombre de plants) | integer | Indicatif |
 | Surface disponible (m²) | float | Facultatif |
 | Espèces pouvant être accueillies | taxon[] | Lié EP-05 |
@@ -226,6 +227,7 @@ Cycle d'hébergement
 | US-PROFIL-06 | Renseigner les informations spécifiques Famille d'accueil | Should |
 | US-PROFIL-13 | Renseigner ses informations d'accueil avant de demander le parcours | Must |
 | US-PROFIL-11 | Gérer ses nurseries | Should |
+| US-PROFIL-14 | Renseigner un téléphone de contact Famille d'accueil | Should |
 
 ### RGPD & suppression
 
@@ -240,6 +242,14 @@ Cycle d'hébergement
 |-----|-------|----------|
 | US-PROFIL-09 | Consulter le profil d'un utilisateur (Admin) | Must |
 | US-PROFIL-10 | Modifier le profil d'un utilisateur pour modération (Admin) | Should |
+
+### Administration — Familles d'accueil & nurseries
+
+| Réf | Titre | Priorité |
+|-----|-------|----------|
+| US-PROFIL-15 | Consulter les stocks des nurseries par taxon (Admin) | Must |
+| US-PROFIL-16 | Consulter la carte des nurseries et les contacts des familles (Admin) | Should |
+| US-PROFIL-17 | Exporter les stocks des nurseries (Admin) | Should |
 
 ## Détail des récits
 
@@ -355,6 +365,54 @@ Une nurserie est un lieu de réserve : la serre du jardin, le garage, un terrain
 
 ---
 
+### US-PROFIL-14 — Renseigner un téléphone de contact Famille d'accueil
+**En tant qu'** Utilisateur avec le profil Famille d'accueil, **je veux** indiquer un numéro de téléphone **afin que** les coordinateurs puissent me joindre rapidement pour préparer une distribution.
+
+**Critères d'acceptation :**
+- Champ « Téléphone » ajouté aux informations d'accueil (US-PROFIL-06), dans le formulaire de demande de parcours (US-PROFIL-13) et dans les paramètres du profil
+- Facultatif : les familles déjà validées ne sont pas bloquées
+- Format français ou international validé à la saisie, stocké normalisé
+- Visible uniquement par le membre lui-même et les coordinateurs (`admin`/`superadmin`), quel que soit le réglage de visibilité du profil
+
+---
+
+### US-PROFIL-15 — Consulter les stocks des nurseries par taxon (Admin)
+**En tant qu'** Administrateur, **je veux** voir en un écran ce que conservent les nurseries du réseau **afin de** préparer les futures distributions de plants d'arbres et d'arbustes.
+
+Sous-section « Familles d'accueil & nurseries » du menu Administration.
+
+**Critères d'acceptation :**
+- Indicateurs : plants disponibles, nurseries actives, familles d'accueil concernées, taxons représentés, plants en attente de validation de taxon
+- Tableau des stocks en arbre taxonomique (genre → espèce → variété, EP-05) : chaque ligne parente cumule sa propre quantité et celle de ses descendants ; colonnes quantité déclarée, réservée (affectations en cours, US-DIST-12) et disponible, nombre de nurseries
+- Filtre par catégorie de taxon (arbres, arbustes…) et recherche par nom commun ou scientifique
+- Le détail d'un taxon liste les nurseries qui le conservent (famille, nurserie, quantité disponible)
+- Seules les nurseries non archivées sont comptées ; les profils privés sont inclus
+- Les plants dont la demande de taxon est en attente (US-TAX-13) apparaissent dans une section séparée, hors totaux, avec un lien vers la modération des demandes
+
+---
+
+### US-PROFIL-16 — Consulter la carte des nurseries et les contacts des familles (Admin)
+**En tant qu'** Administrateur, **je veux** situer les nurseries et joindre les familles qui les gèrent **afin d'** organiser la collecte des plants au plus près des lieux de distribution.
+
+**Critères d'acceptation :**
+- Carte des nurseries géolocalisées, synchronisée avec les filtres de US-PROFIL-15 (catégorie, taxon) : seules les nurseries concernées sont affichées
+- Fiche d'une nurserie : nom, adresse, stock résumé, famille d'accueil (nom, email, téléphone), lien vers la fiche membre
+- Les nurseries sans coordonnées sont listées à part
+- Liste tabulaire des nurseries : famille, nurserie, adresse, total de plants disponibles, contact
+
+---
+
+### US-PROFIL-17 — Exporter les stocks des nurseries (Admin)
+**En tant qu'** Administrateur, **je veux** exporter les stocks **afin de** les exploiter hors de la plateforme (tableur, réunion de préparation).
+
+**Critères d'acceptation :**
+- Export CSV « stock par taxon » : taxon, nom scientifique, catégorie, quantité déclarée, réservée, disponible, nombre de nurseries
+- Export CSV « détail par nurserie » : famille, email, téléphone, nurserie, adresse, taxon, quantité déclarée, réservée, disponible
+- Les exports respectent les filtres actifs
+- Exports réservés aux coordinateurs ; contiennent des données personnelles (mention RGPD dans l'interface)
+
+---
+
 ### US-PROFIL-07 — Accéder aux informations RGPD
 **En tant qu'** Utilisateur, **je veux** accéder facilement aux informations sur la gestion de mes données **afin d'** exercer mes droits.
 
@@ -402,13 +460,11 @@ Une nurserie est un lieu de réserve : la serre du jardin, le garage, un terrain
 - Liste définitive des champs profil — atelier prestataire (base : formulaire Google Adoptant)
 - Catégories de notifications — atelier prestataire
 - Notification à l'utilisateur lors d'une modification admin — décision à prendre
-- Vue coordinateur transverse des nurseries (« qui a des *Quercus robur* ? ») — l'endpoint
-  `GET /api/v1/admin/nurseries?taxon_id=` existe et est testé, mais n'a pas encore d'écran ;
-  les coordinateurs passent aujourd'hui par la page profil de chaque membre
 
 ## Dépendances
 
 - **EP-02** (Auth) — activation de compte prérequis
 - **EP-04** (Projets) — profil Adoptant requis pour créer un projet de plantation
 - **EP-01** (Distributions) — profil Adoptant requis pour réserver
-- **EP-05** (Taxons) — sélection d'espèces dans le profil Famille d'accueil
+- **EP-05** (Taxons) — sélection d'espèces dans le profil Famille d'accueil, arbre taxonomique des stocks (US-PROFIL-15)
+- **EP-01** (Distributions) — affectation des stocks de nurseries aux événements (US-DIST-12 à 14)
