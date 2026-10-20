@@ -18,6 +18,18 @@ defmodule RepousseWeb.Schemas.Nursery do
         lng: %Schema{type: :number, format: :float, nullable: true},
         archived_at: %Schema{type: :string, format: "date-time", nullable: true},
         plants: %Schema{type: :array, items: NurseryPlant},
+        owner: %Schema{
+          type: :object,
+          nullable: true,
+          description: "Owner contact — only on the coordinator listing (`GET /admin/nurseries`)",
+          properties: %{
+            id: %Schema{type: :string, format: :uuid},
+            first_name: %Schema{type: :string, nullable: true},
+            last_name: %Schema{type: :string, nullable: true},
+            email: %Schema{type: :string},
+            phone: %Schema{type: :string, nullable: true, description: "E.164"}
+          }
+        },
         inserted_at: %Schema{type: :string, format: "date-time"},
         updated_at: %Schema{type: :string, format: "date-time"}
       },

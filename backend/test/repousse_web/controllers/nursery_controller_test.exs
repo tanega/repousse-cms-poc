@@ -151,6 +151,31 @@ defmodule RepousseWeb.NurseryControllerTest do
       assert %{"data" => [%{"name" => "Réserve discrète"}]} = json_response(conn, 200)
     end
 
+    test "includes the owner's contact details", %{conn: conn, private_map: pm} do
+      owner =
+        insert(:user, first_name: "Camille", last_name: "Durand", email: "camille@example.org")
+
+      insert(:user_profile,
+        user: owner,
+        profile_type: :host_family,
+        hosting_phone: "+33612345678"
+      )
+
+      insert(:nursery, user: owner)
+
+      conn = conn |> authed(insert(:admin_user), pm) |> get(~p"/api/v1/admin/nurseries")
+
+      assert %{"data" => [%{"owner" => owner_json}]} = json_response(conn, 200)
+
+      assert owner_json == %{
+               "id" => owner.id,
+               "first_name" => "Camille",
+               "last_name" => "Durand",
+               "email" => "camille@example.org",
+               "phone" => "+33612345678"
+             }
+    end
+
     test "filters by taxon", %{conn: conn, private_map: pm} do
       wanted = insert(:taxon)
       matching = insert(:nursery, name: "Avec le taxon")
