@@ -92,6 +92,8 @@ export default function MemberProfilePage() {
   const engagements = profiles.map((p) => toEngagementProfileId(p.profile_type)).filter(Boolean);
   const hostFamily = profiles.find((p) => p.profile_type === "host_family");
   const canEdit = isOwnProfile || member.id === user?.id;
+  const holdsProfile = (type: "adoptant" | "host_family") =>
+    profiles.some((p) => p.profile_type === type && p.status !== "rejected");
 
   return (
     <div className="space-y-4">
@@ -147,16 +149,20 @@ export default function MemberProfilePage() {
             {canEdit && (
               <div className="flex flex-col items-stretch gap-2">
                 <Button asChild size="lg">
-                  <a href="https://www.repousse.org" target="_blank" rel="noreferrer">
+                  <a href="https://www.helloasso.com/associations/repousse" target="_blank" rel="noreferrer">
                     Je souhaite adhérer à Repousse à prix libre
                   </a>
                 </Button>
-                <Button asChild size="lg" variant="outline">
-                  <Link href={`/membres/${id}/settings`}>Je souhaite devenir famille d'accueil</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline">
-                  <Link href="/mes-projets">Je souhaite devenir adoptant</Link>
-                </Button>
+                {!holdsProfile("host_family") && (
+                  <Button asChild size="lg" variant="outline">
+                    <Link href={`/membres/${id}/settings`}>Je souhaite devenir famille d'accueil</Link>
+                  </Button>
+                )}
+                {!holdsProfile("adoptant") && (
+                  <Button asChild size="lg" variant="outline">
+                    <Link href="/mes-projets">Je souhaite devenir adoptant</Link>
+                  </Button>
+                )}
                 {user?.adhesion_active ? (
                   <p className="text-right text-emerald-700 text-xs">Adhésion à jour</p>
                 ) : (
