@@ -35,13 +35,9 @@ Le parcours Bénévole n’est plus dans les réglages. Ne pas le chercher.
 
 ## 3. Profil
 
-Sur http://www.localhost/membres/me, montrer les trois gros boutons :
+Sur http://www.localhost/membres/me, montrer le bouton **Je souhaite adhérer à Repousse à prix libre**. Il ouvre https://www.helloasso.com/associations/repousse.
 
-- Je souhaite adhérer à Repousse à prix libre. Il ouvre repousse.org. Dire que le vrai lien HelloAsso n’est pas encore fourni.
-- Je souhaite devenir famille d’accueil.
-- Je souhaite devenir adoptant.
-
-Montrer la mention « Adhésion à jour » sous les boutons.
+Si le compte a déjà les parcours adoptant et famille d’accueil, les boutons « devenir famille d’accueil » et « devenir adoptant » ne s’affichent plus. Les pastilles Adoptant et Famille d’accueil restent.
 
 ## 4. Devenir famille d’accueil
 
@@ -103,8 +99,8 @@ Administration, Impact.
 
 ## Ce qu’il ne faut pas chercher pendant la démo
 
-- Le dessin du baobab sur la page de connexion.
-- Le vrai bouton HelloAsso « prix libre ».
+- Le dessin du baobab manquant : il est maintenant sur le panneau de connexion.
+- Un autre lien que la page HelloAsso de l’association pour « prix libre ».
 - L’adhésion qui se met à jour toute seule.
 - Des PDF, photos ou vidéos dans le back-office.
 - Les arbres déjà plantés importés depuis l’ancien fichier.
@@ -113,7 +109,6 @@ Administration, Impact.
 ## À leur demander à la fin
 
 - Le visuel baobab.
-- Le lien HelloAsso de l’adhésion à prix libre.
 - Les clés HelloAsso.
 - Qui, en plus des coordinateurs, peut modifier le stock de la clé des champs.
 - Sur quel écran déposer des documents.
