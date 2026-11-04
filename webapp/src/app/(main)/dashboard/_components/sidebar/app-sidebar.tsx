@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     user?.role,
     user?.profiles.filter((p) => p.status === "active").map((p) => p.profile_type),
   );
-  const homeHref = user && hasMinRole(user.role, "admin") ? APP_CONFIG.defaultPath : "/dashboard/me";
+  const homeHref = user && hasMinRole(user.role, "admin") ? APP_CONFIG.defaultPath : "/membres/me";
 
   const navUser = {
     name: user ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email : "",

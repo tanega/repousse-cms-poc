@@ -12,8 +12,17 @@ defmodule Repousse.Distributions.Policy do
   def authorize(:manage_event, user, _params), do: allow(Accounts.admin?(user))
   def authorize(:validate_reservation, user, _params), do: allow(Accounts.admin?(user))
 
+  def authorize(:record_handover, user, _params) do
+    volunteer? = not is_nil(Accounts.get_active_profile(user.id, :volunteer))
+    allow(Accounts.admin?(user) or volunteer?)
+  end
+
   def authorize(action, user, _params) when action in [:reserve, :join_waitlist] do
-    allow(user.status == :active and user.adhesion_active)
+    cond do
+      user.status != :active -> {:error, :unauthorized}
+      user.adhesion_active -> :ok
+      true -> {:error, :membership_required}
+    end
   end
 
   def authorize(_action, _user, _params), do: {:error, :unauthorized}

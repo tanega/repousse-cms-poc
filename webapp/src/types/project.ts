@@ -23,6 +23,9 @@ export interface Project {
   archived_at: string | null;
   owner_id: string | null;
   cover_image_url: string | null;
+  planter_level?: string | null;
+  mulch?: string | null;
+  place_kind?: string | null;
   preferred_species: ProjectPreferredSpecies[];
   inserted_at: string;
   updated_at: string;

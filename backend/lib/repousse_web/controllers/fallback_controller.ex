@@ -63,6 +63,32 @@ defmodule RepousseWeb.FallbackController do
     conn |> put_status(:conflict) |> json(%{error: "Une demande est déjà en attente ou ce profil est déjà actif"})
   end
 
+  def call(conn, {:error, :membership_required}) do
+    conn
+    |> put_status(:forbidden)
+    |> json(%{error: "Votre adhésion HelloAsso n'est pas à jour pour cette année."})
+  end
+
+  def call(conn, {:error, :plant_not_depositable}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{error: "Cet arbre ne peut pas être déposé : il faut une espèce validée et une quantité d'au moins 1."})
+  end
+
+  def call(conn, {:error, :reservation_not_confirmed}) do
+    conn |> put_status(:conflict) |> json(%{error: "Cette réservation n'est plus modifiable."})
+  end
+
+  def call(conn, {:error, :deposit_already_allocated}) do
+    conn |> put_status(:conflict) |> json(%{error: "Ce dépôt est déjà versé dans une distribution."})
+  end
+
+  def call(conn, {:error, :invalid_handover}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{error: "Indiquez au moins un arbre avec une quantité supérieure à zéro."})
+  end
+
   def call(conn, {:error, :host_family_profile_required}) do
     conn
     |> put_status(:unprocessable_entity)
@@ -91,13 +117,13 @@ defmodule RepousseWeb.FallbackController do
     conn |> put_status(:unprocessable_entity) |> json(%{error: "Validation failed", details: errors})
   end
 
+  def call(conn, {:error, reason}) when is_binary(reason) do
+    conn |> put_status(:bad_request) |> json(%{error: reason})
+  end
+
   # A failed `Ecto.Enum` cast puts the parameterized type tuple in `opts`, and
   # tuples have no String.Chars — interpolating one blindly turns a 422 into a
   # 500.
   defp stringify(value) when is_tuple(value) or is_map(value), do: inspect(value)
   defp stringify(value), do: to_string(value)
-
-  def call(conn, {:error, reason}) when is_binary(reason) do
-    conn |> put_status(:bad_request) |> json(%{error: reason})
-  end
 end

@@ -38,6 +38,19 @@ test.describe("Famille d'accueil — profil d'engagement et nurseries", () => {
 
       await dialog.locator("#hosting_capacity").fill("120");
       await dialog.locator("#hosting_address").fill("12 rue des Lilas, 75020 Paris");
+      await dialog.locator("#hosting_phone").fill("0612345678");
+      for (const label of [
+        "Je vis dans le département 44",
+        "Je vis sur place et peux arroser pendant les canicules, ou me faire remplacer",
+        "J'ai un jardin ombragé (haie ou arbres)",
+        "Les arbres pourront être stockés à même le sol, pas sur une terrasse",
+        "Je m'engage à mettre à jour la liste des arbres que j'ai chez moi",
+        "Je m'engage à prendre soin de chaque arbre et à demander de l'aide si certains vont mal",
+        "J'accepte que Repousse conserve ces informations",
+        "Je n'habite pas un secteur qui a déjà assez de familles d'accueil",
+      ]) {
+        await dialog.getByRole("checkbox", { name: label }).check();
+      }
       await dialog.getByRole("button", { name: "Envoyer ma demande" }).click();
       await expect(page.getByText("Demande envoyée aux administrateurs.")).toBeVisible();
       await expect(card.getByRole("button", { name: "En attente de validation" })).toBeDisabled();

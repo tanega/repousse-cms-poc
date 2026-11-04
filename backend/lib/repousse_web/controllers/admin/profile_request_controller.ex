@@ -87,6 +87,7 @@ defmodule RepousseWeb.Admin.ProfileRequestController do
       hosting_surface_m2: profile.hosting_surface_m2,
       hosting_availability: profile.hosting_availability,
       hosting_equipment: profile.hosting_equipment,
+      hosting_answers: profile.hosting_answers || %{},
       hosted_species:
         Enum.map(profile.hosted_species, fn s ->
           %{taxon_id: s.taxon_id, common_name: s.taxon && s.taxon.common_name}

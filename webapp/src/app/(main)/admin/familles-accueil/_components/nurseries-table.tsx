@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Mail, MapPinOff, Phone } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPhone } from "@/lib/phone";
 import type { AdminNursery } from "@/types/nursery";
@@ -23,10 +24,12 @@ export function NurseriesTable({
   rows,
   focusedId,
   onFocus,
+  onEdit,
 }: {
   rows: NurseryRow[];
   focusedId: string | null;
   onFocus: (nurseryId: string | null) => void;
+  onEdit?: (nursery: AdminNursery) => void;
 }) {
   return (
     <Table className="**:data-[slot='table-cell']:px-4 **:data-[slot='table-head']:px-4">
@@ -70,7 +73,22 @@ export function NurseriesTable({
                   )}
                 </TableCell>
                 <TableCell className="py-2.5">
-                  <div className="font-medium text-sm">{nursery.name}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="font-medium text-sm">{nursery.name}</div>
+                    {onEdit && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEdit(nursery);
+                        }}
+                      >
+                        Modifier la liste
+                      </Button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                     {nursery.address ?? "Adresse non renseignée"}
                     {!locatedOnMap && (

@@ -60,6 +60,11 @@ defmodule Repousse.Taxa.Requests do
           except: [user.id]
         )
 
+        Notifications.notify_ops(
+          "Nouvelle demande d'essence",
+          "#{display_name(user)} (#{user.email}) demande l'ajout de « #{label(request)} »."
+        )
+
         {:ok, request}
       end
     else

@@ -40,6 +40,10 @@ config :cors_plug,
 config :repousse,
   cors_allowed_origins: ["http://www.localhost", "http://localhost:3000", "http://localhost:3002"]
 
+# Inbox that receives pending profile and species requests. Override with
+# OPS_NOTIFICATION_EMAIL in the environment when the address changes.
+config :repousse, :ops_notification_email, "desnouvelles.repousse@gmail.com"
+
 # Configure the endpoint
 config :repousse, RepousseWeb.Endpoint,
   url: [host: "localhost"],

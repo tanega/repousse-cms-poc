@@ -22,7 +22,7 @@ defmodule RepousseWeb.ReservationControllerTest do
 
   describe "POST /distributions/:id/reservations" do
     test "reserves items at a slot", %{conn: conn, private_map: pm} do
-      user = insert(:user)
+      user = insert(:user, adhesion_active: true)
       event = insert(:distribution_event)
       slot = insert(:slot, event: event)
       taxon = insert(:taxon)

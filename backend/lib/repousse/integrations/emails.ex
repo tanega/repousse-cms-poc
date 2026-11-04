@@ -71,6 +71,20 @@ defmodule Repousse.Integrations.Emails do
     |> Mailer.deliver()
   end
 
+  @doc "Mail sent to the association inbox when a request is waiting."
+  def send_ops_email(address, title, body) when is_binary(address) do
+    new()
+    |> to(address)
+    |> from({"Association Repousse", "no-reply@repousse.org"})
+    |> subject(title)
+    |> text_body("""
+    #{body}
+
+    L'équipe Repousse
+    """)
+    |> Mailer.deliver()
+  end
+
   @doc """
   Emails an in-app notification (see `Repousse.Notifications`): title as
   subject, body plus a link back to the webapp.

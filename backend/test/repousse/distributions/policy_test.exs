@@ -33,8 +33,8 @@ defmodule Repousse.Distributions.PolicyTest do
     test "a user without an active adhesion cannot reserve or join waitlists" do
       user = build(:user, status: :active, adhesion_active: false)
 
-      assert {:error, :unauthorized} = Bodyguard.permit(Policy, :reserve, user, %{})
-      assert {:error, :unauthorized} = Bodyguard.permit(Policy, :join_waitlist, user, %{})
+      assert {:error, :membership_required} = Bodyguard.permit(Policy, :reserve, user, %{})
+      assert {:error, :membership_required} = Bodyguard.permit(Policy, :join_waitlist, user, %{})
     end
 
     test "a suspended user cannot reserve or join waitlists even with adhesion_active true" do

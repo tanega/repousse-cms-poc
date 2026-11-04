@@ -2,10 +2,21 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
   use Repousse.DataCase, async: true
 
   import Repousse.Factory
-  import Swoosh.TestAssertions
 
   alias Repousse.Accounts
   alias Repousse.Notifications
+
+  defp flush_emails(acc \\ []) do
+    receive do
+      {:email, email} -> flush_emails([email | acc])
+    after
+      0 -> acc
+    end
+  end
+
+  defp email_to?(email, address) do
+    Enum.any?(email.to, fn {_name, to} -> to == address end)
+  end
 
   @hosting %{"hosting_capacity" => 80, "hosting_address" => "12 rue des Lilas, Paris"}
 
@@ -22,7 +33,9 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
       assert [%{type: "profile_request.created"}] = Notifications.list_for_user(admin)
       assert [%{type: "profile_request.created"}] = Notifications.list_for_user(superadmin)
       assert [] = Notifications.list_for_user(user)
-      assert_email_sent(to: {"Alice Dupont", admin.email})
+      emails = flush_emails()
+      assert Enum.any?(emails, &email_to?(&1, admin.email))
+      assert Enum.any?(emails, &email_to?(&1, "desnouvelles.repousse@gmail.com"))
     end
 
     test "Famille d'accueil needs its hosting details before it can be requested" do

@@ -24,6 +24,7 @@ import {
 import { taxonCollection } from "../../especes-vegetales/_components/collection";
 import { createSlotCollection, createStockCollection, distributionEventCollection } from "./collection";
 import type { DeleteTarget } from "./delete-alert-dialog";
+import { HandoverPanel } from "../../../distributions/_components/handover-panel";
 import { DeleteAlertDialog } from "./delete-alert-dialog";
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
@@ -231,6 +232,8 @@ export function DistributionDetailView({ id }: { id: string }) {
           </div>
         </div>
       </div>
+
+      <HandoverPanel eventId={id} />
 
       <DeleteAlertDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />
     </>

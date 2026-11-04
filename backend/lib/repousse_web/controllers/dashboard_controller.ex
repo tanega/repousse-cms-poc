@@ -49,7 +49,7 @@ defmodule RepousseWeb.DashboardController do
     responses: [ok: API.object("CO2 estimate")]
 
   def co2(conn, _params) do
-    json(conn, %{data: %{estimated_kg: 0, note: "not_implemented"}})
+    json(conn, %{data: Repousse.Impact.summary()})
   end
 
   operation :map_distributions,

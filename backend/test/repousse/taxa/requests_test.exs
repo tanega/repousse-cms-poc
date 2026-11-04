@@ -7,6 +7,14 @@ defmodule Repousse.Taxa.RequestsTest do
   alias Repousse.Nurseries
   alias Repousse.Taxa.Requests
 
+  defp flush_emails(acc \\ []) do
+    receive do
+      {:email, email} -> flush_emails([email | acc])
+    after
+      0 -> acc
+    end
+  end
+
   defp host_family do
     user = insert(:user)
     insert(:user_profile, user: user, profile_type: :host_family)
@@ -28,6 +36,11 @@ defmodule Repousse.Taxa.RequestsTest do
       assert [%{type: "taxon_request.created"}] = Notifications.list_for_user(editor)
       assert [] = Notifications.list_for_user(member)
       assert [] = Notifications.list_for_user(asker)
+
+      assert Enum.any?(flush_emails(), fn email ->
+               email.subject == "Nouvelle demande d'essence" and
+                 Enum.any?(email.to, fn {_name, address} -> address == "desnouvelles.repousse@gmail.com" end)
+             end)
     end
 
     test "needs at least one name" do

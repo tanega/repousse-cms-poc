@@ -5,6 +5,7 @@ defmodule Repousse.Accounts do
   alias Repousse.Notifications
   alias Repousse.Repo
   alias Repousse.Accounts.{User, UserProfile}
+  alias Repousse.Projects.Project
 
   # ── User queries ──────────────────────────────────────────────────────────
 
@@ -21,6 +22,43 @@ defmodule Repousse.Accounts do
     Repo.preload(user_or_users, profiles: :hosted_species)
   end
   def get_user_by_email(email), do: Repo.get_by(User, email: email)
+
+  @doc "Adoptants whose name or email matches, with their planting projects."
+  def search_adoptants(query) when is_binary(query) do
+    term = String.trim(query)
+    if term == "" do
+      []
+    else
+      like = "%#{term}%"
+
+      users =
+        from(u in User,
+          join: profile in UserProfile,
+          on: profile.user_id == u.id and profile.profile_type == :adoptant and profile.status == :active,
+          where:
+            ilike(fragment("coalesce(?, '')", u.first_name), ^like) or
+              ilike(fragment("coalesce(?, '')", u.last_name), ^like) or ilike(u.email, ^like),
+          limit: 8
+        )
+        |> Repo.all()
+
+      ids = Enum.map(users, & &1.id)
+
+      projects =
+        from(p in Project, where: p.owner_id in ^ids and is_nil(p.archived_at), select: %{id: p.id, name: p.name, owner_id: p.owner_id})
+        |> Repo.all()
+        |> Enum.group_by(& &1.owner_id)
+
+      Enum.map(users, fn user ->
+        %{
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          projects: Enum.map(Map.get(projects, user.id, []), &%{id: &1.id, name: &1.name})
+        }
+      end)
+    end
+  end
   def get_user_by_hanko_id(hanko_id), do: Repo.get_by(User, hanko_id: hanko_id)
 
   def list_users(opts \\ []) do
@@ -280,6 +318,11 @@ defmodule Repousse.Accounts do
         link: "/admin/demandes-parcours",
         payload: %{profile_id: profile.id, user_id: user.id, profile_type: type}
       })
+
+      Notifications.notify_ops(
+        "Nouvelle demande : #{@profile_labels[type]}",
+        "#{display_name(user)} (#{user.email}) souhaite rejoindre le parcours #{@profile_labels[type]}."
+      )
 
       {:ok, Repo.preload(profile, :hosted_species)}
     end

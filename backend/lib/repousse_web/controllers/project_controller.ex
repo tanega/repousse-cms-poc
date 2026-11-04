@@ -3,6 +3,7 @@ defmodule RepousseWeb.ProjectController do
   use OpenApiSpex.ControllerSpecs
   action_fallback RepousseWeb.FallbackController
 
+  alias Repousse.Impact
   alias Repousse.Projects
   alias Repousse.Projects.Policy
   alias RepousseWeb.OpenApiHelpers, as: API
@@ -274,6 +275,42 @@ defmodule RepousseWeb.ProjectController do
       entry_id: [in: :path, type: :string, description: "Journal entry ID"]
     ],
     responses: [no_content: API.no_content()]
+
+  operation :plantings,
+    summary: "Trees attached to a planting project",
+    parameters: [id: [in: :path, type: :string, description: "Project ID"]],
+    responses: [ok: API.list("Plantings")]
+
+  def plantings(conn, %{"id" => project_id}) do
+    with :ok <- Bodyguard.permit(Policy, :read_project, conn.assigns.current_user, %{project: Projects.get_project!(project_id)}) do
+      data = project_id |> Impact.list_plantings() |> Enum.map(&Impact.present_planting/1)
+      json(conn, %{data: data})
+    end
+  end
+
+  operation :tree_reports,
+    summary: "Adoptant reports on how the project's trees are doing",
+    parameters: [id: [in: :path, type: :string, description: "Project ID"]],
+    responses: [ok: API.list("Tree reports")]
+
+  def tree_reports(conn, %{"id" => project_id}) do
+    with :ok <- Bodyguard.permit(Policy, :read_project, conn.assigns.current_user, %{project: Projects.get_project!(project_id)}) do
+      data = project_id |> Impact.list_reports() |> Enum.map(&Impact.present_report/1)
+      json(conn, %{data: data})
+    end
+  end
+
+  operation :add_tree_report,
+    summary: "Tell the association how the trees on this project are doing",
+    parameters: [id: [in: :path, type: :string, description: "Project ID"]],
+    request_body: {"Tree report", "application/json", %OpenApiSpex.Schema{type: :object}},
+    responses: [created: API.object("Tree report")]
+
+  def add_tree_report(conn, %{"id" => project_id, "tree_report" => attrs}) do
+    with {:ok, report} <- Impact.create_report(conn.assigns.current_user, project_id, attrs) do
+      conn |> put_status(:created) |> json(%{data: Impact.present_report(report)})
+    end
+  end
 
   def delete_journal_entry(conn, %{"entry_id" => entry_id}) do
     entry = Projects.get_journal_entry!(entry_id)

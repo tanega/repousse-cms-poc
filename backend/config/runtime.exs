@@ -23,6 +23,10 @@ end
 config :repousse, RepousseWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+if ops_email = System.get_env("OPS_NOTIFICATION_EMAIL") do
+  config :repousse, :ops_notification_email, ops_email
+end
+
 hanko_api_url = System.get_env("HANKO_API_URL", "http://auth.localhost")
 
 config :repousse, :hanko,

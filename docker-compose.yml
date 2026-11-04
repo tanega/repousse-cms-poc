@@ -52,38 +52,55 @@ services:
       timeout: 3s
       retries: 5
 
+  # minio/minio and minio/mc left Docker Hub in September 2026.
+  # Chainguard's image is the public replacement. It runs as uid 65532 and
+  # has no shell, so a fresh root-owned volume would be unwritable and the
+  # old `mc ready` healthcheck cannot run inside this container.
   minio:
-    image: minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
+    user: "0:0"
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
       - minio_data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     labels:
       - traefik.enable=true
       - traefik.http.routers.minio.rule=Host(`media.localhost`)
       - traefik.http.services.minio.loadbalancer.server.port=9000
 
-  # One-shot job: creates the avatars bucket and makes it publicly readable
-  # (download-only) so `avatar_url` values served to the browser need no
-  # signing. Exits after running; `minio` healthy is its only dependency.
-  minio-init:
-    image: minio/mc:latest
+  minio-ready:
+    image: cgr.dev/chainguard/minio-client:latest
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER:-minioadmin}:${MINIO_ROOT_PASSWORD:-minioadmin}@minio:9000
+    entrypoint: ["mc", "ready", "local"]
     depends_on:
       minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin} &&
-      mc mb -p local/${MINIO_AVATARS_BUCKET:-avatars} &&
-      mc anonymous set download local/${MINIO_AVATARS_BUCKET:-avatars}
-      "
+        condition: service_started
+    restart: on-failure
+
+  # One-shot jobs: create the avatars bucket and make it publicly readable
+  # (download-only) so `avatar_url` values served to the browser need no
+  # signing. The client image is distroless, so each `mc` call is its own
+  # container. `MC_HOST_local` replaces `mc alias set`.
+  minio-init:
+    image: cgr.dev/chainguard/minio-client:latest
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER:-minioadmin}:${MINIO_ROOT_PASSWORD:-minioadmin}@minio:9000
+    entrypoint: ["mc", "mb", "-p", "local/${MINIO_AVATARS_BUCKET:-avatars}"]
+    depends_on:
+      minio-ready:
+        condition: service_completed_successfully
+
+  minio-policy:
+    image: cgr.dev/chainguard/minio-client:latest
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER:-minioadmin}:${MINIO_ROOT_PASSWORD:-minioadmin}@minio:9000
+    entrypoint: ["mc", "anonymous", "set", "download", "local/${MINIO_AVATARS_BUCKET:-avatars}"]
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
 
   hanko:
     build:
@@ -141,7 +158,7 @@ services:
         condition: service_started
       mailpit:
         condition: service_started
-      minio-init:
+      minio-policy:
         condition: service_completed_successfully
 
   webapp:

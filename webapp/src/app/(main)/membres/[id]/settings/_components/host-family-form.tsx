@@ -46,6 +46,7 @@ const schema = z.object({
   hosting_equipment: z.array(z.string()),
   hosting_phone: z.string().refine((value) => !value.trim() || isPlausiblePhone(value), "Numéro de téléphone invalide"),
   hosted_species: z.array(z.string()),
+  answers: z.record(z.string(), z.boolean()),
 });
 
 // Asking to join needs the basics an admin reviews before deciding.
@@ -56,7 +57,32 @@ const requestSchema = schema.superRefine((value, ctx) => {
   if (!value.hosting_address.trim()) {
     ctx.addIssue({ code: "custom", path: ["hosting_address"], message: "Indiquez une adresse ou une zone d'accueil" });
   }
+  if (!value.hosting_phone.trim()) {
+    ctx.addIssue({ code: "custom", path: ["hosting_phone"], message: "Indiquez un téléphone" });
+  }
+  for (const key of REQUIRED_ANSWERS) {
+    if (!value.answers[key]) {
+      ctx.addIssue({ code: "custom", path: ["answers"], message: "Confirmez les conditions d'accueil" });
+      break;
+    }
+  }
 });
+
+const REQUIRED_ANSWERS = ["dept_44", "waters", "shade", "ground", "updates_list", "cares", "rgpd", "not_saturated"] as const;
+
+const ANSWER_LABELS: Record<string, string> = {
+  dept_44: "Je vis dans le département 44",
+  waters: "Je vis sur place et peux arroser pendant les canicules, ou me faire remplacer",
+  shade: "J'ai un jardin ombragé (haie ou arbres)",
+  ground: "Les arbres pourront être stockés à même le sol, pas sur une terrasse",
+  updates_list: "Je m'engage à mettre à jour la liste des arbres que j'ai chez moi",
+  cares: "Je m'engage à prendre soin de chaque arbre et à demander de l'aide si certains vont mal",
+  gauge: "Optionnel : je dispose d'une jauge",
+  bare_root: "Optionnel : j'accepte qu'on dépose chez moi des arbres en racines nues, que je rempoterai",
+  map_consent: "J'accepte de diffuser sur la carte mon prénom, mon téléphone et ma ville",
+  rgpd: "J'accepte que Repousse conserve ces informations",
+  not_saturated: "Je n'habite pas un secteur qui a déjà assez de familles d'accueil",
+};
 
 type HostFamilyValues = z.infer<typeof schema>;
 
@@ -70,6 +96,7 @@ const EMPTY: HostFamilyValues = {
   hosting_equipment: [],
   hosting_phone: "",
   hosted_species: [],
+  answers: {},
 };
 
 /** Empty string means "not filled in" — send null rather than 0. */
@@ -92,6 +119,7 @@ function toFormValues(profile: UserProfile | undefined): HostFamilyValues {
     hosting_equipment: profile.hosting_equipment ?? [],
     hosting_phone: formatPhone(profile.hosting_phone),
     hosted_species: (profile.hosted_species ?? []).map((s) => s.taxon_id),
+    answers: profile.hosting_answers ?? {},
   };
 }
 
@@ -135,6 +163,7 @@ export function HostFamilyForm({ mode = "edit", onRequested }: HostFamilyFormPro
           hosting_availability: value.hosting_availability.trim() || null,
           hosting_equipment: value.hosting_equipment as HostingEquipment[],
           hosting_phone: value.hosting_phone.trim() || null,
+          hosting_answers: value.answers,
           hosted_species: value.hosted_species.map((taxon_id) => ({ taxon_id })),
         };
 
@@ -232,7 +261,38 @@ export function HostFamilyForm({ mode = "edit", onRequested }: HostFamilyFormPro
           }}
         </form.Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        {requesting && (
+          <form.Field name="answers">
+            {(field) => (
+              <Field>
+                <FieldLabel>Conditions d'accueil</FieldLabel>
+                <div className="space-y-2">
+                  {Object.entries(ANSWER_LABELS).map(([key, label]) => (
+                    <div key={key} className="flex items-start gap-2">
+                      <Checkbox
+                        id={`answer-${key}`}
+                        checked={Boolean(field.state.value[key])}
+                        onCheckedChange={(next) => field.handleChange({ ...field.state.value, [key]: next === true })}
+                      />
+                      <Label htmlFor={`answer-${key}`} className="font-normal text-sm leading-snug">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Pour vérifier s'il y a déjà une famille d'accueil près de chez vous :{" "}
+                  <a className="underline" href="https://www.repousse.org" target="_blank" rel="noreferrer">
+                    repousse.org
+                  </a>
+                </p>
+                {field.state.meta.isTouched && !field.state.meta.isValid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )}
+          </form.Field>
+        )}
+
+        <div className={requesting ? "" : "grid gap-4 sm:grid-cols-2"}>
           <form.Field name="hosting_capacity">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
@@ -256,6 +316,7 @@ export function HostFamilyForm({ mode = "edit", onRequested }: HostFamilyFormPro
             }}
           </form.Field>
 
+          {!requesting && (
           <form.Field name="hosting_surface_m2">
             {(field) => (
               <Field>
@@ -274,8 +335,11 @@ export function HostFamilyForm({ mode = "edit", onRequested }: HostFamilyFormPro
               </Field>
             )}
           </form.Field>
+          )}
         </div>
 
+        {!requesting && (
+        <>
         <form.Field name="hosting_availability">
           {(field) => (
             <Field>
@@ -366,6 +430,8 @@ export function HostFamilyForm({ mode = "edit", onRequested }: HostFamilyFormPro
             );
           }}
         </form.Field>
+        </>
+        )}
       </FieldGroup>
 
       <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>

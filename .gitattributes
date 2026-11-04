@@ -1,0 +1,4 @@
+# Docker executes these with a Linux shebang. CRLF makes the kernel look up
+# `/bin/sh\r` and fail with "no such file or directory".
+*.sh text eol=lf
+Dockerfile text eol=lf
