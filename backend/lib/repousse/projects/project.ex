@@ -21,6 +21,9 @@ defmodule Repousse.Projects.Project do
              :archived_at,
              :owner_id,
              :cover_image_url,
+             :planter_level,
+             :mulch,
+             :place_kind,
              :preferred_species,
              :inserted_at,
              :updated_at
@@ -41,6 +44,9 @@ defmodule Repousse.Projects.Project do
     field :published_at, :utc_datetime
     field :archived_at, :utc_datetime
     field :cover_image_url, :string
+    field :planter_level, :string
+    field :mulch, :string
+    field :place_kind, :string
 
     belongs_to :owner, Repousse.Accounts.User
     has_many :members, Repousse.Projects.ProjectMember
@@ -56,7 +62,8 @@ defmodule Repousse.Projects.Project do
     project
     |> cast(attrs, [
       :name, :description, :management_type, :address, :lat, :lng,
-      :surface_m2, :soil_type, :publication_status, :owner_id, :cover_image_url
+      :surface_m2, :soil_type, :publication_status, :owner_id, :cover_image_url,
+      :planter_level, :mulch, :place_kind
     ])
     |> validate_required([:name, :owner_id])
     |> validate_length(:name, min: 2, max: 200)

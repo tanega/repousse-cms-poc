@@ -145,9 +145,24 @@ export default function MemberProfilePage() {
 
           <div className="flex flex-col items-end gap-2.5">
             {canEdit && (
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/membres/${id}/settings`}>Modifier le profil</Link>
-              </Button>
+              <div className="flex flex-col items-stretch gap-2">
+                <Button asChild size="lg">
+                  <a href="https://www.repousse.org" target="_blank" rel="noreferrer">
+                    Je souhaite adhérer à Repousse à prix libre
+                  </a>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <Link href={`/membres/${id}/settings`}>Je souhaite devenir famille d'accueil</Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <Link href="/mes-projets">Je souhaite devenir adoptant</Link>
+                </Button>
+                {user?.adhesion_active ? (
+                  <p className="text-right text-emerald-700 text-xs">Adhésion à jour</p>
+                ) : (
+                  <p className="text-right text-muted-foreground text-xs">Adhésion HelloAsso non confirmée</p>
+                )}
+              </div>
             )}
             {engagements.length > 0 && (
               <div className="flex flex-wrap justify-end gap-1.5">
@@ -195,7 +210,12 @@ export default function MemberProfilePage() {
         </TabsContent>
 
         {hostFamily && (
-          <TabsContent value="nurseries" className="mt-4">
+          <TabsContent value="nurseries" className="mt-4 space-y-3">
+            {canEdit && visible && (
+              <Button asChild>
+                <Link href="/mes-nurseries">Mettre à jour mes stocks</Link>
+              </Button>
+            )}
             {!visible ? (
               <Card>
                 <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
@@ -209,8 +229,13 @@ export default function MemberProfilePage() {
               </Card>
             ) : nurseries.length === 0 ? (
               <Card>
-                <CardContent className="py-8 text-center text-muted-foreground text-sm">
+                <CardContent className="flex flex-col items-center gap-3 py-8 text-center text-muted-foreground text-sm">
                   Aucune nurserie déclarée.
+                  {canEdit && (
+                    <Button asChild>
+                      <Link href="/mes-nurseries">Mettre à jour mes stocks</Link>
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (

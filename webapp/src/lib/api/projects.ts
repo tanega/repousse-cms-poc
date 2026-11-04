@@ -46,6 +46,9 @@ export interface ProjectAttrs {
   soil_type?: string | null;
   publication_status?: PublicationStatus;
   cover_image_url?: string | null;
+  planter_level?: string | null;
+  mulch?: string | null;
+  place_kind?: string | null;
   /** Full replace: sent on every create/update, mirrors the form's editable array. */
   preferred_species?: { taxon_id: string }[];
 }
@@ -63,6 +66,52 @@ export async function updateProject(id: string, attrs: ProjectAttrs): Promise<Pr
   const res = await authedFetch(`/api/v1/projects/${id}`, {
     method: "PUT",
     body: JSON.stringify({ project: attrs }),
+  });
+  const { data } = await res.json();
+  return data;
+}
+
+export interface ProjectPlanting {
+  id: string;
+  quantity: number;
+  source: "distribution" | "historical";
+  note: string | null;
+  planted_on: string | null;
+  project_id: string | null;
+  taxon_id: string;
+  common_name: string | null;
+}
+
+export interface TreeReport {
+  id: string;
+  status: "thriving" | "struggling" | "dead";
+  note: string | null;
+  reason: string | null;
+  project_id: string;
+  taxon_id: string | null;
+  common_name: string | null;
+  inserted_at: string;
+}
+
+export async function fetchProjectPlantings(projectId: string): Promise<ProjectPlanting[]> {
+  const res = await authedFetch(`/api/v1/projects/${projectId}/plantings`);
+  const { data } = await res.json();
+  return data;
+}
+
+export async function fetchTreeReports(projectId: string): Promise<TreeReport[]> {
+  const res = await authedFetch(`/api/v1/projects/${projectId}/tree_reports`);
+  const { data } = await res.json();
+  return data;
+}
+
+export async function createTreeReport(
+  projectId: string,
+  attrs: { status: TreeReport["status"]; note?: string; reason?: string },
+): Promise<TreeReport> {
+  const res = await authedFetch(`/api/v1/projects/${projectId}/tree_reports`, {
+    method: "POST",
+    body: JSON.stringify({ tree_report: attrs }),
   });
   const { data } = await res.json();
   return data;

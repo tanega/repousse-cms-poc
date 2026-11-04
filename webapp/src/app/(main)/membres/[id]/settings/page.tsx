@@ -409,7 +409,7 @@ function EngagementsSection() {
         description="Choisissez vos profils pour adapter votre expérience à votre engagement au sein de l'association."
       />
       <div className="space-y-4">
-        {engagementProfiles.map((profile) => {
+        {engagementProfiles.filter((profile) => profile.id !== "Bénévole").map((profile) => {
           const Icon = profile.icon;
           const active = isActive(profile.id);
           const status = statusOf(profile.id);
@@ -582,7 +582,7 @@ function EngagementsSection() {
           <DialogHeader>
             <DialogTitle>Rejoindre le parcours Famille d'accueil</DialogTitle>
             <DialogDescription>
-              Décrivez vos capacités d'accueil : les administrateurs les consultent avant de valider votre demande.
+              Trois informations suffisent : où, un téléphone, et combien de plants. Les arbres s'ajoutent ensuite.
             </DialogDescription>
           </DialogHeader>
           <HostFamilyForm mode="request" onRequested={() => setHostRequestOpen(false)} />

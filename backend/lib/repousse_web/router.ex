@@ -46,9 +46,15 @@ defmodule RepousseWeb.Router do
 
     # Nurseries (epic-03 US-PROFIL-11) — Famille d'accueil plant reserves
     get "/me/nurseries", NurseryController, :mine
+    get "/me/cle_des_champs", NurseryController, :my_deposits
+    get "/adoptants", NurseryController, :search_adoptants
     post "/me/nurseries", NurseryController, :create
     put "/me/nurseries/:id", NurseryController, :update
     delete "/me/nurseries/:id", NurseryController, :archive
+    post "/me/nurseries/:nursery_id/plants", NurseryController, :add_plant
+    delete "/me/nurseries/:nursery_id/plants/:id", NurseryController, :delete_plant
+    post "/me/nurseries/:nursery_id/plants/:id/deposit", NurseryController, :deposit
+    post "/me/nurseries/:nursery_id/plants/:id/direct", NurseryController, :direct_gift
 
     # Member-facing profile page
     get "/members/:id", MemberController, :show
@@ -60,6 +66,8 @@ defmodule RepousseWeb.Router do
     get "/distributions/:id/stocks", DistributionController, :stocks
     post "/distributions/:id/reservations", ReservationController, :create
     get "/distributions/:id/reservations/mine", ReservationController, :mine
+    get "/distributions/:distribution_id/handovers", ReservationController, :handovers
+    post "/distributions/:distribution_id/reservations/:id/handover", ReservationController, :handover
     delete "/distributions/:distribution_id/reservations/:id", ReservationController, :cancel
     post "/distributions/:id/waitlist", WaitlistController, :join
     get "/distributions/:id/waitlist/mine", WaitlistController, :mine
@@ -69,6 +77,14 @@ defmodule RepousseWeb.Router do
     scope "/admin", Admin, as: :admin do
       pipe_through :admin
 
+      get "/cle_des_champs", CleDesChampsController, :index
+      post "/cle_des_champs", CleDesChampsController, :create
+      patch "/cle_des_champs/:id", CleDesChampsController, :update
+      delete "/cle_des_champs/:id", CleDesChampsController, :delete
+      post "/distributions/:distribution_id/stocks/from_cle_des_champs", CleDesChampsController, :allocate
+      get "/impact", ImpactController, :show
+      post "/impact/gifts", ImpactController, :create_gift
+      post "/impact/hedges", ImpactController, :create_hedge
       resources "/distributions", DistributionController, except: [:new, :edit]
       patch "/distributions/:id/cover_image", DistributionController, :update_cover_image
       post "/distributions/:id/publish", DistributionController, :publish
@@ -99,6 +115,9 @@ defmodule RepousseWeb.Router do
     post "/projects/:id/media", ProjectController, :upload_media
     delete "/projects/:id/media/:media_id", ProjectController, :delete_media
     get "/projects/:id/distribution_reservations", ProjectController, :distribution_reservations
+    get "/projects/:id/plantings", ProjectController, :plantings
+    get "/projects/:id/tree_reports", ProjectController, :tree_reports
+    post "/projects/:id/tree_reports", ProjectController, :add_tree_report
     get "/projects/:id/journal", ProjectController, :journal
     post "/projects/:id/journal", ProjectController, :add_journal_entry
     put "/projects/:project_id/journal/:entry_id", ProjectController, :update_journal_entry

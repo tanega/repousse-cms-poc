@@ -296,6 +296,15 @@ function HostFamilyDetailsList({ details }: { details: NonNullable<ProfileReques
         : "—",
     ],
     [
+      "Conditions confirmées",
+      details.hosting_answers
+        ? Object.entries(details.hosting_answers)
+            .filter(([, value]) => value)
+            .map(([key]) => key)
+            .join(", ") || "—"
+        : "—",
+    ],
+    [
       "Espèces pouvant être accueillies",
       details.hosted_species.length
         ? details.hosted_species.map((s) => s.common_name ?? "Espèce inconnue").join(", ")

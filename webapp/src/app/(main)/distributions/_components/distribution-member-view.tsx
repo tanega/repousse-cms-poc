@@ -27,6 +27,7 @@ import {
   joinWaitlist,
 } from "@/lib/api/reservations";
 import { fetchPublicTaxa } from "@/lib/api/taxa";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useHankoSession } from "@/lib/auth/use-hanko-session";
 import { cn } from "@/lib/utils";
 import { EVENT_STATUS_COLORS, EVENT_STATUS_LABELS } from "@/types/distribution";
@@ -88,7 +89,9 @@ export function DistributionMemberView({ slug }: { slug: string }) {
 
   const { isAuthenticated } = useHankoSession();
   const [justAuthenticated, setJustAuthenticated] = useState(false);
+  const { user } = useCurrentUser();
   const authed = isAuthenticated === true || justAuthenticated;
+  const membershipBlocksReserve = Boolean(authed && user && !user.adhesion_active);
   // Guests go through a 3-step wizard (identité → projet → réservation);
   // signed-in members (and the not-yet-resolved null state) keep the
   // single-page form with the project field inline, per the e2e contract.
@@ -158,7 +161,8 @@ export function DistributionMemberView({ slug }: { slug: string }) {
   const canCancelActive = reservedSlot ? canCancelSlot(reservedSlot.date, reservedSlot.start_time) : true;
 
   const selectedLines = Object.entries(quantities).filter(([, qty]) => qty > 0);
-  const canReserve = !isClosed && !!slotId && !!projectId && selectedLines.length > 0 && !submitting;
+  const canReserve =
+    !isClosed && !!slotId && !!projectId && selectedLines.length > 0 && !submitting && !membershipBlocksReserve;
 
   let reserveButtonLabel = "Réserver";
   if (submitting) reserveButtonLabel = "Réservation…";
@@ -444,6 +448,15 @@ export function DistributionMemberView({ slug }: { slug: string }) {
               </div>
             )}
 
+            {membershipBlocksReserve && (
+              <Alert>
+                <AlertTitle>Adhésion requise</AlertTitle>
+                <AlertDescription>
+                  La réservation est réservée aux adoptants à jour de leur adhésion HelloAsso.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Button className="w-full" disabled={!canReserve} onClick={handleReserve}>
               {reserveButtonLabel}
             </Button>
@@ -473,7 +486,7 @@ export function DistributionMemberView({ slug }: { slug: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={isClosed || !authed}
+                      disabled={isClosed || !authed || membershipBlocksReserve}
                       onClick={() => handleJoinWaitlist(s.taxon_id)}
                     >
                       Rejoindre la liste d'attente

@@ -13,6 +13,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
             <Image src="/img/repousse-logo.webp" alt="Repousse" width={40} height={40} className="size-10" />
             <h1 className="font-medium text-2xl">Association Repousse</h1>
             <p className="text-sm">Commun numérique pour une pépinière participative qui oeuvre dans la vraie vie!</p>
+            <p className="text-sm">Votre session reste ouverte 14 jours sur cet appareil.</p>
           </div>
 
           <div className="absolute bottom-10 flex w-full justify-between px-10">
@@ -27,7 +28,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
             <div className="flex-1 space-y-1 text-foreground">
               <h2 className="font-medium">Besoin d'aide ?</h2>
               <p className="text-sm">
-                Si vous n'arrivez pas à vous connecter, que vous souhaitez supprier votre compte ou que vous avez des
+                Si vous n'arrivez pas à vous connecter, que vous souhaitez supprimer votre compte ou que vous avez des
                 questions sur la confidentialité de vos données, n'hésitez pas à nous contacter à aide(à)repousse.org
               </p>
             </div>

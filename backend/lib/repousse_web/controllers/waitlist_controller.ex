@@ -4,6 +4,7 @@ defmodule RepousseWeb.WaitlistController do
   action_fallback RepousseWeb.FallbackController
 
   alias Repousse.Distributions
+  alias Repousse.Distributions.Policy
   alias RepousseWeb.OpenApiHelpers, as: API
   alias RepousseWeb.Schemas.WaitlistEntry
 
@@ -19,9 +20,10 @@ defmodule RepousseWeb.WaitlistController do
     responses: [created: API.object(WaitlistEntry, "Waitlist entry")]
 
   def join(conn, %{"id" => event_id, "taxon_id" => taxon_id}) do
-    user_id = conn.assigns.current_user.id
+    user = conn.assigns.current_user
 
-    with {:ok, entry} <- Distributions.join_waitlist(user_id, event_id, taxon_id) do
+    with :ok <- Bodyguard.permit(Policy, :join_waitlist, user, %{}),
+         {:ok, entry} <- Distributions.join_waitlist(user.id, event_id, taxon_id) do
       conn |> put_status(:created) |> json(%{data: entry})
     end
   end

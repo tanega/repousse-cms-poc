@@ -14,7 +14,7 @@ export default function MesNurseriesPage() {
       <div>
         <h1 className="font-semibold text-2xl">Mes nurseries</h1>
         <p className="mt-1 text-muted-foreground text-sm">
-          Vos lieux de réserve et les jeunes plants que vous y conservez avant distribution.
+          Ajoutez ou retirez vos arbres. Un bouton par ligne les dépose à la clé des champs.
         </p>
       </div>
       <MesNurseriesView />

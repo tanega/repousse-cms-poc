@@ -145,6 +145,57 @@ defmodule Repousse.Distributions do
     end
   end
 
+  def handover_rows(event_id) do
+    event_id
+    |> list_reservations_for_event()
+    |> Enum.map(fn reservation ->
+      %{
+        id: reservation.id,
+        status: reservation.status,
+        project_id: reservation.project_id,
+        user: %{
+          id: reservation.user.id,
+          first_name: reservation.user.first_name,
+          last_name: reservation.user.last_name,
+          email: reservation.user.email
+        },
+        items:
+          Enum.map(reservation.items, fn item ->
+            %{
+              taxon_id: item.taxon_id,
+              common_name: item.taxon && item.taxon.common_name,
+              reserved_qty: item.reserved_qty,
+              distributed_qty: item.distributed_qty
+            }
+          end)
+      }
+    end)
+  end
+
+  def record_handover(%Reservation{status: status}, _items, _recorder) when status != :confirmed do
+    {:error, :reservation_not_confirmed}
+  end
+
+  def record_handover(%Reservation{} = reservation, items, %Repousse.Accounts.User{} = recorder) when is_list(items) do
+    if items == [] do
+      {:error, :invalid_handover}
+    else
+      reservation = Repo.preload(reservation, :items)
+
+      Ecto.Multi.new()
+      |> Ecto.Multi.run(:distributed, fn _repo, _ -> apply_distributed_qty(reservation, items) end)
+      |> Ecto.Multi.update(:reservation, Reservation.validate_changeset(reservation, %{}))
+      |> Ecto.Multi.run(:plantings, fn _repo, _ ->
+        Repousse.Impact.record_distribution(reservation, items, recorder)
+      end)
+      |> Repo.transaction()
+      |> case do
+        {:ok, %{reservation: validated}} -> {:ok, Repo.preload(validated, [items: [:taxon]], force: true)}
+        {:error, _step, reason, _} -> {:error, reason}
+      end
+    end
+  end
+
   def validate_reservation(%Reservation{} = reservation, attrs \\ %{}) do
     case reservation |> Reservation.validate_changeset(attrs) |> Repo.update() do
       {:ok, validated} -> {:ok, Repo.preload(validated, :items)}
@@ -200,6 +251,21 @@ defmodule Repousse.Distributions do
   defp put_reservations_count(%Event{} = event) do
     event = Repo.preload(event, :reservations)
     %{event | reservations_count: Enum.count(event.reservations, &(&1.status == :confirmed))}
+  end
+
+  defp apply_distributed_qty(reservation, items) do
+    Enum.reduce_while(items, {:ok, []}, fn %{taxon_id: taxon_id, quantity: qty}, {:ok, acc} ->
+      case Enum.find(reservation.items, &(&1.taxon_id == taxon_id)) do
+        nil ->
+          {:cont, {:ok, acc}}
+
+        item ->
+          case item |> ReservationItem.validate_changeset(qty) |> Repo.update() do
+            {:ok, updated} -> {:cont, {:ok, [updated | acc]}}
+            error -> {:halt, error}
+          end
+      end
+    end)
   end
 
   defp check_stock_available(%Stock{quantity_unknown: true}, _qty), do: :ok

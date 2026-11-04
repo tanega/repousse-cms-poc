@@ -4,6 +4,7 @@ defmodule RepousseWeb.ReservationController do
   action_fallback RepousseWeb.FallbackController
 
   alias Repousse.Distributions
+  alias Repousse.Distributions.Policy
   alias RepousseWeb.OpenApiHelpers, as: API
   alias RepousseWeb.Schemas.Reservation
 
@@ -25,7 +26,8 @@ defmodule RepousseWeb.ReservationController do
     project = Repousse.Projects.get_project!(project_id)
     items_attrs = Enum.map(items, &%{stock_id: &1["stock_id"], qty: &1["qty"], taxon_id: &1["taxon_id"]})
 
-    with {:ok, %{reservation: reservation}} <- Distributions.create_reservation(user, slot, event, project, items_attrs) do
+    with :ok <- Bodyguard.permit(Policy, :reserve, user, %{}),
+         {:ok, %{reservation: reservation}} <- Distributions.create_reservation(user, slot, event, project, items_attrs) do
       conn |> put_status(:created) |> json(%{data: reservation})
     end
   end
@@ -48,6 +50,62 @@ defmodule RepousseWeb.ReservationController do
       id: [in: :path, type: :string, description: "Reservation ID"]
     ],
     responses: [ok: API.object(Reservation, "Cancelled reservation"), forbidden: API.object("Not your reservation")]
+
+  operation :handovers,
+    summary: "List reservations so a volunteer can record what was picked up",
+    parameters: [distribution_id: [in: :path, type: :string, description: "Event ID"]],
+    responses: [ok: API.list("Handover rows")]
+
+  def handovers(conn, %{"distribution_id" => event_id}) do
+    with :ok <- Bodyguard.permit(Policy, :record_handover, conn.assigns.current_user, %{}) do
+      json(conn, %{data: Distributions.handover_rows(event_id)})
+    end
+  end
+
+  operation :handover,
+    summary: "Record the trees an adoptant actually picked up and attach them to their project",
+    parameters: [
+      distribution_id: [in: :path, type: :string, description: "Event ID"],
+      id: [in: :path, type: :string, description: "Reservation ID"]
+    ],
+    request_body: {"Quantities actually handed over", "application/json", %OpenApiSpex.Schema{type: :object}},
+    responses: [ok: API.object(Reservation, "Validated reservation")]
+
+  def handover(conn, %{"distribution_id" => event_id, "id" => id} = params) do
+    reservation = Distributions.get_reservation!(id)
+    raw_items = get_in(params, ["handover", "items"]) || []
+
+    cond do
+      reservation.event_id != event_id ->
+        {:error, :not_found}
+
+      true ->
+        with :ok <- Bodyguard.permit(Policy, :record_handover, conn.assigns.current_user, %{}),
+             {:ok, items} <- normalize_handover_items(raw_items),
+             {:ok, validated} <- Distributions.record_handover(reservation, items, conn.assigns.current_user) do
+          json(conn, %{data: validated})
+        end
+    end
+  end
+
+  defp normalize_handover_items(items) when is_list(items) do
+    Enum.reduce_while(items, {:ok, []}, fn item, {:ok, acc} ->
+      taxon_id = item["taxon_id"]
+      quantity = item["quantity"]
+
+      if is_binary(taxon_id) and is_integer(quantity) and quantity > 0 do
+        {:cont, {:ok, [%{taxon_id: taxon_id, quantity: quantity} | acc]}}
+      else
+        {:halt, {:error, :invalid_handover}}
+      end
+    end)
+    |> case do
+      {:ok, []} -> {:error, :invalid_handover}
+      other -> other
+    end
+  end
+
+  defp normalize_handover_items(_), do: {:error, :invalid_handover}
 
   def cancel(conn, %{"id" => id}) do
     reservation = Distributions.get_reservation!(id)

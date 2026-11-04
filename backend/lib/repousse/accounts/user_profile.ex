@@ -31,6 +31,7 @@ defmodule Repousse.Accounts.UserProfile do
              :hosting_surface_m2,
              :hosting_equipment,
              :hosting_phone,
+             :hosting_answers,
              :hosted_species,
              :inserted_at,
              :updated_at
@@ -56,6 +57,7 @@ defmodule Repousse.Accounts.UserProfile do
     field :hosting_surface_m2, :float
     field :hosting_equipment, {:array, :string}, default: []
     field :hosting_phone, :string
+    field :hosting_answers, :map, default: %{}
 
     belongs_to :user, Repousse.Accounts.User
     belongs_to :decided_by, Repousse.Accounts.User
@@ -80,6 +82,7 @@ defmodule Repousse.Accounts.UserProfile do
       :hosting_surface_m2,
       :hosting_equipment,
       :hosting_phone,
+      :hosting_answers,
       :user_id
     ])
     |> validate_required([:profile_type, :user_id])

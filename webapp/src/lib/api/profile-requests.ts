@@ -12,6 +12,7 @@ export interface HostFamilyDetails {
   hosting_surface_m2: number | null;
   hosting_availability: string | null;
   hosting_equipment: HostingEquipment[];
+  hosting_answers?: Record<string, boolean>;
   hosted_species: { taxon_id: string; common_name: string | null }[];
 }
 

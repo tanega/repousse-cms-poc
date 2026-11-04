@@ -11,6 +11,7 @@ export default function LoginV2() {
         <div className="space-y-2 text-center">
           <h1 className="font-medium text-3xl">Connexion</h1>
           <p className="text-muted-foreground text-sm">Accédez à votre espace Repousse.</p>
+          <p className="text-muted-foreground text-sm">Votre session reste ouverte 14 jours sur cet appareil.</p>
         </div>
         <HankoAuth />
       </div>

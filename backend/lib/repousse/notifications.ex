@@ -86,6 +86,28 @@ defmodule Repousse.Notifications do
     {:ok, count}
   end
 
+  @doc """
+  Emails the association inbox (`:ops_notification_email`). A failed delivery
+  is logged and never fails the caller. In-app admin notifications stay
+  separate.
+  """
+  def notify_ops(title, body) do
+    case Application.get_env(:repousse, :ops_notification_email) do
+      email when is_binary(email) and email != "" ->
+        try do
+          Emails.send_ops_email(email, title, body)
+        rescue
+          exception ->
+            Logger.error("Ops notification email failed: #{Exception.message(exception)}")
+        end
+
+      _ ->
+        :ok
+    end
+
+    :ok
+  end
+
   defp deliver_email(%User{} = user, %Notification{} = notification) do
     Emails.send_notification_email(user, notification)
   rescue

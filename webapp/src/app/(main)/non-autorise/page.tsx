@@ -10,7 +10,7 @@ export default async function Page() {
   const user = await getCurrentUserServer();
   let homeHref = "/auth/v2/login";
   if (user) {
-    homeHref = hasMinRole(user.role, "admin") ? APP_CONFIG.defaultPath : "/dashboard/me";
+    homeHref = hasMinRole(user.role, "admin") ? APP_CONFIG.defaultPath : "/membres/me";
   }
 
   return (

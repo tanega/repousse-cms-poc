@@ -31,7 +31,7 @@ secrets:
     - "${HANKO_SECRET_KEY}"
 
 session:
-  lifespan: "1h"
+  lifespan: "336h"
   enable_auth_token_header: true
   cookie:
     domain: "repousse.datae.earth"
@@ -45,6 +45,10 @@ password:
 
 passcode:
   ttl: 120
+
+passkey:
+  acquire_on_registration: "never"
+  acquire_on_login: "never"
 
 email_delivery:
   smtp:

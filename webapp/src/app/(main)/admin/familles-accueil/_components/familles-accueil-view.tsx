@@ -21,7 +21,8 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { fetchAllNurseries } from "@/lib/api/nurseries";
+import { fetchAllNurseries, updateNursery } from "@/lib/api/nurseries";
+import { NurseryForm } from "@/app/(main)/mes-nurseries/_components/nursery-form";
 import { fetchTaxa, fetchTaxonCategories } from "@/lib/api/taxa";
 import type { AdminNursery } from "@/types/nursery";
 import type { Taxon, TaxonCategory } from "@/types/taxon";
@@ -74,6 +75,7 @@ export function FamillesAccueilView() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [taxonId, setTaxonId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<AdminNursery | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -292,7 +294,19 @@ export function FamillesAccueilView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-          <NurseriesTable rows={rows} focusedId={focusedId} onFocus={setFocusedId} />
+          <NurseriesTable rows={rows} focusedId={focusedId} onFocus={setFocusedId} onEdit={setEditing} />
+          {editing && (
+            <NurseryForm
+              open
+              onOpenChange={(open) => !open && setEditing(null)}
+              nursery={editing}
+              taxa={taxa}
+              onSubmit={async (attrs) => {
+                await updateNursery(editing.id, attrs);
+                await load();
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 

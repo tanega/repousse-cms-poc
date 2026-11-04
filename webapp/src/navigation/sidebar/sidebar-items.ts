@@ -81,7 +81,7 @@ export const sidebarItems: NavGroup[] = [
       {
         id: "me",
         title: "Accueil",
-        url: "/dashboard/me",
+        url: "/membres/me",
         icon: Home,
       },
       {
@@ -90,6 +90,27 @@ export const sidebarItems: NavGroup[] = [
         url: "/mes-nurseries",
         icon: Sprout,
         requiresProfile: "host_family",
+      },
+      {
+        id: "distributions",
+        title: "Distributions",
+        url: "/distributions",
+        icon: Package,
+        requiresProfile: "adoptant",
+      },
+      {
+        id: "mes-projets",
+        title: "Projets de plantation",
+        url: "/mes-projets",
+        icon: TreePine,
+        requiresProfile: "adoptant",
+      },
+      {
+        id: "remise",
+        title: "Remise des plants",
+        url: "/remise",
+        icon: Package,
+        minRole: "admin",
       },
     ],
   },
@@ -117,22 +138,6 @@ export const sidebarItems: NavGroup[] = [
         title: "CRM",
         url: "/dashboard/crm",
         icon: ChartBar,
-        minRole: "superadmin",
-      },
-      {
-        id: "distributions",
-        title: "Distributions",
-        url: "/distributions",
-        icon: Package,
-        // /distributions itself stays a public guest-facing form (see
-        // middleware PUBLIC_PATHS) — only the sidebar entry is hidden.
-        minRole: "superadmin",
-      },
-      {
-        id: "projets-plantation",
-        title: "Projets de plantation",
-        url: "/projets-plantation",
-        icon: TreePine,
         minRole: "superadmin",
       },
     ],
@@ -209,6 +214,20 @@ export const sidebarItems: NavGroup[] = [
         title: "Distributions",
         url: "/admin/distributions",
         icon: Package,
+        minRole: "admin",
+      },
+      {
+        id: "admin-cle-des-champs",
+        title: "Dispo à la clé des champs",
+        url: "/admin/cle-des-champs",
+        icon: Warehouse,
+        minRole: "admin",
+      },
+      {
+        id: "admin-impact",
+        title: "Impact",
+        url: "/admin/impact",
+        icon: Leaf,
         minRole: "admin",
       },
       {
