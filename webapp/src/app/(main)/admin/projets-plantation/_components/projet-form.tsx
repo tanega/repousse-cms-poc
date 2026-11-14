@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dropzone, DropzoneEmptyState, DropzoneRejectionError, DropzoneZone } from "@/components/ui/dropzone";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -382,10 +382,6 @@ export function ProjetForm({ mode, projet }: ProjetFormProps) {
                             form.setFieldValue("lng", result.lng);
                           }}
                         />
-                        <FieldDescription>
-                          Recherche via la Base Adresse Nationale — sélectionnez une suggestion pour géolocaliser le
-                          projet.
-                        </FieldDescription>
                       </Field>
                     )}
                   </form.Field>

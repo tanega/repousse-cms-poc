@@ -23,6 +23,7 @@ defmodule RepousseWeb.WaitlistControllerTest do
   describe "POST /distributions/:id/waitlist" do
     test "joins the waitlist for a taxon", %{conn: conn, private_map: pm} do
       user = insert(:user, adhesion_active: true)
+      insert(:project, owner: user)
       event = insert(:distribution_event)
       taxon = insert(:taxon)
 

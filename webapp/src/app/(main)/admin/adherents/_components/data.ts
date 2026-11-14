@@ -18,7 +18,7 @@ export function isAdhesionActive(row: Pick<AdherentRow, "adhesion_active">): boo
 }
 
 export const profileTypeLabels: Record<ProfileType, string> = {
-  volunteer: "Bénévole",
+  volunteer: "Adhérent.e",
   adoptant: "Adoptant",
   host_family: "Famille d'accueil",
 };

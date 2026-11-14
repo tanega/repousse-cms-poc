@@ -8,6 +8,7 @@ defmodule Repousse.Distributions.Policy do
   @behaviour Bodyguard.Policy
 
   alias Repousse.Accounts
+  alias Repousse.Projects
 
   def authorize(:manage_event, user, _params), do: allow(Accounts.admin?(user))
   def authorize(:validate_reservation, user, _params), do: allow(Accounts.admin?(user))
@@ -20,8 +21,9 @@ defmodule Repousse.Distributions.Policy do
   def authorize(action, user, _params) when action in [:reserve, :join_waitlist] do
     cond do
       user.status != :active -> {:error, :unauthorized}
-      user.adhesion_active -> :ok
-      true -> {:error, :membership_required}
+      not user.adhesion_active -> {:error, :membership_required}
+      not Projects.owns_project?(user.id) -> {:error, :project_required}
+      true -> :ok
     end
   end
 

@@ -40,6 +40,9 @@ export interface Hedge {
   id: string;
   name: string;
   length_m: number | null;
+  reinforced_length_m: number | null;
+  tree_count: number | null;
+  commune: string | null;
   survival_rate: number | null;
   planted_on: string | null;
   notes: string | null;
@@ -79,6 +82,9 @@ export async function createGift(attrs: { taxon_id: string; quantity: number; no
 export async function createHedge(attrs: {
   name: string;
   length_m?: number | null;
+  reinforced_length_m?: number | null;
+  tree_count?: number | null;
+  commune?: string | null;
   survival_rate?: number | null;
   planted_on?: string | null;
   notes?: string | null;

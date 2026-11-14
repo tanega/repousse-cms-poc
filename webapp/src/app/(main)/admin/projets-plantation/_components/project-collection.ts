@@ -27,7 +27,7 @@ function toAttrs(p: Partial<Project>): ProjectAttrs {
 export const projectCollection = createCollection(
   queryCollectionOptions<Project>({
     queryKey: ["projects"],
-    queryFn: fetchProjects,
+    queryFn: () => fetchProjects({ all: true }),
     queryClient,
     getKey: (project) => project.id,
     onInsert: async ({ transaction }) => {

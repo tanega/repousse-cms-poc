@@ -12,7 +12,6 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
           <div className="space-y-1 px-10 pt-10 text-foreground">
             <Image src="/img/repousse-logo.webp" alt="Repousse" width={40} height={40} className="size-10" />
             <h1 className="font-medium text-2xl">Association Repousse</h1>
-            <p className="text-sm">Commun numérique pour une pépinière participative qui oeuvre dans la vraie vie!</p>
             <p className="text-sm">Votre session reste ouverte 14 jours sur cet appareil.</p>
           </div>
 
@@ -29,10 +28,10 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
 
           <div className="flex w-full justify-between px-10 pb-10">
             <div className="flex-1 space-y-1 text-foreground">
-              <h2 className="font-medium">Prêt à vous lancer ?</h2>
+              <h2 className="font-medium">Pour récupérer des arbres</h2>
               <p className="text-sm">
-                Si vous êtes adhérent de Repousse, vous avez du recevoir un courriel vous informant de la création de
-                votre compte. Connectez-vous maintenant pour découvrir votre espace et la communauté Repousse
+                Pour faciliter la distribution des arbres et perdre moins de repousses, nous avons créé Baobab :
+                plateforme par laquelle il est désormais obligatoire de passer pour récupérer des arbres Repousse !
               </p>
             </div>
             <Separator orientation="vertical" className="mx-3 h-auto!" />
@@ -40,7 +39,8 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
               <h2 className="font-medium">Besoin d'aide ?</h2>
               <p className="text-sm">
                 Si vous n'arrivez pas à vous connecter, que vous souhaitez supprimer votre compte ou que vous avez des
-                questions sur la confidentialité de vos données, n'hésitez pas à nous contacter à aide(à)repousse.org
+                questions sur la confidentialité de vos données, n'hésitez pas à nous contacter à
+                desnouvelles.repousse@gmail.com
               </p>
             </div>
           </div>

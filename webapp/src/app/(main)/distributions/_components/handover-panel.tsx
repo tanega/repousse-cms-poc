@@ -9,6 +9,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { fetchHandovers, recordHandover, type HandoverRow } from "@/lib/api/handover";
 
+function speciesTotals(rows: HandoverRow[]) {
+  const totals = new Map<string, number>();
+  for (const row of rows) {
+    for (const item of row.items) {
+      const name = item.common_name ?? "Arbre";
+      totals.set(name, (totals.get(name) ?? 0) + item.reserved_qty);
+    }
+  }
+  return [...totals.entries()].map(([name, quantity]) => ({ name, quantity }));
+}
+
 function personName(row: HandoverRow) {
   const name = [row.user.first_name, row.user.last_name].filter(Boolean).join(" ");
   return name || row.user.email;
@@ -72,11 +83,29 @@ export function HandoverPanel({ eventId }: { eventId: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         {error && <p className="text-destructive text-sm">{error}</p>}
+        {rows && rows.length > 0 && (
+          <div className="space-y-1 text-sm">
+            <p className="font-medium">Essences réservées</p>
+            {speciesTotals(rows).map((line) => (
+              <p key={line.name}>
+                {line.name} · {line.quantity}
+              </p>
+            ))}
+          </div>
+        )}
         {rows && rows.length === 0 && <p className="text-muted-foreground text-sm">Aucune réservation pour cette distribution.</p>}
         {rows?.map((row) => (
           <div key={row.id} className="space-y-2 rounded-lg border p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="font-medium text-sm">{personName(row)}</p>
+              <div>
+                <p className="font-medium text-sm">{personName(row)}</p>
+                {row.slot && (
+                  <p className="text-muted-foreground text-xs">
+                    {row.slot.date} · {row.slot.start_time}–{row.slot.end_time} · {row.slot.location_name}
+                    {row.slot.address ? ` · ${row.slot.address}` : ""}
+                  </p>
+                )}
+              </div>
               <p className="text-muted-foreground text-xs">{row.status === "validated" ? "Déjà enregistré" : "En attente"}</p>
             </div>
             {row.items.map((item) => (

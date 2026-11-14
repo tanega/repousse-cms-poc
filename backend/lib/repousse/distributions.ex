@@ -153,6 +153,7 @@ defmodule Repousse.Distributions do
         id: reservation.id,
         status: reservation.status,
         project_id: reservation.project_id,
+        slot: slot_summary(reservation.slot),
         user: %{
           id: reservation.user.id,
           first_name: reservation.user.first_name,
@@ -170,6 +171,18 @@ defmodule Repousse.Distributions do
           end)
       }
     end)
+  end
+
+  defp slot_summary(nil), do: nil
+
+  defp slot_summary(slot) do
+    %{
+      location_name: slot.location_name,
+      address: slot.address,
+      date: slot.date,
+      start_time: slot.start_time,
+      end_time: slot.end_time
+    }
   end
 
   def record_handover(%Reservation{status: status}, _items, _recorder) when status != :confirmed do

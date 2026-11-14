@@ -69,6 +69,12 @@ defmodule RepousseWeb.FallbackController do
     |> json(%{error: "Votre adhésion HelloAsso n'est pas à jour pour cette année."})
   end
 
+  def call(conn, {:error, :project_required}) do
+    conn
+    |> put_status(:forbidden)
+    |> json(%{error: "Renseignez un projet de plantation avant de réserver des arbres."})
+  end
+
   def call(conn, {:error, :plant_not_depositable}) do
     conn
     |> put_status(:unprocessable_entity)

@@ -21,7 +21,7 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { fetchAllNurseries, updateNursery } from "@/lib/api/nurseries";
+import { archiveNursery, fetchAllNurseries, updateNursery } from "@/lib/api/nurseries";
 import { NurseryForm } from "@/app/(main)/mes-nurseries/_components/nursery-form";
 import { fetchTaxa, fetchTaxonCategories } from "@/lib/api/taxa";
 import type { AdminNursery } from "@/types/nursery";
@@ -294,7 +294,19 @@ export function FamillesAccueilView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-          <NurseriesTable rows={rows} focusedId={focusedId} onFocus={setFocusedId} onEdit={setEditing} />
+          <NurseriesTable
+            rows={rows}
+            focusedId={focusedId}
+            onFocus={setFocusedId}
+            onEdit={setEditing}
+            onDelete={(nursery) => {
+              const confirmed = window.confirm(`Supprimer la nurserie « ${nursery.name} » de la liste ? Son historique est conservé.`);
+              if (!confirmed) return;
+              archiveNursery(nursery.id)
+                .then(() => load())
+                .catch((err) => toast.error(err instanceof Error ? err.message : "Échec de la suppression."));
+            }}
+          />
           {editing && (
             <NurseryForm
               open

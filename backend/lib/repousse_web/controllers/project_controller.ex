@@ -3,6 +3,7 @@ defmodule RepousseWeb.ProjectController do
   use OpenApiSpex.ControllerSpecs
   action_fallback RepousseWeb.FallbackController
 
+  alias Repousse.Accounts
   alias Repousse.Impact
   alias Repousse.Projects
   alias Repousse.Projects.Policy
@@ -20,9 +21,11 @@ defmodule RepousseWeb.ProjectController do
     responses: [ok: API.list(Project, "Planting projects")]
 
   def index(conn, params) do
-    user_id = conn.assigns.current_user.id
+    user = conn.assigns.current_user
     public_only = Map.get(params, "public_only", "false") == "true"
-    projects = Projects.list_projects(user_id: user_id, public_only: public_only)
+    all = Map.get(params, "all", "false") == "true" and Accounts.admin?(user)
+    opts = if all, do: [public_only: public_only], else: [user_id: user.id, public_only: public_only]
+    projects = Projects.list_projects(opts)
     json(conn, %{data: projects})
   end
 

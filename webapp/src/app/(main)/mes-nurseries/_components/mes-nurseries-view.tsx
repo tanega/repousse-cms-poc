@@ -232,10 +232,10 @@ export function MesNurseriesView() {
       <AlertDialog open={pendingArchive !== null} onOpenChange={(open) => !open && setPendingArchive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Archiver « {pendingArchive?.name} » ?</AlertDialogTitle>
+            <AlertDialogTitle>Supprimer « {pendingArchive?.name} » ?</AlertDialogTitle>
             <AlertDialogDescription>
-              La nurserie disparaît de votre liste et de votre profil. Son historique est conservé et reste consultable
-              par les coordinateurs.
+              La nurserie disparaît de votre liste. Son historique est conservé et reste consultable par les
+              coordinateurs. Utilisez ceci pour un doublon ou une erreur.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

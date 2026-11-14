@@ -25,11 +25,13 @@ export function NurseriesTable({
   focusedId,
   onFocus,
   onEdit,
+  onDelete,
 }: {
   rows: NurseryRow[];
   focusedId: string | null;
   onFocus: (nurseryId: string | null) => void;
   onEdit?: (nursery: AdminNursery) => void;
+  onDelete?: (nursery: AdminNursery) => void;
 }) {
   return (
     <Table className="**:data-[slot='table-cell']:px-4 **:data-[slot='table-head']:px-4">
@@ -86,6 +88,19 @@ export function NurseriesTable({
                         }}
                       >
                         Modifier la liste
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDelete(nursery);
+                        }}
+                      >
+                        Supprimer
                       </Button>
                     )}
                   </div>

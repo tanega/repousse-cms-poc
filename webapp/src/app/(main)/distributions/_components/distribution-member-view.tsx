@@ -27,6 +27,7 @@ import {
   joinWaitlist,
 } from "@/lib/api/reservations";
 import { fetchPublicTaxa } from "@/lib/api/taxa";
+import { floriscopeUrl } from "@/lib/floriscope";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useHankoSession } from "@/lib/auth/use-hanko-session";
 import { cn } from "@/lib/utils";
@@ -92,6 +93,9 @@ export function DistributionMemberView({ slug }: { slug: string }) {
   const { user } = useCurrentUser();
   const authed = isAuthenticated === true || justAuthenticated;
   const membershipBlocksReserve = Boolean(authed && user && !user.adhesion_active);
+  const projectBlocksReserve = Boolean(
+    authed && user && projects && !projects.some((project) => !project.archived_at && project.owner_id === user.id),
+  );
   // Guests go through a 3-step wizard (identité → projet → réservation);
   // signed-in members (and the not-yet-resolved null state) keep the
   // single-page form with the project field inline, per the e2e contract.
@@ -135,7 +139,21 @@ export function DistributionMemberView({ slug }: { slug: string }) {
   }
 
   function taxonName(taxonId: string) {
-    return (taxa ?? []).find((t) => t.id === taxonId)?.common_name ?? taxonId;
+    const taxon = (taxa ?? []).find((t) => t.id === taxonId);
+    const href = floriscopeUrl(taxon?.scientific_name);
+    return (
+      <span>
+        {taxon?.common_name ?? taxonId}
+        {href ? (
+          <>
+            {" · "}
+            <a className="underline" href={href} target="_blank" rel="noreferrer">
+              Floriscope
+            </a>
+          </>
+        ) : null}
+      </span>
+    );
   }
 
   function projectName(id: string) {
@@ -162,7 +180,7 @@ export function DistributionMemberView({ slug }: { slug: string }) {
 
   const selectedLines = Object.entries(quantities).filter(([, qty]) => qty > 0);
   const canReserve =
-    !isClosed && !!slotId && !!projectId && selectedLines.length > 0 && !submitting && !membershipBlocksReserve;
+    !isClosed && !!slotId && !!projectId && selectedLines.length > 0 && !submitting && !membershipBlocksReserve && !projectBlocksReserve;
 
   let reserveButtonLabel = "Réserver";
   if (submitting) reserveButtonLabel = "Réservation…";
@@ -278,6 +296,13 @@ export function DistributionMemberView({ slug }: { slug: string }) {
                 </div>
               </div>
             )}
+            <p>
+              Vos repousses ont bien été réservées. Il peut arriver qu'il y ait des modifications de dernières minutes
+              dans les approvisionnements, les quantités peuvent être revues à la baisse. Ces repousses bien que
+              gratuites sont le fruit de beaucoup d'heures de travail bénévole : n'hésitez pas à remercier les bénévoles
+              et à nous aider. Nous comptons sur vous pour être ponctuels et nous signaler toute annulation.
+            </p>
+            {reservedSlot?.address && <p>Rendez-vous : {reservedSlot.address}</p>}
             <Separator />
             <div className="space-y-1">
               {reservation.items.map((item) => (
@@ -456,6 +481,14 @@ export function DistributionMemberView({ slug }: { slug: string }) {
                 </AlertDescription>
               </Alert>
             )}
+            {projectBlocksReserve && (
+              <Alert>
+                <AlertTitle>Projet de plantation requis</AlertTitle>
+                <AlertDescription>
+                  Renseignez un projet de plantation avant de récupérer des arbres.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <Button className="w-full" disabled={!canReserve} onClick={handleReserve}>
               {reserveButtonLabel}
@@ -486,7 +519,7 @@ export function DistributionMemberView({ slug }: { slug: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={isClosed || !authed || membershipBlocksReserve}
+                      disabled={isClosed || !authed || membershipBlocksReserve || projectBlocksReserve}
                       onClick={() => handleJoinWaitlist(s.taxon_id)}
                     >
                       Rejoindre la liste d'attente

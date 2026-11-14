@@ -55,8 +55,9 @@ const PLACE_KINDS = [
   ["collective", "Un jardin ou une forêt comestible partagée"],
   ["condominium", "Un jardin de copropriété"],
   ["individual", "Un jardin de particulier"],
-  ["school", "Un jardin ou une ferme pédagogique, une école"],
+  ["school", "Un établissement scolaire"],
   ["public_space", "Un espace public, une entreprise ou un tiers-lieu"],
+  ["other", "Autres"],
 ];
 
 export default function MesProjetsPage() {
@@ -67,6 +68,7 @@ export default function MesProjetsPage() {
   const [planterLevel, setPlanterLevel] = useState("debutant");
   const [mulch, setMulch] = useState("paille");
   const [placeKind, setPlaceKind] = useState("individual");
+  const [desiredTrees, setDesiredTrees] = useState("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,10 +106,12 @@ export default function MesProjetsPage() {
         planter_level: planterLevel,
         mulch,
         place_kind: placeKind,
+        desired_tree_count: desiredTrees.trim() ? Number(desiredTrees) : null,
       });
       setName("");
       setAddress("");
-      toast.success("Projet créé. S'il fallait un parcours adoptant, la demande est partie.");
+      setDesiredTrees("");
+      toast.success("Projet créé. Le parcours adoptant est actif s'il ne l'était pas déjà.");
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Échec de la création.");
@@ -123,7 +127,7 @@ export default function MesProjetsPage() {
         <p className="mt-1 text-muted-foreground text-sm">
           {adoptant?.status === "pending"
             ? "Votre parcours adoptant est en attente de validation. Vous pouvez déjà décrire vos projets."
-            : "Un nom et une adresse suffisent pour ouvrir un projet."}
+            : "Chaque adhérent·e peut avoir plusieurs projets de plantation, par exemple « chez papi » ou « projet de haie ». Vous devez renseigner ces informations pour pouvoir récupérer des arbres via Repousse."}
         </p>
       </div>
 
@@ -190,6 +194,17 @@ export default function MesProjetsPage() {
               </Select>
             </div>
           </div>
+          <div>
+            <Label htmlFor="projet-arbres">Nombre d'arbres que vous aimeriez planter cette année</Label>
+            <Input
+              id="projet-arbres"
+              type="number"
+              min={1}
+              value={desiredTrees}
+              onChange={(event) => setDesiredTrees(event.target.value)}
+              placeholder="Sur ce projet"
+            />
+          </div>
           <Button disabled={busy} onClick={submit}>
             {busy ? "Création…" : "Créer mon projet"}
           </Button>
@@ -233,7 +248,10 @@ function ProjectCard({ project }: { project: Project }) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{project.name}</CardTitle>
-        <CardDescription>{project.address || "Adresse non renseignée"}</CardDescription>
+        <CardDescription>
+          {project.address || "Adresse non renseignée"}
+          {project.desired_tree_count ? ` · ${project.desired_tree_count} arbres souhaités cette année` : ""}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div>
@@ -266,8 +284,35 @@ function ProjectCard({ project }: { project: Project }) {
           {reports[0] && (
             <p className="text-muted-foreground text-xs">Dernière nouvelle : {STATUS_LABELS[reports[0].status]}</p>
           )}
+          <SurvivalRates reports={reports} />
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function SurvivalRates({ reports }: { reports: TreeReport[] }) {
+  const byYear = new Map<number, TreeReport[]>();
+  for (const report of reports) {
+    const year = new Date(report.inserted_at).getFullYear();
+    if (Number.isNaN(year)) continue;
+    const list = byYear.get(year) ?? [];
+    list.push(report);
+    byYear.set(year, list);
+  }
+  const years = [...byYear.entries()].sort((a, b) => b[0] - a[0]);
+  if (years.length === 0) return null;
+
+  return (
+    <div className="space-y-1 text-sm">
+      {years.map(([year, list]) => {
+        const share = (status: TreeReport["status"]) => Math.round((100 * list.filter((item) => item.status === status).length) / list.length);
+        return (
+          <p key={year}>
+            {year} : ils vont bien {share("thriving")} % · ils vont mal {share("struggling")} % · ils sont morts {share("dead")} %
+          </p>
+        );
+      })}
+    </div>
   );
 }

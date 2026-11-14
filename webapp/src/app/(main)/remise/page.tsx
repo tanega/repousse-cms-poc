@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { HandoverPanel } from "@/app/(main)/distributions/_components/handover-panel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { fetchPublicEvents } from "@/lib/api/distributions";
+import { fetchEvents } from "@/lib/api/distributions";
 import type { DistributionEvent } from "@/types/distribution";
 
 export default function RemisePage() {
@@ -12,11 +12,10 @@ export default function RemisePage() {
   const [eventId, setEventId] = useState("");
 
   useEffect(() => {
-    fetchPublicEvents()
+    fetchEvents()
       .then((list) => {
-        const open = list.filter((event) => event.status !== "draft");
-        setEvents(open);
-        if (open[0]) setEventId(open[0].id);
+        setEvents(list);
+        if (list[0]) setEventId(list[0].id);
       })
       .catch(() => setEvents([]));
   }, []);
@@ -36,7 +35,7 @@ export default function RemisePage() {
         <SelectContent>
           {events.map((event) => (
             <SelectItem key={event.id} value={event.id}>
-              {event.title}
+              {event.title} · {event.status === "draft" ? "brouillon" : event.status === "published" ? "publiée" : "clôturée"}
             </SelectItem>
           ))}
         </SelectContent>
