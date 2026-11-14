@@ -29,8 +29,9 @@ async function authedFetch(path: string, init: RequestInit = {}): Promise<Respon
   return res;
 }
 
-export async function fetchProjects(): Promise<Project[]> {
-  const res = await authedFetch("/api/v1/projects");
+export async function fetchProjects(options?: { all?: boolean }): Promise<Project[]> {
+  const query = options?.all ? "?all=true" : "";
+  const res = await authedFetch(`/api/v1/projects${query}`);
   const { data } = await res.json();
   return data;
 }
@@ -49,6 +50,7 @@ export interface ProjectAttrs {
   planter_level?: string | null;
   mulch?: string | null;
   place_kind?: string | null;
+  desired_tree_count?: number | null;
   /** Full replace: sent on every create/update, mirrors the form's editable array. */
   preferred_species?: { taxon_id: string }[];
 }

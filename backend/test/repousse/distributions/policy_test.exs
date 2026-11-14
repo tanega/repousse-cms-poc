@@ -23,11 +23,19 @@ defmodule Repousse.Distributions.PolicyTest do
   describe ":reserve / :join_waitlist" do
     # epic-02 US-AUTH-04: suspended/lapsed membership is read-only —
     # reservations and waitlist joins are blocked.
-    test "a user with an active, current-year adhesion can reserve and join waitlists" do
-      user = build(:user, status: :active, adhesion_active: true)
+    test "a user with an active adhesion and a planting project can reserve and join waitlists" do
+      user = insert(:user, status: :active, adhesion_active: true)
+      insert(:project, owner: user)
 
       assert :ok = Bodyguard.permit(Policy, :reserve, user, %{})
       assert :ok = Bodyguard.permit(Policy, :join_waitlist, user, %{})
+    end
+
+    test "a user without a planting project cannot reserve or join waitlists" do
+      user = insert(:user, status: :active, adhesion_active: true)
+
+      assert {:error, :project_required} = Bodyguard.permit(Policy, :reserve, user, %{})
+      assert {:error, :project_required} = Bodyguard.permit(Policy, :join_waitlist, user, %{})
     end
 
     test "a user without an active adhesion cannot reserve or join waitlists" do

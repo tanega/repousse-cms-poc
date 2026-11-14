@@ -6,11 +6,27 @@ defmodule Repousse.Impact.Hedge do
   @foreign_key_type :binary_id
 
   @derive {Jason.Encoder,
-           only: [:id, :name, :length_m, :survival_rate, :planted_on, :notes, :taxon_id, :inserted_at, :updated_at]}
+           only: [
+             :id,
+             :name,
+             :length_m,
+             :reinforced_length_m,
+             :tree_count,
+             :commune,
+             :survival_rate,
+             :planted_on,
+             :notes,
+             :taxon_id,
+             :inserted_at,
+             :updated_at
+           ]}
 
   schema "hedges" do
     field :name, :string
     field :length_m, :float
+    field :reinforced_length_m, :float
+    field :tree_count, :integer
+    field :commune, :string
     field :survival_rate, :integer
     field :planted_on, :date
     field :notes, :string
@@ -22,10 +38,22 @@ defmodule Repousse.Impact.Hedge do
 
   def changeset(hedge, attrs) do
     hedge
-    |> cast(attrs, [:name, :length_m, :survival_rate, :planted_on, :notes, :taxon_id])
+    |> cast(attrs, [
+      :name,
+      :length_m,
+      :reinforced_length_m,
+      :tree_count,
+      :commune,
+      :survival_rate,
+      :planted_on,
+      :notes,
+      :taxon_id
+    ])
     |> validate_required([:name])
     |> validate_length(:name, min: 2, max: 200)
     |> validate_number(:survival_rate, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
     |> validate_number(:length_m, greater_than: 0)
+    |> validate_number(:reinforced_length_m, greater_than_or_equal_to: 0)
+    |> validate_number(:tree_count, greater_than_or_equal_to: 0)
   end
 end

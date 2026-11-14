@@ -20,7 +20,7 @@ type Journey = {
 
 const journeys: Journey[] = [
   {
-    profile: "Bénévole",
+    profile: "Adhérent.e",
     description: "Profil par défaut — attribué à tout nouveau compte.",
     icon: Users,
     colorClass: "text-muted-foreground",
@@ -29,7 +29,7 @@ const journeys: Journey[] = [
     steps: [
       { label: "Inscription", detail: "Via HelloAsso ou formulaire" },
       { label: "Activation", detail: "Confirmation par email" },
-      { label: "Onboarding", detail: "Profil Bénévole pré-coché, complétion facultative" },
+      { label: "Onboarding", detail: "Profil Adhérent.e pré-coché, complétion facultative" },
       { label: "Espace membre", detail: "Calendrier, ateliers, actualités" },
       { label: "Évolution", detail: "Ajout d'un second profil si souhaité" },
     ],

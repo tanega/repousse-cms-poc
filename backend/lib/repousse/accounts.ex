@@ -279,17 +279,18 @@ defmodule Repousse.Accounts do
   @doc """
   A member asks to join an engagement profile. `attrs` carries the profile's
   own details; a Famille d'accueil request must include the hosting basics
-  (capacity and address) so the admin can review them before deciding. Profiles needing approval
-  become `pending` and every admin is notified; the others (Bénévole) are
-  activated straight away. A previously rejected request can be re-submitted.
+  (capacity and address) so the admin can review them before deciding.
+  A Famille d'accueil request becomes `pending` and every admin is notified.
+  Adoptant and Bénévole are activated straight away. A previously rejected
+  request can be re-submitted.
   """
   def request_profile(%User{} = user, profile_type, attrs \\ %{}) do
     with {:ok, type} <- parse_profile_type(profile_type) do
       existing = get_profile(user.id, type)
 
       cond do
-        not UserProfile.requires_approval?(type) and is_nil(existing) ->
-          with {:ok, profile} <- add_profile(user, type), do: {:ok, Repo.preload(profile, :hosted_species)}
+        not UserProfile.requires_approval?(type) and (is_nil(existing) or existing.status == :rejected) ->
+          activate_open_profile(user, type, existing)
 
         existing && existing.status in [:pending, :active] ->
           {:error, :profile_already_requested}
@@ -297,6 +298,25 @@ defmodule Repousse.Accounts do
         true ->
           submit_request(user, type, existing, attrs)
       end
+    end
+  end
+
+  defp activate_open_profile(user, type, existing) do
+    changeset =
+      (existing || %UserProfile{})
+      |> UserProfile.changeset(%{"user_id" => user.id, "profile_type" => Atom.to_string(type)})
+      |> Ecto.Changeset.put_change(:status, :active)
+      |> Ecto.Changeset.put_change(:rejection_reason, nil)
+
+    with {:ok, profile} <- Repo.insert_or_update(changeset) do
+      if type == :adoptant do
+        Notifications.notify_ops(
+          "Nouveau parcours adoptant",
+          "#{display_name(user)} (#{user.email}) a rejoint le parcours adoptant, sans validation."
+        )
+      end
+
+      {:ok, Repo.preload(profile, :hosted_species)}
     end
   end
 

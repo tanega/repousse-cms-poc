@@ -52,6 +52,8 @@ interface NavItemBase {
   newTab?: boolean;
   /** Minimum role required to see this item. Omit for any authenticated user (member+). */
   minRole?: UserRole;
+  /** Hide this item once the user reaches this role. */
+  hiddenFromMinRole?: UserRole;
   /** Engagement profile required to see this item. Omit for every member. */
   requiresProfile?: ProfileType;
 }
@@ -83,6 +85,14 @@ export const sidebarItems: NavGroup[] = [
         title: "Accueil",
         url: "/membres/me",
         icon: Home,
+        hiddenFromMinRole: "admin",
+      },
+      {
+        id: "accueil-impact",
+        title: "Accueil",
+        url: "/admin/impact",
+        icon: Home,
+        minRole: "admin",
       },
       {
         id: "mes-nurseries",
@@ -104,13 +114,6 @@ export const sidebarItems: NavGroup[] = [
         url: "/mes-projets",
         icon: TreePine,
         requiresProfile: "adoptant",
-      },
-      {
-        id: "remise",
-        title: "Remise des plants",
-        url: "/remise",
-        icon: Package,
-        minRole: "admin",
       },
     ],
   },
@@ -238,11 +241,18 @@ export const sidebarItems: NavGroup[] = [
         minRole: "admin",
       },
       {
+        id: "remise",
+        title: "Remise des plants",
+        url: "/remise",
+        icon: Package,
+        minRole: "admin",
+      },
+      {
         id: "admin-automatisations",
         title: "Automatisations",
         url: "/admin/automatisations",
         icon: Zap,
-        minRole: "admin",
+        minRole: "superadmin",
       },
     ],
   },
@@ -405,6 +415,7 @@ export function filterNavByAccess(
       items: group.items.filter(
         (item) =>
           (!item.minRole || (role && hasMinRole(role, item.minRole))) &&
+          (!item.hiddenFromMinRole || !role || !hasMinRole(role, item.hiddenFromMinRole)) &&
           (!item.requiresProfile || (profiles ?? []).includes(item.requiresProfile)),
       ),
     }))

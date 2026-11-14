@@ -7,8 +7,9 @@ defmodule Repousse.Accounts.UserProfile do
 
   @profile_types [:volunteer, :adoptant, :host_family]
   @statuses [:pending, :active, :rejected]
-  # Profiles a member can't self-activate: a coordinator validates the request.
-  @approval_required [:adoptant, :host_family]
+  # Famille d'accueil stays reviewed by a coordinator. Adoptant is active
+  # as soon as the member asks, so coordinators are not validating each one.
+  @approval_required [:host_family]
   @equipment [:greenhouse, :tarp, :auto_watering, :artificial_light, :cold_frame, :outdoor_ground]
 
   @derive {Jason.Encoder,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -33,6 +33,7 @@ import {
   updateStock,
   uploadEventCoverImage,
 } from "@/lib/api/distributions";
+import { allocateDepositsToEvent, fetchCleDesChamps, type CleDesChampsDeposit } from "@/lib/api/nurseries";
 import { cn } from "@/lib/utils";
 import type { DistributionSlot, DistributionStock } from "@/types/distribution";
 import { EVENT_STATUS_COLORS, EVENT_STATUS_LABELS, type EventStatus } from "@/types/distribution";
@@ -54,10 +55,11 @@ const SLOT_DATE_START_MONTH = new Date();
 const SLOT_DATE_END_MONTH = new Date(new Date().getFullYear() + 3, 11);
 
 /** Client-only row for the in-progress form; `isNew` decides create vs. update on submit. */
-type DraftSlot = Pick<
-  DistributionSlot,
-  "location_name" | "address" | "date" | "start_time" | "end_time" | "contact"
+type DraftSlot = Omit<
+  Pick<DistributionSlot, "location_name" | "address" | "date" | "start_time" | "end_time" | "contact">,
+  "address"
 > & {
+  address: string;
   clientId: string;
   id?: string;
   isNew: boolean;
@@ -79,13 +81,13 @@ const formSchema = z.object({
       id: z.string().optional(),
       isNew: z.boolean(),
       location_name: z.string().trim().min(1, "Le lieu est requis"),
-      address: z.string().trim().nullable(),
+      address: z.string().trim().min(1, "L'adresse est requise"),
       date: z.string().min(1, "La date est requise"),
       start_time: z.string().min(1, "L'heure de début est requise"),
       end_time: z.string().min(1, "L'heure de fin est requise"),
       contact: z.string().trim().nullable(),
     }),
-  ),
+  ).min(1, "Ajoutez un créneau"),
   stocks: z.array(
     z.object({
       clientId: z.string(),
@@ -119,6 +121,14 @@ function SlotRow({
               placeholder="ex : Jardin partagé du Fort"
               value={slot.location_name}
               onChange={(e) => onChange({ ...slot, location_name: e.target.value })}
+            />
+          </div>
+          <div className="col-span-2 space-y-1.5">
+            <Label className="text-xs">Adresse</Label>
+            <Input
+              placeholder="12 rue des Lilas, Nantes"
+              value={slot.address ?? ""}
+              onChange={(e) => onChange({ ...slot, address: e.target.value })}
             />
           </div>
           <div className="space-y-1.5">
@@ -243,6 +253,16 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+  const [deposits, setDeposits] = useState<CleDesChampsDeposit[]>([]);
+  const [selectedDepositIds, setSelectedDepositIds] = useState<string[]>([]);
+  const selectedDepositIdsRef = useRef(selectedDepositIds);
+  selectedDepositIdsRef.current = selectedDepositIds;
+
+  useEffect(() => {
+    fetchCleDesChamps()
+      .then((payload) => setDeposits((payload.data ?? []).filter((deposit) => !deposit.allocated_at && deposit.quantity > 0)))
+      .catch(() => setDeposits([]));
+  }, []);
 
   const form = useForm({
     defaultValues: {
@@ -255,7 +275,7 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
           id: s.id,
           isNew: false,
           location_name: s.location_name,
-          address: s.address,
+          address: s.address ?? "",
           date: s.date,
           start_time: s.start_time,
           end_time: s.end_time,
@@ -273,7 +293,10 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
         }),
       ),
     } satisfies FormValues,
-    validators: { onChange: formSchema },
+    validators: { onChange: formSchema, onSubmit: formSchema },
+    onSubmitInvalid: () => {
+      toast.error("Complétez l'intitulé, puis un créneau avec un lieu, une adresse, une date et des horaires.");
+    },
     onSubmit: async ({ value }) => {
       const record = {
         title: value.title.trim(),
@@ -357,7 +380,11 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
           // query-db-collection's purpose-built API for exactly this: write
           // server-confirmed data straight into the collection's reactive
           // store, synchronously, no round-trip.
-          distributionEventCollection.utils.writeInsert(created);
+          try {
+            distributionEventCollection.utils.writeInsert(created);
+          } catch {
+            // The event is already saved. A stale list cache must not block the redirect.
+          }
 
           await Promise.all([
             ...value.slots.map((s) =>
@@ -384,14 +411,18 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
           await uploadEventCoverImage(eventId, coverFile);
         }
 
+        if (!isEdit && selectedDepositIdsRef.current.length > 0) {
+          await allocateDepositsToEvent(eventId, selectedDepositIdsRef.current);
+        }
+
         await queryClient.invalidateQueries({ queryKey: ["distribution-events"] });
         await queryClient.invalidateQueries({ queryKey: ["distribution-slots", eventId] });
         await queryClient.invalidateQueries({ queryKey: ["distribution-stocks", eventId] });
 
         toast.success(isEdit ? "Événement mis à jour." : "Événement créé.");
         router.push(`/admin/distributions/${eventId}`);
-      } catch {
-        toast.error(isEdit ? "Échec de la mise à jour." : "Échec de la création.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : isEdit ? "Échec de la mise à jour." : "Échec de la création.");
       }
     },
   });
@@ -579,7 +610,7 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
                               clientId: crypto.randomUUID(),
                               isNew: true,
                               location_name: "",
-                              address: null,
+                              address: "",
                               date: "",
                               start_time: "",
                               end_time: "",
@@ -596,6 +627,33 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
                 </form.Field>
               </CardContent>
             </Card>
+
+            {deposits.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Dispo à la clé des champs</CardTitle>
+                  <CardDescription className="text-xs">
+                    Cochez les arbres à verser dans le stock de cette distribution. Ils quittent le stock de la clé des champs.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {deposits.map((deposit) => (
+                    <Label key={deposit.id} className="flex items-center gap-2 font-normal text-sm">
+                      <Checkbox
+                        checked={selectedDepositIds.includes(deposit.id)}
+                        onCheckedChange={(checked) =>
+                          setSelectedDepositIds((current) =>
+                            checked ? [...current, deposit.id] : current.filter((id) => id !== deposit.id),
+                          )
+                        }
+                      />
+                      {deposit.quantity} {deposit.common_name ?? "arbres"}
+                      {deposit.nursery_name ? ` · ${deposit.nursery_name}` : ""}
+                    </Label>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Stock */}
             <Card>
@@ -690,9 +748,9 @@ export function DistributionForm({ mode, distributionId, status, defaultValues }
             </Card>
 
             <div className="flex flex-col gap-2">
-              <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
-                {([canSubmit, isSubmitting]) => (
-                  <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
+              <form.Subscribe selector={(state) => state.isSubmitting}>
+                {(isSubmitting) => (
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? "Enregistrement…" : isEdit ? "Enregistrer les modifications" : "Créer l'événement"}
                   </Button>
                 )}

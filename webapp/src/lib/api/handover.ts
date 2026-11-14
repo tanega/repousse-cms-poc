@@ -38,6 +38,13 @@ export interface HandoverRow {
   id: string;
   status: "confirmed" | "cancelled" | "no_show" | "validated";
   project_id: string;
+  slot: {
+    location_name: string;
+    address: string | null;
+    date: string;
+    start_time: string;
+    end_time: string;
+  } | null;
   user: { id: string; first_name: string | null; last_name: string | null; email: string };
   items: HandoverItem[];
 }

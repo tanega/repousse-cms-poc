@@ -27,7 +27,7 @@ defmodule RepousseWeb.ReservationControllerTest do
       slot = insert(:slot, event: event)
       taxon = insert(:taxon)
       stock = insert(:stock, event: event, taxon: taxon, quantity: 10)
-      project = insert(:project)
+      project = insert(:project, owner: user)
 
       conn =
         conn

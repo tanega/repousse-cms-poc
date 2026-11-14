@@ -5,6 +5,12 @@ defmodule Repousse.Projects do
 
   # --- Projects ---
 
+  def owns_project?(user_id) when is_binary(user_id) do
+    Repo.exists?(from p in Project, where: p.owner_id == ^user_id and is_nil(p.archived_at))
+  end
+
+  def owns_project?(_), do: false
+
   def list_projects(opts \\ []) do
     user_id = Keyword.get(opts, :user_id)
     public_only = Keyword.get(opts, :public_only, false)

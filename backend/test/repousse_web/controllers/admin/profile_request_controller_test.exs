@@ -37,7 +37,7 @@ defmodule RepousseWeb.Admin.ProfileRequestControllerTest do
     user = insert(:user)
     insert(:user_profile, user: user, profile_type: :volunteer)
 
-    conn = conn |> authed(user, pm) |> put(~p"/api/v1/me/profiles", %{"profiles" => ["volunteer", "adoptant"]})
+    conn = conn |> authed(user, pm) |> put(~p"/api/v1/me/profiles", %{"profiles" => ["volunteer", "host_family"]})
     assert json_response(conn, 422)
   end
 
@@ -45,12 +45,15 @@ defmodule RepousseWeb.Admin.ProfileRequestControllerTest do
     admin = insert(:admin_user)
     u1 = insert(:user)
     u2 = insert(:user)
-    {:ok, p1} = Accounts.request_profile(u1, "adoptant")
+    {:ok, p1} = Accounts.request_profile(u1, "host_family", %{"hosting_capacity" => 10, "hosting_address" => "Nantes"})
     {:ok, p2} = Accounts.request_profile(u2, "host_family", %{"hosting_capacity" => 40, "hosting_address" => "Lyon"})
 
     list = conn |> authed(admin, pm) |> get(~p"/api/v1/admin/profile_requests")
     assert %{"data" => data, "meta" => %{"pending_count" => 2}} = json_response(list, 200)
-    assert [%{"user" => %{"email" => _}, "details" => nil}, %{"details" => %{"hosting_capacity" => 40, "hosting_address" => "Lyon"}}] = data
+    assert [
+             %{"details" => %{"hosting_capacity" => 10, "hosting_address" => "Nantes"}},
+             %{"details" => %{"hosting_capacity" => 40, "hosting_address" => "Lyon"}}
+           ] = data
 
     ok = build_conn() |> authed(admin, pm) |> post(~p"/api/v1/admin/profile_requests/#{p1.id}/approve")
     assert %{"data" => %{"status" => "active"}} = json_response(ok, 200)

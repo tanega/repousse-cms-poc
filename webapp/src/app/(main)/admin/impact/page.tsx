@@ -23,6 +23,10 @@ export default function ImpactPage() {
   const [giftNote, setGiftNote] = useState("");
   const [hedgeName, setHedgeName] = useState("");
   const [hedgeLength, setHedgeLength] = useState("");
+  const [hedgeReinforced, setHedgeReinforced] = useState("");
+  const [hedgeYear, setHedgeYear] = useState("");
+  const [hedgeTrees, setHedgeTrees] = useState("");
+  const [hedgeCommune, setHedgeCommune] = useState("");
   const [hedgeRate, setHedgeRate] = useState("");
 
   async function load() {
@@ -66,10 +70,18 @@ export default function ImpactPage() {
       await createHedge({
         name: hedgeName.trim(),
         length_m: length,
+        reinforced_length_m: hedgeReinforced.trim() ? Number(hedgeReinforced) : null,
+        tree_count: hedgeTrees.trim() ? Number(hedgeTrees) : null,
+        commune: hedgeCommune.trim() || null,
+        planted_on: hedgeYear.trim() ? `${hedgeYear.trim()}-01-01` : null,
         survival_rate: rate,
       });
       setHedgeName("");
       setHedgeLength("");
+      setHedgeReinforced("");
+      setHedgeYear("");
+      setHedgeTrees("");
+      setHedgeCommune("");
       setHedgeRate("");
       toast.success("Haie enregistrée.");
       await load();
@@ -156,18 +168,38 @@ export default function ImpactPage() {
           {hedges.map((hedge) => (
             <p key={hedge.id} className="text-sm">
               {hedge.name}
-              {hedge.length_m ? ` — ${hedge.length_m} m` : ""}
+              {hedge.length_m ? ` — linéaire créé ${hedge.length_m} m` : ""}
+              {hedge.reinforced_length_m ? ` — renforcé ${hedge.reinforced_length_m} m` : ""}
+              {hedge.tree_count ? ` — ${hedge.tree_count} arbres` : ""}
+              {hedge.commune ? ` — ${hedge.commune}` : ""}
+              {hedge.planted_on ? ` — ${hedge.planted_on.slice(0, 4)}` : ""}
               {hedge.survival_rate != null ? ` — reprise ${hedge.survival_rate} %` : ""}
             </p>
           ))}
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="hedge-name">Nom</Label>
               <Input id="hedge-name" value={hedgeName} onChange={(e) => setHedgeName(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="hedge-length">Longueur (m)</Label>
+              <Label htmlFor="hedge-length">Linéaire créé (m)</Label>
               <Input id="hedge-length" type="number" min={0} value={hedgeLength} onChange={(e) => setHedgeLength(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="hedge-reinforced">Linéaire renforcé (m)</Label>
+              <Input id="hedge-reinforced" type="number" min={0} value={hedgeReinforced} onChange={(e) => setHedgeReinforced(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="hedge-year">Année de plantation</Label>
+              <Input id="hedge-year" type="number" min={1990} max={2100} value={hedgeYear} onChange={(e) => setHedgeYear(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="hedge-trees">Nombre d'arbres plantés</Label>
+              <Input id="hedge-trees" type="number" min={0} value={hedgeTrees} onChange={(e) => setHedgeTrees(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="hedge-commune">Commune ou adresse</Label>
+              <Input id="hedge-commune" value={hedgeCommune} onChange={(e) => setHedgeCommune(e.target.value)} />
             </div>
             <div>
               <Label htmlFor="hedge-rate">Reprise (%)</Label>

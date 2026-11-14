@@ -26,6 +26,7 @@ export interface Project {
   planter_level?: string | null;
   mulch?: string | null;
   place_kind?: string | null;
+  desired_tree_count?: number | null;
   preferred_species: ProjectPreferredSpecies[];
   inserted_at: string;
   updated_at: string;

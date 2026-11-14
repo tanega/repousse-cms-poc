@@ -24,6 +24,7 @@ defmodule Repousse.Projects.Project do
              :planter_level,
              :mulch,
              :place_kind,
+             :desired_tree_count,
              :preferred_species,
              :inserted_at,
              :updated_at
@@ -47,6 +48,7 @@ defmodule Repousse.Projects.Project do
     field :planter_level, :string
     field :mulch, :string
     field :place_kind, :string
+    field :desired_tree_count, :integer
 
     belongs_to :owner, Repousse.Accounts.User
     has_many :members, Repousse.Projects.ProjectMember
@@ -63,10 +65,11 @@ defmodule Repousse.Projects.Project do
     |> cast(attrs, [
       :name, :description, :management_type, :address, :lat, :lng,
       :surface_m2, :soil_type, :publication_status, :owner_id, :cover_image_url,
-      :planter_level, :mulch, :place_kind
+      :planter_level, :mulch, :place_kind, :desired_tree_count
     ])
     |> validate_required([:name, :owner_id])
     |> validate_length(:name, min: 2, max: 200)
+    |> validate_number(:desired_tree_count, greater_than: 0)
     |> cast_assoc(:preferred_species, with: &Repousse.Projects.PreferredSpecies.changeset/2)
   end
 

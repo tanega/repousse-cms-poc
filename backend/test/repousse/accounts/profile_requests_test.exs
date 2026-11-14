@@ -70,6 +70,17 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
       assert [] = Notifications.list_for_user(admin)
     end
 
+    test "adoptant is active immediately and the inbox is told, without an admin task" do
+      user = insert(:user)
+      admin = insert(:admin_user)
+
+      assert {:ok, profile} = Accounts.request_profile(user, "adoptant")
+      assert profile.status == :active
+      assert Accounts.get_active_profile(user.id, :adoptant)
+      assert [] = Notifications.list_for_user(admin)
+      assert Enum.any?(flush_emails(), &email_to?(&1, "desnouvelles.repousse@gmail.com"))
+    end
+
     test "cannot request twice while pending, or once active" do
       user = insert(:user)
       assert {:ok, _} = Accounts.request_profile(user, "adoptant")
@@ -128,13 +139,13 @@ defmodule Repousse.Accounts.ProfileRequestsTest do
       user = insert(:user)
       insert(:user_profile, user: user, profile_type: :volunteer)
 
-      assert {:error, :profile_requires_approval} = Accounts.set_profiles(user, [:volunteer, :adoptant])
+      assert {:error, :profile_requires_approval} = Accounts.set_profiles(user, [:volunteer, :host_family])
     end
 
     test "can cancel a pending request by dropping it" do
       user = insert(:user)
       insert(:user_profile, user: user, profile_type: :volunteer)
-      {:ok, _} = Accounts.request_profile(user, "adoptant")
+      {:ok, _} = Accounts.request_profile(user, "host_family", @hosting)
 
       assert {:ok, profiles} = Accounts.set_profiles(user, [:volunteer])
       assert Enum.map(profiles, & &1.profile_type) == [:volunteer]
